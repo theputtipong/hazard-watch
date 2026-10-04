@@ -1,5 +1,12 @@
 @import "tailwindcss";
 
+/*
+ * Colour tokens. Components only use these (bg-panel, text-ink, bg-danger …), never raw hex,
+ * so themes are just variable overrides below:
+ *   [data-theme="dark"]  dark mode
+ *   [data-cvd="on"]      colour-vision-deficiency palette (Paul Tol "muted"; safe for red/green colour blindness)
+ * The map's marker/zone colours live in src/config.ts (WEB.severityColor / severityColorCvd).
+ */
 @theme {
   --font-sans: var(--font-plex-thai), system-ui, sans-serif;
   --font-mono: var(--font-plex-mono), ui-monospace, monospace;
@@ -7,12 +14,18 @@
   --color-ink: #0f1b2d;
   --color-ink-2: #2b3647;
   --color-muted: #4a5668;
+  --color-faint: #6b7787;
   --color-line: #d9dee5;
+  --color-line-soft: #e6eaf0;
+  --color-chip-line: #c9d1db;
   --color-ground: #f4f6f8;
   --color-panel: #ffffff;
+  --color-sunken: #eef1f4;
+  --color-seg: #e8ecf1;
+  --color-map-bg: #eaf0f5;
   --color-accent: #1f5fbf;
 
-  /* Severity: fills for areas/pills, strong for dots and text. Differ in lightness, not only hue. */
+  /* Severity: fills for pills/cards and strong text on them. */
   --color-ok: #ddf1e7;
   --color-ok-strong: #155c40;
   --color-watch: #fff0cc;
@@ -21,6 +34,53 @@
   --color-warn-strong: #9a3409;
   --color-danger: #fbe0e5;
   --color-danger-strong: #8c0f28;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --color-ink: #e6ebf2;
+  --color-ink-2: #c9d1dc;
+  --color-muted: #a3aebd;
+  --color-faint: #7d8898;
+  --color-line: #2c3644;
+  --color-line-soft: #26303d;
+  --color-chip-line: #3a4656;
+  --color-ground: #0e141c;
+  --color-panel: #161e29;
+  --color-sunken: #1f2935;
+  --color-seg: #1f2935;
+  --color-map-bg: #1a222d;
+  --color-accent: #8ab8ff;
+  --color-ok: #123a2a;
+  --color-ok-strong: #8fe0b8;
+  --color-watch: #3d2f08;
+  --color-watch-strong: #f5cf6b;
+  --color-warn: #44200f;
+  --color-warn-strong: #ffab7d;
+  --color-danger: #4a1220;
+  --color-danger-strong: #ff9db0;
+}
+
+:root[data-cvd='on'] {
+  --color-ok: #dbe6f3;
+  --color-ok-strong: #224466;
+  --color-watch: #f6f0d6;
+  --color-watch-strong: #5c4f10;
+  --color-warn: #f5dde2;
+  --color-warn-strong: #7a2f3f;
+  --color-danger: #ecd3df;
+  --color-danger-strong: #5a0f33;
+}
+
+:root[data-theme='dark'][data-cvd='on'] {
+  --color-ok: #1b2d45;
+  --color-ok-strong: #9cc1ea;
+  --color-watch: #3a3519;
+  --color-watch-strong: #eadf9e;
+  --color-warn: #42232b;
+  --color-warn-strong: #f0a9b6;
+  --color-danger: #3a1427;
+  --color-danger-strong: #e59ac0;
 }
 
 body {
@@ -32,4 +92,27 @@ body {
   font-family: var(--font-mono);
   font-weight: 600;
   letter-spacing: -0.02em;
+}
+
+/* Dark map: invert the light OSM tiles (cheap, no second tile provider needed). */
+:root[data-theme='dark'] .leaflet-tile-pane {
+  filter: invert(1) hue-rotate(180deg) brightness(0.92) contrast(0.88);
+}
+:root[data-theme='dark'] .leaflet-container {
+  background: var(--color-map-bg);
+}
+:root[data-theme='dark'] .leaflet-popup-content-wrapper,
+:root[data-theme='dark'] .leaflet-popup-tip,
+:root[data-theme='dark'] .leaflet-tooltip,
+:root[data-theme='dark'] .leaflet-bar a {
+  background: var(--color-panel);
+  color: var(--color-ink);
+  border-color: var(--color-line);
+}
+:root[data-theme='dark'] .leaflet-control-attribution {
+  background: rgb(22 30 41 / 0.8);
+  color: var(--color-muted);
+}
+:root[data-theme='dark'] .leaflet-control-attribution a {
+  color: var(--color-accent);
 }

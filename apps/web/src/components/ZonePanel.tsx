@@ -35,7 +35,7 @@ export function describe(s: ZoneSummary, lang: Lang): string {
 
 function Status({ s, lang }: { s: ZoneSummary | undefined; lang: Lang }) {
   if (!s || s.severity === null) {
-    return <span className="inline-flex rounded-full bg-[#eef1f4] px-2.5 py-0.5 text-xs font-semibold text-muted">{t('zone.noData', lang)}</span>;
+    return <span className="inline-flex rounded-full bg-sunken px-2.5 py-0.5 text-xs font-semibold text-muted">{t('zone.noData', lang)}</span>;
   }
   return <SeverityPill severity={s.severity} lang={lang} />;
 }
@@ -55,10 +55,10 @@ export function ZonePanel({ lang, zones }: { lang: Lang; zones: ZoneView }) {
   const crumbs = [{ label: regionName, depth: 0 }, ...zones.path.map((z, i) => ({ label: zoneLabel(z, lang), depth: i + 1 }))];
 
   return (
-    <div className="flex flex-col gap-3 border-t border-[#e6eaf0] px-3.5 py-3">
+    <div className="flex flex-col gap-3 border-t border-line-soft px-3.5 py-3">
       {(zones.path.length > 0 || zones.selected) && (
       <div className="flex flex-wrap items-center gap-2">
-        <button type="button" onClick={zones.back} className="min-h-10 rounded-full border border-[#c9d1db] bg-panel px-3.5 text-sm font-medium">
+        <button type="button" onClick={zones.back} className="min-h-10 rounded-full border border-chip-line bg-panel px-3.5 text-sm font-medium">
           ‹ {t('common.back', lang)}
         </button>
         <nav aria-label={t('area.nav', lang)} className="flex flex-wrap items-center gap-1 text-[15px]">
@@ -66,7 +66,7 @@ export function ZonePanel({ lang, zones }: { lang: Lang; zones: ZoneView }) {
             const last = i === crumbs.length - 1 && !zones.selected;
             return (
               <span key={c.depth} className="flex items-center gap-1">
-                {i > 0 && <span aria-hidden="true" className="text-[#8a94a3]">›</span>}
+                {i > 0 && <span aria-hidden="true" className="text-faint">›</span>}
                 {last ? (
                   <span aria-current="page" className="font-bold">
                     {c.label}
@@ -81,7 +81,7 @@ export function ZonePanel({ lang, zones }: { lang: Lang; zones: ZoneView }) {
           })}
           {zones.selected && (
             <span className="flex items-center gap-1">
-              <span aria-hidden="true" className="text-[#8a94a3]">›</span>
+              <span aria-hidden="true" className="text-faint">›</span>
               <span aria-current="page" className="font-bold">
                 {zoneLabel(zones.selected, lang)}
               </span>
@@ -118,7 +118,7 @@ export function ZonePanel({ lang, zones }: { lang: Lang; zones: ZoneView }) {
                     onClick={() => zones.open(z.properties.id)}
                     aria-current={current || undefined}
                     className={`flex min-h-13 w-full items-center gap-2 rounded-[10px] border bg-panel px-3 py-1.5 text-left text-sm ${
-                      current ? 'border-ink shadow-[inset_0_0_0_1px_#0f1b2d]' : 'border-line'
+                      current ? 'border-ink shadow-[inset_0_0_0_1px_var(--color-ink)]' : 'border-line'
                     }`}
                   >
                     <span className="flex min-w-0 flex-1 flex-col">

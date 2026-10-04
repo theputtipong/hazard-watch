@@ -9,6 +9,7 @@ import { t, type Lang } from '@hw/core/i18n';
 import { WEB } from '@/config';
 import { radarImageUrl } from '@/lib/api';
 import { RADAR_BOUNDS, type Layers } from '@/lib/layers';
+import type { MapPalette } from '@/lib/prefs';
 import type { ZoneView } from '@/lib/useZones';
 import { cctvIcon, floodIcon, LEGEND_GLYPH, pm25Icon, waterIcon, youIcon } from './mapIcons';
 import { zoneLabel } from './ZonePanel';
@@ -26,6 +27,8 @@ interface Props {
   cameras: CctvCamera[];
   waterStations: Observation[];
   zones: ZoneView;
+  /** Severity colours for the current theme / colour-blind setting. */
+  palette: MapPalette;
 }
 
 /** Draw order: problems above normal points, and "you" above everything. */
@@ -34,7 +37,7 @@ const FLOOD_RANK: Record<Severity, number> = { ok: 0, watch: 1, warn: 2, danger:
 /** Readings older than `staleAfterMinutes` are drawn faded so they don't read as current. */
 const fade = (o: Observation) => (isStale(o.observedAt, DEFAULT_CONFIG) ? WEB.map.staleOpacity : 1);
 
-export default function MapView({ lang, center, located, onLocate, layers, radarId, floodPoints, pmStations, cameras, waterStations, zones }: Props) {
+export default function MapView({ lang, center, located, onLocate, layers, radarId, floodPoints, pmStations, cameras, waterStations, zones, palette }: Props) {
   const bounds = RADAR_BOUNDS[radarId];
   const startZoom = regionFor(center).zoom;
   const [zoom, setZoom] = useState(startZoom);
@@ -51,7 +54,7 @@ export default function MapView({ lang, center, located, onLocate, layers, radar
         <ZoomWatcher onZoom={setZoom} />
         <FollowFirstFix center={center} located={located} />
         <FitToFocus focus={zones.selected ?? zones.path.at(-1) ?? null} depth={zones.path.length} center={center} />
-        {layers.zones && <ZoneLayer lang={lang} zones={zones} />}
+        {layers.zones && <ZoneLayer lang={lang} zones={zones} palette={palette} />}
         {layers.radar && bounds && <ImageOverlay url={radarImageUrl(radarId)} bounds={bounds} opacity={WEB.map.radarOpacity} />}
 
         {showCams &&
@@ -71,7 +74,7 @@ export default function MapView({ lang, center, located, onLocate, layers, radar
           pmStations
             .filter((s) => s.value !== null)
             .map((s) => (
-              <Marker key={s.id} position={[s.location.lat, s.location.lng]} icon={pm25Icon(s.value!, s.severity)} zIndexOffset={Z.pm25} opacity={fade(s)}>
+              <Marker key={s.id} position={[s.location.lat, s.location.lng]} icon={pm25Icon(s.value!, s.severity, palette.severity)} zIndexOffset={Z.pm25} opacity={fade(s)}>
                 <Popup>
                   <PopupBody title={s.name[lang]}>
                     <span>
@@ -87,7 +90,7 @@ export default function MapView({ lang, center, located, onLocate, layers, radar
           waterStations
             .filter((w) => w.value !== null)
             .map((w) => (
-              <Marker key={w.id} position={[w.location.lat, w.location.lng]} icon={waterIcon(w.value!, w.severity)} zIndexOffset={Z.water} opacity={fade(w)}>
+              <Marker key={w.id} position={[w.location.lat, w.location.lng]} icon={waterIcon(w.value!, w.severity, palette.severity)} zIndexOffset={Z.water} opacity={fade(w)}>
                 <Popup>
                   <PopupBody title={w.name[lang]}>
                     <span>
@@ -124,7 +127,7 @@ export default function MapView({ lang, center, located, onLocate, layers, radar
             <Marker
               key={p.id}
               position={[p.location.lat, p.location.lng]}
-              icon={floodIcon(p.severity as Exclude<Severity, 'ok'>)}
+              icon={floodIcon(p.severity as Exclude<Severity, 'ok'>, palette.severity)}
               zIndexOffset={Z.flood + FLOOD_RANK[p.severity]}
               opacity={fade(p)}
             >
@@ -145,7 +148,7 @@ export default function MapView({ lang, center, located, onLocate, layers, radar
         </Marker>
       </MapContainer>
       {map && <MapButtons map={map} lang={lang} center={center} located={located} onLocate={onLocate} />}
-      <Legend lang={lang} layers={layers} />
+      <Legend lang={lang} layers={layers} palette={palette} />
       {layers.cctv && !showCams && (
         <p className="pointer-events-none absolute bottom-6 left-1/2 z-[1000] -translate-x-1/2 rounded-full bg-ink/85 px-3 py-1 text-xs text-white">
           {t('map.zoomForCctv', lang)}
@@ -156,7 +159,7 @@ export default function MapView({ lang, center, located, onLocate, layers, radar
 }
 
 /** Zone polygons coloured by the worst reading inside; tap to drill down. */
-function ZoneLayer({ lang, zones }: { lang: Lang; zones: ZoneView }) {
+function ZoneLayer({ lang, zones, palette }: { lang: Lang; zones: ZoneView; palette: MapPalette }) {
   const z = WEB.zones;
   return (
     <>
@@ -167,12 +170,12 @@ function ZoneLayer({ lang, zones }: { lang: Lang; zones: ZoneView }) {
         return (
           <GeoJSON
             // Style isn't reactive in react-leaflet, so the key changes with what affects the style.
-            key={`${id}:${sev}:${selected}`}
+            key={`${id}:${sev}:${selected}:${palette.selected}:${sev ? palette.severity[sev] : ''}`}
             data={zone as unknown as GeoJSON.Feature}
             style={{
-              color: selected ? '#0f1b2d' : z.borderColor,
+              color: selected ? palette.selected : z.borderColor,
               weight: selected ? z.selectedWeight : z.borderWeight,
-              fillColor: sev ? WEB.severityColor[sev] : 'transparent',
+              fillColor: sev ? palette.severity[sev] : 'transparent',
               fillOpacity: sev ? z.fillOpacity[sev] : 0,
             }}
             eventHandlers={{ click: () => zones.open(id) }}
@@ -325,9 +328,9 @@ function Glyph({ bg, paths, size = 18, children }: { bg: string; paths?: string;
   );
 }
 
-function Legend({ lang, layers }: { lang: Lang; layers: Layers }) {
+function Legend({ lang, layers, palette }: { lang: Lang; layers: Layers; palette: MapPalette }) {
   const [open, setOpen] = useState(() => window.innerWidth >= WEB.map.legendOpenMinWidth);
-  const c = WEB.severityColor;
+  const c = palette.severity;
   const row = 'flex items-center gap-2';
   return (
     <div className="absolute top-3 right-3 z-[1000] flex max-w-[210px] flex-col gap-1.5 rounded-xl border border-line bg-panel/95 px-3 py-2 text-xs text-ink-2 shadow-sm">

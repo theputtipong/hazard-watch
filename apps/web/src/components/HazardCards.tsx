@@ -99,7 +99,7 @@ export function FloodCard({
           <div className="grid grid-cols-3 gap-2">
             <Stat value={counts.flooded} label={t('flood.flooded', lang)} className="bg-danger text-danger-strong" />
             <Stat value={counts.minor} label={t('flood.minor', lang)} className="bg-watch text-watch-strong" />
-            <Stat value={counts.normal} label={t('flood.normal', lang)} className="bg-[#eef1f4] text-ink" />
+            <Stat value={counts.normal} label={t('flood.normal', lang)} className="bg-sunken text-ink" />
           </div>
           {nearestFlooded && (
             <p className="flex justify-between gap-2 text-[13px] text-ink-2">
@@ -167,7 +167,7 @@ export function QuakeCard({
         </p>
       )}
       {latest && (
-        <p className="flex justify-between gap-2 border-t border-[#eef1f4] pt-2 text-[13px] text-muted">
+        <p className="flex justify-between gap-2 border-t border-sunken pt-2 text-[13px] text-muted">
           <span>
             {t('quake.latest', lang)}: {latest.quake.place[lang]}
           </span>
@@ -214,7 +214,7 @@ export function WaterLevelCard({
               {fmt(nearest.km)} {u.distance}
             </span>
           </p>
-          <div className="border-t border-[#eef1f4] pt-2 text-[13px]">
+          <div className="border-t border-sunken pt-2 text-[13px]">
             <p className="mb-1 text-muted">{t('water.high', lang, { pct: cfg.waterLevel.watchPct })}</p>
             {high.length ? (
               <ul className="flex flex-col gap-1">

@@ -16,7 +16,7 @@ export function CctvList({ lang, cameras }: { lang: Lang; cameras: (CctvCamera &
               href={cam.viewUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex min-h-11 items-center gap-3 rounded-xl border border-[#e0e5eb] p-3 hover:border-ink-2"
+              className="flex min-h-11 items-center gap-3 rounded-xl border border-line-soft p-3 hover:border-ink-2"
             >
               <span className="flex min-w-0 flex-1 flex-col">
                 <span className="text-sm font-medium">{cam.name[lang]}</span>

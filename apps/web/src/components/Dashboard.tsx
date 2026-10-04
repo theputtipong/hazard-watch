@@ -10,18 +10,26 @@ import { floodCounts, nearest, quakeSummary, uniqueBy } from '@/lib/derive';
 import { feedFreshness, freshnessNote } from '@/lib/freshness';
 import { useLocation } from '@/lib/useLocation';
 import { useZones } from '@/lib/useZones';
+import { mapPalette, usePrefs } from '@/lib/prefs';
+import { useSpeech } from '@/lib/speech';
+import { spokenSummary } from '@/lib/spokenSummary';
+import { A11yControls } from './A11yControls';
+import { zoneLabel } from './ZonePanel';
 import { ZonePanel } from './ZonePanel';
 import { CctvList } from './CctvList';
 import { FloodCard, Pm25Card, QuakeCard, WaterLevelCard, WeatherCard } from './HazardCards';
 import { Header } from './Header';
 import { RADAR_BOUNDS, type LayerKey, type Layers } from '@/lib/layers';
 
-const MapView = dynamic(() => import('./MapView'), { ssr: false, loading: () => <div className="h-[420px] bg-[#eaf0f5] sm:h-[520px]" /> });
+const MapView = dynamic(() => import('./MapView'), { ssr: false, loading: () => <div className="h-[420px] bg-map-bg sm:h-[520px]" /> });
 
 const LAYER_LABEL: Record<LayerKey, MessageKey> = { zones: 'zone.layer', radar: 'layer.radar', flood: 'layer.flood', water: 'layer.water', pm25: 'layer.pm25', cctv: 'layer.cctv' };
 
 export function Dashboard({ lang }: { lang: Lang }) {
   const { location, status, locate } = useLocation();
+  const { prefs, cycleTheme, toggleCvd } = usePrefs();
+  const palette = useMemo(() => mapPalette(prefs), [prefs]);
+  const speech = useSpeech(lang);
   const [snapshot, setSnapshot] = useState<DashboardSnapshot | null>(null);
   const [weather, setWeather] = useState<WeatherNow | null>(null);
   const [layers, setLayers] = useState<Layers>({ ...WEB.map.defaultLayers });
@@ -94,16 +102,53 @@ export function Dashboard({ lang }: { lang: Lang }) {
   const zones = useZones(readings);
 
   const updatedAt = [snapshot?.edge?.updatedAt, snapshot?.runner?.updatedAt].filter(Boolean).sort().at(-1) ?? null;
+  const focusZone = zones.selected ?? zones.path.at(-1) ?? null;
+  const spoken = useMemo(
+    () =>
+      spokenSummary({
+        lang,
+        area: activeRegions().map((r) => r.name[lang]).join(', '),
+        updatedAt,
+        weather,
+        pm: view.nearestPm,
+        flood: { available: view.floodAvailable, flooded: view.counts.flooded, minor: view.counts.minor, nearest: view.nearestFlooded },
+        water: view.nearestWater,
+        quakes: { available: view.quakeAvailable, alerts: view.quakes.alerts },
+        focus: focusZone ? { name: zoneLabel(focusZone, lang), summary: zones.focusSummary } : null,
+      }),
+    [lang, updatedAt, weather, view, focusZone, zones.focusSummary],
+  );
   const toggle = (key: LayerKey) => setLayers((l) => ({ ...l, [key]: !l[key] }));
 
   return (
     <>
-      <Header lang={lang} updatedAt={updatedAt} />
+      <a
+        href="#summary"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[2000] focus:rounded-lg focus:bg-panel focus:px-3 focus:py-2"
+      >
+        {t('a11y.skip', lang)}
+      </a>
+      <Header lang={lang} updatedAt={updatedAt}>
+        <A11yControls
+          lang={lang}
+          theme={prefs.theme}
+          cvd={prefs.cvd}
+          onTheme={cycleTheme}
+          onCvd={toggleCvd}
+          speech={speech}
+          onListen={() => (speech.speaking ? speech.stop() : speech.speak(spoken))}
+        />
+      </Header>
       <main className="mx-auto flex max-w-[1360px] flex-wrap items-start gap-5 px-4 py-5 sm:px-6">
+        {/* Same text as read-aloud, for screen readers (blind users): one place with the whole picture. */}
+        <section id="summary" tabIndex={-1} aria-label={t('a11y.summary', lang)} className="sr-only">
+          <h2>{t('a11y.summary', lang)}</h2>
+          <p>{spoken}</p>
+        </section>
         {status === 'denied' && <p className="basis-full rounded-xl bg-watch px-4 py-2 text-sm text-watch-strong">{t('location.denied', lang)}</p>}
 
         <section aria-label={t('map.title', lang)} className="min-w-0 flex-[999_1_560px] overflow-hidden rounded-2xl border border-line bg-panel">
-          <div className="flex flex-wrap items-center gap-2 border-b border-[#e6eaf0] px-3.5 py-3">
+          <div className="flex flex-wrap items-center gap-2 border-b border-line-soft px-3.5 py-3">
             <strong className="mr-1.5 text-[15px]">{t('map.layers', lang)}</strong>
             {(Object.keys(LAYER_LABEL) as LayerKey[]).map((key) => (
               <button
@@ -112,7 +157,7 @@ export function Dashboard({ lang }: { lang: Lang }) {
                 aria-pressed={layers[key]}
                 onClick={() => toggle(key)}
                 className={`min-h-10 rounded-full border px-3.5 text-sm font-medium ${
-                  layers[key] ? 'border-ink bg-ink text-white' : 'border-[#c9d1db] bg-panel text-ink-2'
+                  layers[key] ? 'border-ink bg-ink text-white' : 'border-chip-line bg-panel text-ink-2'
                 }`}
               >
                 {t(LAYER_LABEL[key], lang)}
@@ -131,6 +176,7 @@ export function Dashboard({ lang }: { lang: Lang }) {
             cameras={view.cameras}
             waterStations={view.waterStations}
             zones={zones}
+            palette={palette}
           />
           {layers.radar && !RADAR_BOUNDS[radarId] && <p className="px-3.5 py-2 text-xs text-muted">{t('radar.notCalibrated', lang)}</p>}
           <ZonePanel lang={lang} zones={zones} />
@@ -157,7 +203,7 @@ export function Dashboard({ lang }: { lang: Lang }) {
           href={WEB.donateUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex min-h-10 items-center rounded-full bg-[#ffdd00] px-3.5 font-semibold text-ink"
+          className="inline-flex min-h-10 items-center rounded-full bg-[#ffdd00] px-3.5 font-semibold text-[#0f1b2d]"
         >
           {t('footer.coffee', lang)}
         </a>

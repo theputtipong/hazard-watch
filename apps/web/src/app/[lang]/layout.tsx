@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { notFound } from 'next/navigation';
 import { IBM_Plex_Mono, IBM_Plex_Sans_Thai } from 'next/font/google';
 import { LANGS, isLang, t } from '@hw/core/i18n';
+import { PREFS_SCRIPT } from '@/lib/prefsScript';
 import '../globals.css';
 
 const plexThai = IBM_Plex_Sans_Thai({
@@ -27,7 +28,11 @@ export default async function LangLayout({ children, params }: LayoutProps<'/[la
   const { lang } = await params;
   if (!isLang(lang)) notFound();
   return (
-    <html lang={lang} className={`${plexThai.variable} ${plexMono.variable}`}>
+    // data-theme/data-cvd are set by the inline script before paint, so the server value may differ.
+    <html lang={lang} className={`${plexThai.variable} ${plexMono.variable}`} data-theme="light" data-cvd="off" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: PREFS_SCRIPT }} />
+      </head>
       <body className="min-h-dvh font-sans antialiased">{children}</body>
     </html>
   );

@@ -35,6 +35,8 @@ export const WEB = {
 
   /** Marker/dot colours per severity (fills for cards are CSS tokens in app/globals.css). */
   severityColor: { ok: '#2e9e6a', watch: '#d9a400', warn: '#e2632b', danger: '#b4171e' } satisfies Record<Severity, string>,
+  /** Same, for the colour-blind mode (Paul Tol "muted": blue / sand / rose / wine — also differ in lightness). */
+  severityColorCvd: { ok: '#4477aa', watch: '#ddcc77', warn: '#cc6677', danger: '#882255' } satisfies Record<Severity, string>,
   /** Colour of flood points that are normal (kept grey so alerts stand out). */
   floodNormalColor: '#6b7787',
 
@@ -57,6 +59,9 @@ export const WEB = {
     maximumAgeMs: 10 * 60_000,
     timeoutMs: 15_000,
   },
+
+  /** Read-aloud (Web Speech API). 1 = normal speed; lower is easier to follow. */
+  speech: { rate: 0.95 },
 
   /** Days the chosen language is remembered. */
   langCookieDays: 365,

@@ -127,6 +127,42 @@ export const messages = {
   'source.quake': { th: 'ที่มา: กรมอุตุนิยมวิทยา, USGS', en: 'Source: Thai Meteorological Dept., USGS' },
   'radar.notCalibrated': { th: 'ภาพเรดาร์ยังไม่ได้ปรับพิกัดให้ตรงแผนที่', en: 'Radar image not yet aligned to the map' },
 
+  'a11y.display': { th: 'การแสดงผลและการเข้าถึง', en: 'Display & accessibility' },
+  'a11y.theme': { th: 'ธีม: {mode}', en: 'Theme: {mode}' },
+  'a11y.theme.system': { th: 'ตามระบบ', en: 'System' },
+  'a11y.theme.light': { th: 'สว่าง', en: 'Light' },
+  'a11y.theme.dark': { th: 'มืด', en: 'Dark' },
+  'a11y.cvd': { th: 'สีสำหรับผู้ตาบอดสี', en: 'Colour-blind colours' },
+  'a11y.listen': { th: 'ฟังสรุป', en: 'Listen' },
+  'a11y.stop': { th: 'หยุดอ่าน', en: 'Stop' },
+  'a11y.noSpeech': { th: 'เบราว์เซอร์นี้อ่านออกเสียงไม่ได้', en: 'This browser cannot read aloud' },
+  'a11y.noVoice': {
+    th: 'เครื่องนี้ไม่มีเสียงอ่านภาษาไทย ติดตั้งได้ในการตั้งค่าภาษาของระบบ',
+    en: 'No voice for this language on this device; add one in system language settings',
+  },
+  'a11y.skip': { th: 'ข้ามไปที่สรุปสถานการณ์', en: 'Skip to situation summary' },
+  'a11y.summary': { th: 'สรุปสถานการณ์', en: 'Situation summary' },
+
+  'speak.intro': { th: 'สรุปสถานการณ์ {area} ข้อมูลเวลา {time}', en: 'Situation summary for {area}, data as of {time}.' },
+  'speak.weather': { th: 'อุณหภูมิ {temp} องศา ความชื้น {hum} เปอร์เซ็นต์', en: 'Temperature {temp} degrees, humidity {hum} percent.' },
+  'speak.pm25': {
+    th: 'ฝุ่น พีเอ็ม สองจุดห้า ที่{name} {value} ไมโครกรัมต่อลูกบาศก์เมตร ระดับ{status}',
+    en: 'PM 2.5 at {name}: {value} micrograms per cubic metre, {status}.',
+  },
+  'speak.flood': { th: 'น้ำท่วมขัง {flooded} จุด ท่วมเล็กน้อย {minor} จุด', en: '{flooded} flooded spots and {minor} with minor flooding.' },
+  'speak.floodNearest': { th: 'จุดท่วมใกล้คุณที่สุดคือ {name} ห่าง {km} กิโลเมตร', en: 'Nearest flooded spot: {name}, {km} kilometres away.' },
+  'speak.water': {
+    th: 'ระดับน้ำที่{name} {value} เปอร์เซ็นต์ของความจุตลิ่ง ระดับ{status}',
+    en: 'Water level at {name}: {value} percent of bank-full, {status}.',
+  },
+  'speak.quakeNone': {
+    th: 'ไม่มีแผ่นดินไหวขนาด {mag} ขึ้นไป ในรัศมี {km} กิโลเมตร ช่วง {days} วันที่ผ่านมา',
+    en: 'No earthquake of magnitude {mag} or more within {km} kilometres in the past {days} days.',
+  },
+  'speak.quakeAlert': { th: 'แผ่นดินไหวขนาด {mag} ที่ {place} ห่าง {km} กิโลเมตร', en: 'Magnitude {mag} earthquake at {place}, {km} kilometres away.' },
+  'speak.area': { th: 'พื้นที่ที่เลือก {name} สถานะ{status}', en: 'Selected area {name}: {status}.' },
+  'speak.noData': { th: '{topic} ไม่มีข้อมูล', en: '{topic}: no data.' },
+
   'footer.coffee': { th: 'สนับสนุนค่ากาแฟ', en: 'Buy me a coffee' },
   'footer.credits': {
     th: 'ข้อมูลจาก กรมอุตุนิยมวิทยา · สำนักการระบายน้ำ กทม. · สสน. (ThaiWater) · กรมควบคุมมลพิษ · GISTDA · USGS · Open-Meteo · ขอบเขตพื้นที่: กรุงเทพมหานคร, geoBoundaries, OCHA/กรมแผนที่ทหาร · แผนที่ © OpenStreetMap',

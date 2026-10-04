@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 import { LANGS, t, type Lang } from '@hw/core/i18n';
 import { WEB } from '@/config';
 
@@ -8,7 +9,7 @@ function setLangCookie(lang: Lang) {
   document.cookie = `lang=${lang}; path=/; max-age=${WEB.langCookieDays * 86_400}; samesite=lax`;
 }
 
-export function Header({ lang, updatedAt }: { lang: Lang; updatedAt: string | null }) {
+export function Header({ lang, updatedAt, children }: { lang: Lang; updatedAt: string | null; children?: ReactNode }) {
   const time = updatedAt
     ? new Date(updatedAt).toLocaleTimeString(lang === 'th' ? 'th-TH' : 'en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok' })
     : '—';
@@ -26,10 +27,11 @@ export function Header({ lang, updatedAt }: { lang: Lang; updatedAt: string | nu
             <span className="text-xs text-muted">{t('app.tagline', lang)}</span>
           </div>
         </div>
+        {children}
         <span className="text-[13px] text-muted">
           {t('common.updated', lang)} <span className="num">{time}</span>
         </span>
-        <nav aria-label={t('common.language', lang)} className="flex gap-0.5 rounded-[10px] bg-[#e8ecf1] p-[3px]">
+        <nav aria-label={t('common.language', lang)} className="flex gap-0.5 rounded-[10px] bg-seg p-[3px]">
           {LANGS.map((l) => (
             <Link
               key={l}
