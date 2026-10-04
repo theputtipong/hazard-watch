@@ -4,13 +4,13 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { CircleMarker, GeoJSON, ImageOverlay, MapContainer, Marker, Popup, TileLayer, Tooltip, useMap, useMapEvents } from 'react-leaflet';
-import { regionFor, type CctvCamera, type LatLng, type Observation, type Severity, type ZoneFeature } from '@hw/core';
+import { DEFAULT_CONFIG, isStale, regionFor, type CctvCamera, type LatLng, type Observation, type Severity, type ZoneFeature } from '@hw/core';
 import { t, type Lang } from '@hw/core/i18n';
 import { WEB } from '@/config';
 import { radarImageUrl } from '@/lib/api';
 import { RADAR_BOUNDS, type Layers } from '@/lib/layers';
 import type { ZoneView } from '@/lib/useZones';
-import { cctvIcon, floodIcon, LEGEND_GLYPH, pm25Icon, youIcon } from './mapIcons';
+import { cctvIcon, floodIcon, LEGEND_GLYPH, pm25Icon, waterIcon, youIcon } from './mapIcons';
 import { zoneLabel } from './ZonePanel';
 
 interface Props {
@@ -24,14 +24,17 @@ interface Props {
   floodPoints: Observation[];
   pmStations: Observation[];
   cameras: CctvCamera[];
+  waterStations: Observation[];
   zones: ZoneView;
 }
 
 /** Draw order: problems above normal points, and "you" above everything. */
-const Z = { cctv: 100, pm25: 200, flood: 300, you: 1000 } as const;
+const Z = { cctv: 100, pm25: 200, water: 250, flood: 300, you: 1000 } as const;
 const FLOOD_RANK: Record<Severity, number> = { ok: 0, watch: 1, warn: 2, danger: 3 };
+/** Readings older than `staleAfterMinutes` are drawn faded so they don't read as current. */
+const fade = (o: Observation) => (isStale(o.observedAt, DEFAULT_CONFIG) ? WEB.map.staleOpacity : 1);
 
-export default function MapView({ lang, center, located, onLocate, layers, radarId, floodPoints, pmStations, cameras, zones }: Props) {
+export default function MapView({ lang, center, located, onLocate, layers, radarId, floodPoints, pmStations, cameras, waterStations, zones }: Props) {
   const bounds = RADAR_BOUNDS[radarId];
   const startZoom = regionFor(center).zoom;
   const [zoom, setZoom] = useState(startZoom);
@@ -68,13 +71,33 @@ export default function MapView({ lang, center, located, onLocate, layers, radar
           pmStations
             .filter((s) => s.value !== null)
             .map((s) => (
-              <Marker key={s.id} position={[s.location.lat, s.location.lng]} icon={pm25Icon(s.value!, s.severity)} zIndexOffset={Z.pm25}>
+              <Marker key={s.id} position={[s.location.lat, s.location.lng]} icon={pm25Icon(s.value!, s.severity)} zIndexOffset={Z.pm25} opacity={fade(s)}>
                 <Popup>
                   <PopupBody title={s.name[lang]}>
                     <span>
                       PM2.5 <b>{s.value}</b> {s.unit} · {t(`severity.${s.severity}`, lang)}
                     </span>
                     <TimeLine lang={lang} iso={s.observedAt} />
+                  </PopupBody>
+                </Popup>
+              </Marker>
+            ))}
+
+        {layers.water &&
+          waterStations
+            .filter((w) => w.value !== null)
+            .map((w) => (
+              <Marker key={w.id} position={[w.location.lat, w.location.lng]} icon={waterIcon(w.value!, w.severity)} zIndexOffset={Z.water} opacity={fade(w)}>
+                <Popup>
+                  <PopupBody title={w.name[lang]}>
+                    <span>
+                      <b>
+                        {Math.round(w.value!)}
+                        {w.unit}
+                      </b>{' '}
+                      {t('water.ofBank', lang)} · {t(`severity.${w.severity}`, lang)}
+                    </span>
+                    <TimeLine lang={lang} iso={w.observedAt} />
                   </PopupBody>
                 </Popup>
               </Marker>
@@ -103,6 +126,7 @@ export default function MapView({ lang, center, located, onLocate, layers, radar
               position={[p.location.lat, p.location.lng]}
               icon={floodIcon(p.severity as Exclude<Severity, 'ok'>)}
               zIndexOffset={Z.flood + FLOOD_RANK[p.severity]}
+              opacity={fade(p)}
             >
               <Popup>
                 <PopupBody title={p.name[lang]}>
@@ -342,6 +366,18 @@ function Legend({ lang, layers }: { lang: Lang; layers: Layers }) {
                 {t('flood.normal', lang)}
               </span>
             </>
+          )}
+          {layers.water && (
+            <span className={row}>
+              <span
+                className="grid size-[18px] shrink-0 place-items-center rounded-[5px] border-2 border-white text-[7px] font-bold text-white shadow-sm"
+                style={{ background: c.watch }}
+                aria-hidden="true"
+              >
+                %
+              </span>
+              {t('layer.water', lang)}
+            </span>
           )}
           {layers.pm25 && (
             <span className={row}>

@@ -52,6 +52,27 @@ export function pm25Icon(value: number, severity: Severity) {
   return round(`pm-${Math.round(value)}-${severity}`, s, WEB.severityColor[severity], text, severity === 'danger' ? ALERT_BADGE : '');
 }
 
+/** Water level: a rounded square (not a circle) with the % of bank-full, so it isn't confused with PM2.5. */
+export function waterIcon(pct: number, severity: Severity) {
+  const s = WEB.map.iconSize.water;
+  const key = `water-${Math.round(pct)}-${severity}`;
+  const hit = cache.get(key);
+  if (hit) return hit;
+  const icon = L.divIcon({
+    className: '',
+    iconSize: [s, s],
+    iconAnchor: [s / 2, s / 2],
+    tooltipAnchor: [s / 2, 0],
+    html:
+      `<div style="position:relative;width:${s}px;height:${s}px;border-radius:7px;background:${WEB.severityColor[severity]};` +
+      `border:2.5px solid #fff;box-shadow:0 1px 4px rgba(15,27,45,.45);display:grid;place-items:center;box-sizing:border-box;` +
+      `color:#fff;font:700 ${pct >= 100 ? 9 : 10}px/1 system-ui">${Math.round(pct)}%` +
+      `${severity === 'danger' ? ALERT_BADGE : ''}</div>`,
+  });
+  cache.set(key, icon);
+  return icon;
+}
+
 export function cctvIcon() {
   const s = WEB.map.iconSize.cctv;
   return round('cctv', s, WEB.map.cctvColor, svg(CAMERA, s * 0.66));

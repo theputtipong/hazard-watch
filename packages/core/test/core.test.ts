@@ -128,7 +128,7 @@ describe('zones', () => {
   const b = square('B', 100.5, 13, 101, 13.5);
   const obs = (kind: Observation['kind'], lng: number, severity: Observation['severity'], value: number | null = 1): Observation => ({
     id: `${kind}${lng}${severity}`, kind, source: 'bma-flood', name: { th: '', en: '' }, location: { lat: 13.2, lng },
-    observedAt: '2026-10-04T00:00:00Z', value, unit: '', severity,
+    observedAt: new Date().toISOString(), value, unit: '', severity,
   });
   it('finds the containing zone', () => {
     expect(inZone(a, { lat: 13.2, lng: 100.2 })).toBe(true);
@@ -139,6 +139,10 @@ describe('zones', () => {
     const sa = summarizeZone(groups.get('A')!, cfg);
     expect(sa).toMatchObject({ severity: 'warn', flooded: 1, readings: 2 });
     expect(summarizeZone(groups.get('B')!, cfg)).toMatchObject({ severity: 'watch', pm25Max: 30 });
+  });
+  it('ignores stale readings', () => {
+    const old = { ...obs('flood', 100.1, 'danger'), observedAt: '2026-01-01T00:00:00Z' };
+    expect(summarizeZone([old], cfg)).toMatchObject({ severity: null, stale: 1 });
   });
   it('reports no data instead of normal for empty zones', () => {
     expect(summarizeZone([], cfg).severity).toBeNull();

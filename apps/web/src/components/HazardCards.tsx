@@ -40,13 +40,14 @@ export function WeatherCard({ lang, weather }: { lang: Lang; weather: WeatherNow
   );
 }
 
-export function Pm25Card({ lang, station }: { lang: Lang; station: (Observation & { km: number }) | null }) {
+export function Pm25Card({ lang, station, note }: { lang: Lang; station: (Observation & { km: number }) | null; note?: string }) {
   const value = station?.value ?? null;
   return (
     <Card
       title={t('card.pm25', lang)}
       status={value !== null && <SeverityPill severity={pm25Severity(value, cfg)} lang={lang} />}
       source={t('source.pm25', lang)}
+      note={note}
     >
       {station && value !== null ? (
         <>
@@ -76,7 +77,9 @@ export function FloodCard({
   counts,
   nearestFlooded,
   available,
+  note,
 }: {
+  note?: string;
   lang: Lang;
   counts: { flooded: number; minor: number; normal: number; offline: number };
   nearestFlooded: (Observation & { km: number }) | null;
@@ -89,6 +92,7 @@ export function FloodCard({
       title={t('card.flood', lang)}
       status={available && <SeverityPill severity={severity} lang={lang} />}
       source={t('source.flood', lang)}
+      note={note}
     >
       {available ? (
         <>
@@ -130,7 +134,9 @@ export function QuakeCard({
   alerts,
   latest,
   available,
+  note,
 }: {
+  note?: string;
   lang: Lang;
   available: boolean;
   alerts: { quake: Earthquake; severity: 'ok' | 'watch' | 'warn' | 'danger'; km: number }[];
@@ -141,7 +147,7 @@ export function QuakeCard({
   const time = (iso: string) =>
     new Date(iso).toLocaleString(lang === 'th' ? 'th-TH' : 'en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok' });
   return (
-    <Card title={t('card.quake', lang)} status={available && <SeverityPill severity={severity} lang={lang} />} source={t('source.quake', lang)}>
+    <Card title={t('card.quake', lang)} status={available && <SeverityPill severity={severity} lang={lang} />} source={t('source.quake', lang)} note={note}>
       {!available ? (
         <p className="text-sm text-muted">{t('common.noData', lang)}</p>
       ) : alerts.length ? (
@@ -169,6 +175,66 @@ export function QuakeCard({
             M{latest.quake.magnitude.toFixed(1)} · {time(latest.quake.occurredAt)}
           </span>
         </p>
+      )}
+    </Card>
+  );
+}
+
+export function WaterLevelCard({
+  lang,
+  nearest,
+  high,
+  note,
+}: {
+  lang: Lang;
+  nearest: (Observation & { km: number }) | null;
+  /** Gauges at or above the watch level, highest first. */
+  high: Observation[];
+  note?: string;
+}) {
+  const severity = worst(high.map((o) => o.severity));
+  return (
+    <Card
+      title={t('card.water', lang)}
+      status={nearest && <SeverityPill severity={severity} lang={lang} />}
+      source={t('source.water', lang)}
+      note={note}
+    >
+      {nearest ? (
+        <>
+          <div className="flex items-baseline gap-2">
+            <span className="num text-[40px] leading-none">{fmt(nearest.value, 0)}</span>
+            <span className="text-sm text-muted">
+              {nearest.unit} {t('water.ofBank', lang)}
+            </span>
+          </div>
+          <p className="text-[13px] text-ink-2">
+            {t('water.nearest', lang, { name: placeName(nearest, lang) })} ·{' '}
+            <span className="num">
+              {fmt(nearest.km)} {u.distance}
+            </span>
+          </p>
+          <div className="border-t border-[#eef1f4] pt-2 text-[13px]">
+            <p className="mb-1 text-muted">{t('water.high', lang, { pct: cfg.waterLevel.watchPct })}</p>
+            {high.length ? (
+              <ul className="flex flex-col gap-1">
+                {high.slice(0, 3).map((o) => (
+                  <li key={o.id} className="flex justify-between gap-2">
+                    <span>{placeName(o, lang)}</span>
+                    <span className="num">
+                      {fmt(o.value, 0)}
+                      {o.unit}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p>{t('water.none', lang)}</p>
+            )}
+          </div>
+        </>
+      ) : (
+        <p className="text-sm text-muted">{t('common.noData', lang)}</p>
       )}
     </Card>
   );

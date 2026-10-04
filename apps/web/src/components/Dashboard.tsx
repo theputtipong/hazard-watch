@@ -2,22 +2,23 @@
 
 import dynamic from 'next/dynamic';
 import { useEffect, useMemo, useState } from 'react';
-import { activeRegions, DEFAULT_CONFIG, type DashboardSnapshot, type WeatherNow } from '@hw/core';
+import { activeRegions, DEFAULT_CONFIG, isStale, type DashboardSnapshot, type WeatherNow } from '@hw/core';
 import { t, type Lang, type MessageKey } from '@hw/core/i18n';
 import { WEB } from '@/config';
 import { fetchSnapshot, fetchWeather } from '@/lib/api';
 import { floodCounts, nearest, quakeSummary, uniqueBy } from '@/lib/derive';
+import { feedFreshness, freshnessNote } from '@/lib/freshness';
 import { useLocation } from '@/lib/useLocation';
 import { useZones } from '@/lib/useZones';
 import { ZonePanel } from './ZonePanel';
 import { CctvList } from './CctvList';
-import { FloodCard, Pm25Card, QuakeCard, WeatherCard } from './HazardCards';
+import { FloodCard, Pm25Card, QuakeCard, WaterLevelCard, WeatherCard } from './HazardCards';
 import { Header } from './Header';
 import { RADAR_BOUNDS, type LayerKey, type Layers } from '@/lib/layers';
 
 const MapView = dynamic(() => import('./MapView'), { ssr: false, loading: () => <div className="h-[420px] bg-[#eaf0f5] sm:h-[520px]" /> });
 
-const LAYER_LABEL: Record<LayerKey, MessageKey> = { zones: 'zone.layer', radar: 'layer.radar', flood: 'layer.flood', pm25: 'layer.pm25', cctv: 'layer.cctv' };
+const LAYER_LABEL: Record<LayerKey, MessageKey> = { zones: 'zone.layer', radar: 'layer.radar', flood: 'layer.flood', water: 'layer.water', pm25: 'layer.pm25', cctv: 'layer.cctv' };
 
 export function Dashboard({ lang }: { lang: Lang }) {
   const { location, status, locate } = useLocation();
@@ -45,21 +46,41 @@ export function Dashboard({ lang }: { lang: Lang }) {
     const pm = snapshot?.edge?.feeds.pm25?.items ?? [];
     const flood = snapshot?.runner?.feeds.flood?.items ?? [];
     const cams = snapshot?.runner?.feeds.cctv?.items ?? [];
+    const water = snapshot?.runner?.feeds.waterlevel?.items ?? [];
+    const cfg = DEFAULT_CONFIG;
+    const fresh = <T extends { observedAt: string }>(items: T[]) => items.filter((o) => !isStale(o.observedAt, cfg));
+    const quakeFeeds = [snapshot?.edge?.feeds.quakesTmd, snapshot?.edge?.feeds.quakesUsgs];
     return {
+      waterStations: water,
+      nearestWater: nearest(fresh(water.filter((o) => o.value !== null)), location)[0] ?? null,
+      highWater: fresh(water)
+        .filter((o) => o.value !== null && o.value >= cfg.waterLevel.watchPct)
+        .sort((a, b) => b.value! - a.value!),
+      notes: {
+        pm25: freshnessNote(feedFreshness(snapshot?.edge?.feeds.pm25, cfg), lang),
+        flood: freshnessNote(feedFreshness(snapshot?.runner?.feeds.flood, cfg), lang),
+        water: freshnessNote(feedFreshness(snapshot?.runner?.feeds.waterlevel, cfg), lang),
+        // Quakes: only warn when both sources failed.
+        quake: quakeFeeds.every((f) => f && !f.ok)
+          ? freshnessNote(feedFreshness(quakeFeeds[0], cfg, new Date(), () => undefined), lang)
+          : undefined,
+      },
       pmStations: pm,
-      nearestPm: nearest(pm.filter((s) => s.value !== null), location)[0] ?? null,
+      // Nearest station with a current reading; old readings are not shown as the local value.
+      nearestPm: nearest(fresh(pm.filter((s) => s.value !== null)), location)[0] ?? null,
       floodPoints: flood,
       // A feed counts as available only if it has data; a failed fetch must never read as "normal".
-      floodAvailable: flood.length > 0,
+      floodAvailable: fresh(flood).length > 0,
       quakeAvailable: !!(snapshot?.edge?.feeds.quakesTmd?.items.length || snapshot?.edge?.feeds.quakesUsgs?.items.length),
-      counts: floodCounts(flood),
-      nearestFlooded: nearest(flood.filter((p) => !p.offline && (p.severity === 'warn' || p.severity === 'danger')), location)[0] ?? null,
+      // Counts and the nearest flooded spot use current readings only; old ones are just faded on the map.
+      counts: floodCounts(fresh(flood)),
+      nearestFlooded: nearest(fresh(flood).filter((p) => !p.offline && (p.severity === 'warn' || p.severity === 'danger')), location)[0] ?? null,
       cameras: cams,
       // Several cameras often share one junction name; list each junction once.
       nearCams: uniqueBy(nearest(cams, location, cams.length), (c) => c.name.th).slice(0, WEB.nearbyCameras),
       quakes: quakeSummary(snapshot, location, DEFAULT_CONFIG),
     };
-  }, [snapshot, location]);
+  }, [snapshot, location, lang]);
 
   const readings = useMemo(
     () => [
@@ -108,6 +129,7 @@ export function Dashboard({ lang }: { lang: Lang }) {
             floodPoints={view.floodPoints}
             pmStations={view.pmStations}
             cameras={view.cameras}
+            waterStations={view.waterStations}
             zones={zones}
           />
           {layers.radar && !RADAR_BOUNDS[radarId] && <p className="px-3.5 py-2 text-xs text-muted">{t('radar.notCalibrated', lang)}</p>}
@@ -116,9 +138,10 @@ export function Dashboard({ lang }: { lang: Lang }) {
 
         <aside className="flex min-w-0 flex-[1_1_340px] flex-col gap-3.5 max-lg:order-first">
           <WeatherCard lang={lang} weather={weather} />
-          <Pm25Card lang={lang} station={view.nearestPm} />
-          <FloodCard lang={lang} counts={view.counts} nearestFlooded={view.nearestFlooded} available={view.floodAvailable} />
-          <QuakeCard lang={lang} alerts={view.quakes.alerts} latest={view.quakes.latestRegional} available={view.quakeAvailable} />
+          <Pm25Card lang={lang} station={view.nearestPm} note={view.notes.pm25} />
+          <FloodCard lang={lang} counts={view.counts} nearestFlooded={view.nearestFlooded} available={view.floodAvailable} note={view.notes.flood} />
+          <QuakeCard lang={lang} alerts={view.quakes.alerts} latest={view.quakes.latestRegional} available={view.quakeAvailable} note={view.notes.quake} />
+          <WaterLevelCard lang={lang} nearest={view.nearestWater} high={view.highWater} note={view.notes.water} />
         </aside>
 
         <div className="basis-full">

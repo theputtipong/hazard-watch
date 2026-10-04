@@ -14,12 +14,14 @@ export const WEB = {
     tileUrl: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     /** Layers switched on when the page opens. */
-    defaultLayers: { zones: true, radar: true, flood: true, pm25: false, cctv: false } satisfies Record<LayerKey, boolean>,
+    defaultLayers: { zones: true, radar: true, flood: true, water: true, pm25: false, cctv: false } satisfies Record<LayerKey, boolean>,
     defaultRadar: 'nkm',
     radarOpacity: 0.6,
+    /** Opacity of markers whose reading is older than core config `staleAfterMinutes`. */
+    staleOpacity: 0.4,
     /** Marker sizes in pixels (icons are square). Normal flood points stay small dots so problems stand out. */
     markerRadius: { floodNormal: 4 },
-    iconSize: { you: 34, floodWatch: 26, floodWarn: 30, floodDanger: 34, pm25: 30, cctv: 24 },
+    iconSize: { you: 34, floodWatch: 26, floodWarn: 30, floodDanger: 34, pm25: 30, water: 30, cctv: 24 },
     /** Colour of the "you are here" person marker. */
     youColor: '#1f5fbf',
     /** Zoom used when jumping to the user's location with the locate button. */

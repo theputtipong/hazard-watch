@@ -1,5 +1,5 @@
 import type { AlertConfig } from './config';
-import { worst } from './severity';
+import { isStale, worst } from './severity';
 import type { LatLng, Observation, Severity } from './types';
 
 /** Administrative levels: 1 province (จังหวัด), 2 district (เขต/อำเภอ), 3 subdistrict (แขวง/ตำบล). */
@@ -58,6 +58,8 @@ export interface ZoneSummary {
   /** null = no usable reading inside the zone, which must be shown as "no data", never "normal". */
   severity: Severity | null;
   readings: number;
+  /** Readings ignored because they are older than `staleAfterMinutes`. */
+  stale: number;
   flooded: number;
   minorFlood: number;
   pm25Max: number | null;
@@ -70,12 +72,15 @@ const maxOf = (values: (number | null)[]) => {
   return nums.length ? Math.max(...nums) : null;
 };
 
-export function summarizeZone(readings: Observation[], cfg: AlertConfig): ZoneSummary {
-  const usable = readings.filter((o) => !o.offline && o.value !== null && cfg.zones.kinds.includes(o.kind));
+export function summarizeZone(readings: Observation[], cfg: AlertConfig, now: Date = new Date()): ZoneSummary {
+  const relevant = readings.filter((o) => !o.offline && o.value !== null && cfg.zones.kinds.includes(o.kind));
+  // Old readings must not colour a zone: a flood from yesterday is not a flood now.
+  const usable = relevant.filter((o) => !isStale(o.observedAt, cfg, now));
   const of = (kind: Observation['kind']) => usable.filter((o) => o.kind === kind);
   return {
     severity: usable.length ? worst(usable.map((o) => o.severity)) : null,
     readings: usable.length,
+    stale: relevant.length - usable.length,
     flooded: of('flood').filter((o) => o.severity === 'warn' || o.severity === 'danger').length,
     minorFlood: of('flood').filter((o) => o.severity === 'watch').length,
     pm25Max: maxOf(of('pm25').map((o) => o.value)),
