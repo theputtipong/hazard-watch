@@ -40,17 +40,29 @@ export function waterLevelSeverity(bankFullPct: number, cfg: AlertConfig): Sever
   return 'ok';
 }
 
-/** BMA flood point: subStatus 1 normal, 2 minor flooding, 3 flooded. */
+/** BMA flood point: sub-status codes are mapped in config; deep water upgrades a flooded point to danger. */
 export function bmaFloodSeverity(subStatus: number, depthCm: number | null, cfg: AlertConfig): Severity {
-  if (subStatus === 3) return depthCm !== null && depthCm >= cfg.flood.dangerDepthCm ? 'danger' : 'warn';
-  if (subStatus === 2) return 'watch';
-  return 'ok';
+  const base = cfg.flood.bmaSubStatus[subStatus] ?? 'ok';
+  if (base === 'ok') return 'ok';
+  return depthCm !== null && depthCm >= cfg.flood.dangerDepthCm ? 'danger' : base;
 }
 
 export function quakeSeverity(q: Earthquake, from: LatLng, cfg: AlertConfig): Severity {
   const km = distanceKm(from, q.location);
-  if (km > cfg.quake.radiusKm || q.magnitude < cfg.quake.minMagnitude) return 'ok';
-  return q.magnitude >= cfg.quake.dangerMagnitude ? 'danger' : 'warn';
+  const tier = [...cfg.quake.tiers]
+    .sort((a, b) => rank(b.severity) - rank(a.severity))
+    .find((t) => q.magnitude >= t.minMagnitude && km <= t.maxDistanceKm);
+  return tier?.severity ?? 'ok';
+}
+
+/** Smallest magnitude and widest radius that can raise any quake alert (used in "no quakes" text). */
+export function quakeAlertFloor(cfg: AlertConfig): { minMagnitude: number; maxDistanceKm: number } {
+  const tiers = cfg.quake.tiers;
+  if (!tiers.length) return { minMagnitude: Infinity, maxDistanceKm: 0 };
+  return {
+    minMagnitude: Math.min(...tiers.map((t) => t.minMagnitude)),
+    maxDistanceKm: Math.max(...tiers.map((t) => t.maxDistanceKm)),
+  };
 }
 
 export function isStale(observedAt: string, cfg: AlertConfig, now: Date = new Date()): boolean {

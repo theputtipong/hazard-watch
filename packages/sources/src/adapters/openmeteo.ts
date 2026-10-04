@@ -1,4 +1,5 @@
 import type { LatLng, WeatherNow } from '@hw/core';
+import { ENDPOINTS, REQUEST } from '../endpoints';
 import { getJson, type AdapterContext } from '../http';
 
 interface OpenMeteoResponse {
@@ -17,7 +18,7 @@ export function parseOpenMeteo(body: OpenMeteoResponse, location: LatLng): Weath
     source: 'open-meteo',
     location,
     // Requested with timezone=Asia/Bangkok, so the time is local without offset.
-    observedAt: new Date(`${c.time}:00+07:00`).toISOString(),
+    observedAt: new Date(`${c.time}:00${REQUEST.thaiOffset}`).toISOString(),
     temperatureC: c.temperature_2m,
     humidityPct: c.relative_humidity_2m,
     precipitationMm: c.precipitation,
@@ -27,10 +28,10 @@ export function parseOpenMeteo(body: OpenMeteoResponse, location: LatLng): Weath
 
 /** Called per user location (not by cron); round coordinates so responses cache well. */
 export async function fetchWeather(ctx: AdapterContext, location: LatLng): Promise<WeatherNow> {
-  const lat = location.lat.toFixed(2);
-  const lng = location.lng.toFixed(2);
+  const lat = location.lat.toFixed(REQUEST.weatherCoordDecimals);
+  const lng = location.lng.toFixed(REQUEST.weatherCoordDecimals);
   const url =
-    `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}` +
+    `${ENDPOINTS.openMeteo}?latitude=${lat}&longitude=${lng}` +
     '&current=temperature_2m,relative_humidity_2m,precipitation,weather_code&timezone=Asia%2FBangkok';
   return parseOpenMeteo(await getJson(ctx, url), { lat: Number(lat), lng: Number(lng) });
 }

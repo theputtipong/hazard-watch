@@ -1,4 +1,5 @@
 import type { CctvCamera } from '@hw/core';
+import { DEFAULT_CONFIG } from '@hw/core';
 import { t, type Lang } from '@hw/core/i18n';
 
 export function CctvList({ lang, cameras }: { lang: Lang; cameras: (CctvCamera & { km: number })[] }) {
@@ -19,7 +20,7 @@ export function CctvList({ lang, cameras }: { lang: Lang; cameras: (CctvCamera &
             >
               <span className="flex min-w-0 flex-1 flex-col">
                 <span className="text-sm font-medium">{cam.name[lang]}</span>
-                <span className="num text-xs text-muted">{cam.km.toFixed(1)} km</span>
+                <span className="num text-xs text-muted">{cam.km.toFixed(1)} {DEFAULT_CONFIG.units.distance}</span>
               </span>
               <span className="text-[13px] font-semibold whitespace-nowrap text-accent">{t('common.viewAtSource', lang)} ↗</span>
             </a>

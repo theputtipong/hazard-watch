@@ -5,6 +5,7 @@
  */
 import { defaultContext, FEEDS, type RunnerFeed } from '@hw/sources';
 import { regionRadars } from '@hw/core';
+import { INGEST } from '../src/config';
 
 const base = process.env.INGEST_URL;
 const token = process.env.INGEST_TOKEN;
@@ -32,7 +33,7 @@ const radar = feeds.radar;
 if (radar?.ok) {
   for (const frame of radar.items as { radarId: string; time: string; imageUrl: string }[]) {
     if (!radarIds.includes(frame.radarId)) continue;
-    const img = await fetch(frame.imageUrl, { signal: AbortSignal.timeout(30_000) });
+    const img = await fetch(frame.imageUrl, { signal: AbortSignal.timeout(INGEST.radarDownloadTimeoutMs) });
     if (!img.ok) {
       console.log(`radar ${frame.radarId}: download failed ${img.status}`);
       continue;

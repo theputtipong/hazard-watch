@@ -4,8 +4,9 @@ import dynamic from 'next/dynamic';
 import { useEffect, useMemo, useState } from 'react';
 import { activeRegions, DEFAULT_CONFIG, type DashboardSnapshot, type WeatherNow } from '@hw/core';
 import { t, type Lang, type MessageKey } from '@hw/core/i18n';
+import { WEB } from '@/config';
 import { fetchSnapshot, fetchWeather } from '@/lib/api';
-import { floodCounts, nearest, quakeSummary } from '@/lib/derive';
+import { floodCounts, nearest, quakeSummary, uniqueBy } from '@/lib/derive';
 import { useLocation } from '@/lib/useLocation';
 import { CctvList } from './CctvList';
 import { FloodCard, Pm25Card, QuakeCard, WeatherCard } from './HazardCards';
@@ -14,21 +15,20 @@ import { RADAR_BOUNDS, type LayerKey, type Layers } from '@/lib/layers';
 
 const MapView = dynamic(() => import('./MapView'), { ssr: false, loading: () => <div className="h-[420px] bg-[#eaf0f5] sm:h-[520px]" /> });
 
-const REFRESH_MS = 2 * 60_000;
 const LAYER_LABEL: Record<LayerKey, MessageKey> = { radar: 'layer.radar', flood: 'layer.flood', pm25: 'layer.pm25', cctv: 'layer.cctv' };
 
 export function Dashboard({ lang }: { lang: Lang }) {
   const { location, status } = useLocation();
   const [snapshot, setSnapshot] = useState<DashboardSnapshot | null>(null);
   const [weather, setWeather] = useState<WeatherNow | null>(null);
-  const [layers, setLayers] = useState<Layers>({ radar: true, flood: true, pm25: false, cctv: false });
-  const [radarId] = useState('nkm');
+  const [layers, setLayers] = useState<Layers>({ ...WEB.map.defaultLayers });
+  const [radarId] = useState<string>(WEB.map.defaultRadar);
 
   useEffect(() => {
     let alive = true;
     const load = () => fetchSnapshot().then((s) => alive && setSnapshot(s)).catch(() => {});
     load();
-    const timer = setInterval(load, REFRESH_MS);
+    const timer = setInterval(load, WEB.refreshMs);
     return () => {
       alive = false;
       clearInterval(timer);
@@ -53,7 +53,8 @@ export function Dashboard({ lang }: { lang: Lang }) {
       counts: floodCounts(flood),
       nearestFlooded: nearest(flood.filter((p) => !p.offline && (p.severity === 'warn' || p.severity === 'danger')), location)[0] ?? null,
       cameras: cams,
-      nearCams: nearest(cams, location, 4),
+      // Several cameras often share one junction name; list each junction once.
+      nearCams: uniqueBy(nearest(cams, location, cams.length), (c) => c.name.th).slice(0, WEB.nearbyCameras),
       quakes: quakeSummary(snapshot, location, DEFAULT_CONFIG),
     };
   }, [snapshot, location]);
@@ -113,7 +114,7 @@ export function Dashboard({ lang }: { lang: Lang }) {
           <span>{t('footer.credits', lang)}</span>
         </span>
         <a
-          href="https://www.buymeacoffee.com/"
+          href={WEB.donateUrl}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex min-h-10 items-center rounded-full bg-[#ffdd00] px-3.5 font-semibold text-ink"

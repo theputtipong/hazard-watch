@@ -1,9 +1,10 @@
-import { DEFAULT_CONFIG, pm25Severity, worst, type Earthquake, type Observation, type WeatherNow } from '@hw/core';
+import { DEFAULT_CONFIG, pm25Severity, quakeAlertFloor, worst, type Earthquake, type Observation, type WeatherNow } from '@hw/core';
 import { t, type Lang } from '@hw/core/i18n';
 import { Card } from './Card';
 import { SeverityPill } from './Severity';
 
 const cfg = DEFAULT_CONFIG;
+const u = cfg.units;
 const fmt = (n: number | null | undefined, digits = 1) => (n === null || n === undefined ? '–' : n.toFixed(digits));
 const placeName = (o: { name: { th: string; en: string } }, lang: Lang) => o.name[lang] || o.name.th;
 
@@ -12,15 +13,23 @@ export function WeatherCard({ lang, weather }: { lang: Lang; weather: WeatherNow
     <Card title={t('card.weather', lang)} source={t('source.weather', lang)}>
       {weather ? (
         <>
-          <span className="num text-[40px] leading-none">{fmt(weather.temperatureC)}°</span>
+          <span className="num text-[40px] leading-none">
+            {fmt(weather.temperatureC)}
+            {u.temperature}
+          </span>
           <dl className="grid grid-cols-2 gap-2 text-xs text-muted">
             <div>
               <dt>{t('weather.humidity', lang)}</dt>
-              <dd className="num text-base text-ink">{fmt(weather.humidityPct, 0)}%</dd>
+              <dd className="num text-base text-ink">
+                {fmt(weather.humidityPct, 0)}
+                {u.humidity}
+              </dd>
             </div>
             <div>
               <dt>{t('weather.rainNow', lang)}</dt>
-              <dd className="num text-base text-ink">{fmt(weather.precipitationMm)} mm</dd>
+              <dd className="num text-base text-ink">
+                {fmt(weather.precipitationMm)} {u.precipitation}
+              </dd>
             </div>
           </dl>
         </>
@@ -43,10 +52,12 @@ export function Pm25Card({ lang, station }: { lang: Lang; station: (Observation 
         <>
           <div className="flex items-baseline gap-2">
             <span className="num text-[40px] leading-none">{fmt(value)}</span>
-            <span className="text-sm text-muted">µg/m³</span>
+            <span className="text-sm text-muted">{station.unit || u.pm25}</span>
           </div>
           <p className="text-[13px] text-ink-2">
-            {t('pm25.nearest', lang, { name: placeName(station, lang) })} · <span className="num">{fmt(station.km)} km</span>
+            {t('pm25.nearest', lang, { name: placeName(station, lang) })} · <span className="num">
+              {fmt(station.km)} {u.distance}
+            </span>
           </p>
           <p className="flex flex-wrap justify-between gap-2 text-xs text-muted">
             <span>{t('pm25.who', lang, { value: cfg.pm25.bands.ok })}</span>
@@ -91,7 +102,9 @@ export function FloodCard({
               <span>
                 {t('flood.nearest', lang)}: {placeName(nearestFlooded, lang)}
               </span>
-              <span className="num">{fmt(nearestFlooded.km)} km</span>
+              <span className="num">
+                {fmt(nearestFlooded.km)} {u.distance}
+              </span>
             </p>
           )}
         </>
@@ -124,6 +137,7 @@ export function QuakeCard({
   latest: { quake: Earthquake; km: number } | null;
 }) {
   const severity = worst(alerts.map((a) => a.severity));
+  const floor = quakeAlertFloor(cfg);
   const time = (iso: string) =>
     new Date(iso).toLocaleString(lang === 'th' ? 'th-TH' : 'en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok' });
   return (
@@ -136,14 +150,14 @@ export function QuakeCard({
             <li key={quake.id} className="flex justify-between gap-2">
               <span>{quake.place[lang]}</span>
               <span className="num">
-                M{quake.magnitude.toFixed(1)} · {Math.round(km)} km
+                M{quake.magnitude.toFixed(1)} · {Math.round(km)} {u.distance}
               </span>
             </li>
           ))}
         </ul>
       ) : (
         <p className="text-sm">
-          {t('quake.none', lang, { mag: cfg.quake.minMagnitude.toFixed(1), km: cfg.quake.radiusKm.toLocaleString(), days: cfg.quake.lookbackHours / 24 })}
+          {t('quake.none', lang, { mag: floor.minMagnitude.toFixed(1), km: floor.maxDistanceKm.toLocaleString(), days: cfg.quake.lookbackHours / 24 })}
         </p>
       )}
       {latest && (

@@ -1,9 +1,8 @@
 import type { Earthquake } from '@hw/core';
 import { XMLParser } from 'fast-xml-parser';
+import { ENDPOINTS } from '../endpoints';
 import { getJson, getText, settle, type AdapterContext } from '../http';
 
-const USGS_URL = 'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_week.geojson';
-const TMD_RSS_URL = 'https://earthquake.tmd.go.th/feed/rss_tmd.xml';
 
 interface UsgsFeed {
   features: {
@@ -58,7 +57,7 @@ export function parseTmdQuakeRss(xml: string): Earthquake[] {
 }
 
 export const usgsQuakes = (ctx: AdapterContext) =>
-  settle('usgs', ctx, async () => parseUsgs(await getJson(ctx, USGS_URL)));
+  settle('usgs', ctx, async () => parseUsgs(await getJson(ctx, ENDPOINTS.usgs)));
 
 export const tmdQuakes = (ctx: AdapterContext) =>
-  settle('tmd', ctx, async () => parseTmdQuakeRss(await getText(ctx, TMD_RSS_URL)));
+  settle('tmd', ctx, async () => parseTmdQuakeRss(await getText(ctx, ENDPOINTS.tmdQuakeRss)));

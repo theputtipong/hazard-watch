@@ -9,3 +9,6 @@ dist
 !.env.example
 *.log
 .DS_Store
+
+# Local working notes (Thai status / TODO) — kept out of git on purpose
+TODO.md

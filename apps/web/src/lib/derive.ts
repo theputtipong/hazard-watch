@@ -1,5 +1,6 @@
 import {
   distanceKm,
+  quakeAlertFloor,
   quakeSeverity,
   worst,
   type AlertConfig,
@@ -28,12 +29,15 @@ export function floodCounts(points: Observation[]) {
   return count;
 }
 
-/** USGS and TMD often report the same event; keep one per ~minute/~50 km, preferring TMD (Thai text). */
-export function mergeQuakes(tmd: Earthquake[], usgs: Earthquake[]): Earthquake[] {
+/** USGS and TMD often report the same event; keep one (preferring TMD, which has Thai text). Window is in config. */
+export function mergeQuakes(tmd: Earthquake[], usgs: Earthquake[], cfg: AlertConfig): Earthquake[] {
+  const { duplicateWithinSeconds, duplicateWithinKm } = cfg.quake;
   const out = [...tmd];
   for (const q of usgs) {
     const dup = tmd.some(
-      (t) => Math.abs(new Date(t.occurredAt).getTime() - new Date(q.occurredAt).getTime()) < 90_000 && distanceKm(t.location, q.location) < 50,
+      (t) =>
+        Math.abs(new Date(t.occurredAt).getTime() - new Date(q.occurredAt).getTime()) < duplicateWithinSeconds * 1000 &&
+        distanceKm(t.location, q.location) < duplicateWithinKm,
     );
     if (!dup) out.push(q);
   }
@@ -41,7 +45,7 @@ export function mergeQuakes(tmd: Earthquake[], usgs: Earthquake[]): Earthquake[]
 }
 
 export function quakeSummary(snapshot: DashboardSnapshot | null, from: LatLng, cfg: AlertConfig, now = new Date()) {
-  const all = mergeQuakes(snapshot?.edge?.feeds.quakesTmd?.items ?? [], snapshot?.edge?.feeds.quakesUsgs?.items ?? []);
+  const all = mergeQuakes(snapshot?.edge?.feeds.quakesTmd?.items ?? [], snapshot?.edge?.feeds.quakesUsgs?.items ?? [], cfg);
   const since = now.getTime() - cfg.quake.lookbackHours * 3_600_000;
   const recent = all.filter((q) => new Date(q.occurredAt).getTime() >= since);
   const alerts = recent
@@ -49,10 +53,20 @@ export function quakeSummary(snapshot: DashboardSnapshot | null, from: LatLng, c
     .filter((x) => x.severity !== 'ok');
   const regional = recent
     .map((q) => ({ quake: q, km: distanceKm(from, q.location) }))
-    .filter((x) => x.km <= cfg.quake.radiusKm);
+    .filter((x) => x.km <= quakeAlertFloor(cfg).maxDistanceKm);
   return { alerts, latestRegional: regional[0] ?? null, severity: worst(alerts.map((a) => a.severity)) as Severity };
 }
 
 export function isFresh(iso: string | undefined, maxMinutes: number, now = new Date()): boolean {
   return !!iso && now.getTime() - new Date(iso).getTime() <= maxMinutes * 60_000;
+}
+
+export function uniqueBy<T>(items: T[], key: (item: T) => string): T[] {
+  const seen = new Set<string>();
+  return items.filter((it) => {
+    const k = key(it);
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
 }

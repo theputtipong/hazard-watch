@@ -1,8 +1,9 @@
 import { regionProvinces, regionRadars, waterLevelSeverity, type Observation, type RadarFrame } from '@hw/core';
+import { ENDPOINTS, REQUEST } from '../endpoints';
 import { getJson, settle, type AdapterContext } from '../http';
 
 // api-v3.thaiwater.net rate-limits cloud IPs (HTTP 429), so this also runs from GitHub Actions.
-const BASE = 'https://api-v3.thaiwater.net/api/v1/thaiwater30';
+const BASE = ENDPOINTS.thaiwaterBase;
 const WATERLEVEL_URL = `${BASE}/public/waterlevel_load`;
 const MAIN_URL = `${BASE}/public/thailand_main`;
 const IMAGE_URL = `${BASE}/shared/image?image=`;
@@ -30,9 +31,9 @@ export function parseWaterLevel(body: { waterlevel_data: { data: WaterLevelRow[]
         source: 'thaiwater',
         name: { th: r.station.tele_station_name.th, en: r.station.tele_station_name.en || r.station.tele_station_name.th },
         location: { lat: r.station.tele_station_lat, lng: r.station.tele_station_long },
-        observedAt: new Date(`${r.waterlevel_datetime.replace(' ', 'T')}:00+07:00`).toISOString(),
+        observedAt: new Date(`${r.waterlevel_datetime.replace(' ', 'T')}:00${REQUEST.thaiOffset}`).toISOString(),
         value: pct,
-        unit: '% bank-full',
+        unit: ctx.config.units.waterLevel,
         severity: pct === null ? 'ok' : waterLevelSeverity(pct, ctx.config),
         offline: pct === null,
         extra: { msl: r.waterlevel_msl === null ? null : Number(r.waterlevel_msl), province: r.geocode.province_name.th, amphoe: r.geocode.amphoe_name.th },

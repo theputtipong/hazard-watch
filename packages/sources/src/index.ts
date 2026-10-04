@@ -1,4 +1,5 @@
 export * from './http';
+export * from './endpoints';
 export * from './adapters/air4thai';
 export * from './adapters/bma';
 export * from './adapters/quakes';

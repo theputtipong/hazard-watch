@@ -1,4 +1,6 @@
-const BKK_OFFSET = '+07:00';
+import { REQUEST } from './endpoints';
+
+const BKK_OFFSET = REQUEST.thaiOffset;
 
 /** "2026-10-03" + "21:00" (Bangkok local) -> ISO string. */
 export function bkkLocal(date: string, time: string): string {

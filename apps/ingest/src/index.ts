@@ -2,6 +2,7 @@ import { activeRegions, regionRadars } from '@hw/core';
 import { defaultContext, fetchWeather, FEEDS, type EdgeFeed, type RunnerFeed } from '@hw/sources';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
+import { INGEST } from './config';
 import { KEYS, readGroup, writeGroup, type FeedMap } from './store';
 
 export interface Env {
@@ -12,7 +13,6 @@ export interface Env {
 
 const RUNNER_FEEDS = Object.keys(FEEDS.runner) as RunnerFeed[];
 const RADAR_IDS = new Set(regionRadars(activeRegions()));
-const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
 
 export async function runEdgeFeeds(env: Env, now = new Date()) {
   const ctx = defaultContext({ now });
@@ -33,7 +33,7 @@ app.get('/', (c) => c.text('hw-ingest ok'));
 /** Everything the dashboard needs in one request. */
 app.get('/v1/snapshot', async (c) => {
   const [edge, runner] = await Promise.all([readGroup(c.env.SNAPSHOTS, KEYS.edge), readGroup(c.env.SNAPSHOTS, KEYS.runner)]);
-  c.header('cache-control', 'public, max-age=60');
+  c.header('cache-control', `public, max-age=${INGEST.cacheSeconds.snapshot}`);
   return c.json({ edge, runner });
 });
 
@@ -44,7 +44,7 @@ app.get('/v1/weather', async (c) => {
     return c.json({ error: 'lat and lng are required' }, 400);
   }
   const weather = await fetchWeather(defaultContext(), { lat, lng });
-  c.header('cache-control', 'public, max-age=600');
+  c.header('cache-control', `public, max-age=${INGEST.cacheSeconds.weather}`);
   return c.json(weather);
 });
 
@@ -55,7 +55,7 @@ app.get('/v1/radar/:id', async (c) => {
   if (!value || !metadata) return c.json({ error: 'no image yet' }, 404);
   return c.body(value, 200, {
     'content-type': metadata.contentType,
-    'cache-control': 'public, max-age=120',
+    'cache-control': `public, max-age=${INGEST.cacheSeconds.radar}`,
     'x-radar-time': metadata.time,
     'access-control-allow-origin': '*',
     'access-control-expose-headers': 'x-radar-time',
@@ -68,7 +68,7 @@ app.use('/ingest/*', async (c, next) => {
   const auth = c.req.header('authorization') ?? '';
   if (!c.env.INGEST_TOKEN || auth !== `Bearer ${c.env.INGEST_TOKEN}`) return c.json({ error: 'unauthorized' }, 401);
   const size = Number(c.req.header('content-length') ?? 0);
-  if (size > MAX_UPLOAD_BYTES) return c.json({ error: 'payload too large' }, 413);
+  if (size > INGEST.maxUploadBytes) return c.json({ error: 'payload too large' }, 413);
   await next();
 });
 

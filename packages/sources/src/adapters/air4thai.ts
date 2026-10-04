@@ -1,8 +1,8 @@
 import { inRegions, pm25Severity, type Observation } from '@hw/core';
+import { ENDPOINTS } from '../endpoints';
 import { getJson, settle, type AdapterContext } from '../http';
 import { bkkLocal } from '../time';
 
-const URL = 'https://air4thai.pcd.go.th/services/getNewAQI_JSON.php';
 
 interface Station {
   stationID: string;
@@ -30,7 +30,7 @@ export function parseAir4Thai(body: { stations: Station[] }, ctx: AdapterContext
         location,
         observedAt: bkkLocal(s.AQILast.date, s.AQILast.time),
         value,
-        unit: 'µg/m³',
+        unit: ctx.config.units.pm25,
         severity: value === null ? 'ok' : pm25Severity(value, ctx.config),
         offline: value === null,
         extra: { area: s.areaTH },
@@ -39,4 +39,4 @@ export function parseAir4Thai(body: { stations: Station[] }, ctx: AdapterContext
 }
 
 export const air4thai = (ctx: AdapterContext) =>
-  settle('air4thai', ctx, async () => parseAir4Thai(await getJson(ctx, URL), ctx));
+  settle('air4thai', ctx, async () => parseAir4Thai(await getJson(ctx, ENDPOINTS.air4thai), ctx));

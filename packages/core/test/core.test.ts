@@ -11,6 +11,7 @@ import {
   mergeConfig,
   pm25Severity,
   pm25ShouldPush,
+  quakeAlertFloor,
   quakeSeverity,
   rainSeverity,
   worst,
@@ -52,6 +53,13 @@ describe('quake', () => {
     expect(quakeSeverity(quake(5.9, 22.01, 95.92), BANGKOK_CENTER, cfg)).toBe('ok');
     expect(quakeSeverity(quake(7.5, 35.6, 139.7), BANGKOK_CENTER, cfg)).toBe('ok');
   });
+  it('uses configurable tiers', () => {
+    const custom = mergeConfig({ quake: { tiers: [{ severity: 'watch', minMagnitude: 4.5, maxDistanceKm: 800 }] } });
+    expect(quakeSeverity(quake(4.6, 18.76, 102.3), BANGKOK_CENTER, custom)).toBe('watch');
+    expect(quakeSeverity(quake(7.7, 22.01, 95.92), BANGKOK_CENTER, custom)).toBe('ok');
+    expect(custom.quake.tiers).toHaveLength(1);
+    expect(quakeAlertFloor(cfg)).toEqual({ minMagnitude: 6, maxDistanceKm: 1500 });
+  });
   it('computes distances', () => {
     expect(distanceKm(BANGKOK_CENTER, { lat: 22.01, lng: 95.92 })).toBeGreaterThan(1000);
     expect(distanceKm(BANGKOK_CENTER, { lat: 22.01, lng: 95.92 })).toBeLessThan(1100);
@@ -59,6 +67,11 @@ describe('quake', () => {
 });
 
 describe('flood and rain', () => {
+  it('maps BMA sub-status through config', () => {
+    const strict = mergeConfig({ flood: { bmaSubStatus: { 2: 'warn', 3: 'danger' } } });
+    expect(bmaFloodSeverity(2, 5, strict)).toBe('warn');
+    expect(bmaFloodSeverity(3, 5, strict)).toBe('danger');
+  });
   it('maps BMA sub-status', () => {
     expect(bmaFloodSeverity(1, 0, cfg)).toBe('ok');
     expect(bmaFloodSeverity(2, 10, cfg)).toBe('watch');

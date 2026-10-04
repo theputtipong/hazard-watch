@@ -1,5 +1,6 @@
 import type { Severity } from '@hw/core';
 import { t, type Lang } from '@hw/core/i18n';
+import { WEB } from '@/config';
 
 const PILL: Record<Severity, string> = {
   ok: 'bg-ok text-ok-strong',
@@ -8,12 +9,7 @@ const PILL: Record<Severity, string> = {
   danger: 'bg-danger text-danger-strong',
 };
 
-export const DOT_COLOR: Record<Severity, string> = {
-  ok: '#2e9e6a',
-  watch: '#d9a400',
-  warn: '#e2632b',
-  danger: '#b4171e',
-};
+export const DOT_COLOR: Record<Severity, string> = WEB.severityColor;
 
 /** Status is always written out, never colour alone. */
 export function SeverityPill({ severity, lang, label }: { severity: Severity; lang: Lang; label?: string }) {

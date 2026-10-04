@@ -2,9 +2,10 @@
 
 import Link from 'next/link';
 import { LANGS, t, type Lang } from '@hw/core/i18n';
+import { WEB } from '@/config';
 
 function setLangCookie(lang: Lang) {
-  document.cookie = `lang=${lang}; path=/; max-age=31536000; samesite=lax`;
+  document.cookie = `lang=${lang}; path=/; max-age=${WEB.langCookieDays * 86_400}; samesite=lax`;
 }
 
 export function Header({ lang, updatedAt }: { lang: Lang; updatedAt: string | null }) {

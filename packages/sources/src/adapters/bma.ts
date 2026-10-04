@@ -1,11 +1,10 @@
 import { bmaFloodSeverity, rainSeverity, type Observation } from '@hw/core';
+import { ENDPOINTS } from '../endpoints';
 import { getJson, settle, type AdapterContext } from '../http';
 import { aspNetDate } from '../time';
 
 // Unofficial endpoints used by weather.bangkok.go.th. They only answer POST and block cloud IPs,
 // so these adapters run from the GitHub Actions ingest job, not the Cloudflare worker.
-const FLOOD_URL = 'https://weather.bangkok.go.th/Flood/PageMap/GetDataTable';
-const RAIN_URL = 'https://weather.bangkok.go.th/rain/PageMap/GetDataForUpdate';
 const POST = { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' };
 
 interface FloodPoint {
@@ -53,7 +52,7 @@ export function parseBmaFlood(points: FloodPoint[], ctx: AdapterContext): Observ
         location: { lat: p.latitude, lng: p.longitude },
         observedAt: aspNetDate(p.site_timestamp) ?? ctx.now.toISOString(),
         value: offline ? null : (p.flood ?? null),
-        unit: 'cm',
+        unit: ctx.config.units.floodDepth,
         severity: offline ? 'ok' : bmaFloodSeverity(p.flood_sub_status, p.flood, ctx.config),
         offline,
         extra: { subStatus: p.flood_sub_status, district: p.districtName },
@@ -82,7 +81,7 @@ export function parseBmaRain(gauges: RainGauge[], ctx: AdapterContext): Observat
       location: { lat: g.latitude, lng: g.longitude },
       observedAt: aspNetDate(g.site_timestamp) ?? ctx.now.toISOString(),
       value: offline ? null : g.rf1hr,
-      unit: 'mm/h',
+      unit: ctx.config.units.rain,
       severity: offline || g.rf1hr === null ? 'ok' : rainSeverity(g.rf1hr, ctx.config),
       offline,
       extra: { rain24h: g.rf24hr, district: g.district_name },
@@ -91,7 +90,7 @@ export function parseBmaRain(gauges: RainGauge[], ctx: AdapterContext): Observat
 }
 
 export const bmaFlood = (ctx: AdapterContext) =>
-  settle('bma-flood', ctx, async () => parseBmaFlood(await getJson(ctx, FLOOD_URL, POST), ctx));
+  settle('bma-flood', ctx, async () => parseBmaFlood(await getJson(ctx, ENDPOINTS.bmaFlood, POST), ctx));
 
 export const bmaRain = (ctx: AdapterContext) =>
-  settle('bma-rain', ctx, async () => parseBmaRain(await getJson(ctx, RAIN_URL, POST), ctx));
+  settle('bma-rain', ctx, async () => parseBmaRain(await getJson(ctx, ENDPOINTS.bmaRain, POST), ctx));

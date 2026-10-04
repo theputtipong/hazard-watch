@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { regionFor, type LatLng } from '@hw/core';
+import { WEB } from '@/config';
 
 export type LocationStatus = 'pending' | 'granted' | 'denied' | 'unsupported';
 
@@ -21,7 +22,7 @@ export function useLocation() {
         setStatus('granted');
       },
       () => setStatus('denied'),
-      { enableHighAccuracy: false, maximumAge: 10 * 60_000, timeout: 15_000 },
+      { enableHighAccuracy: false, maximumAge: WEB.location.maximumAgeMs, timeout: WEB.location.timeoutMs },
     );
   }, []);
 

@@ -1,3 +1,4 @@
+import { REQUEST } from './endpoints';
 import { activeRegions, DEFAULT_CONFIG, type AlertConfig, type Region, type SourceId, type SourceResult } from '@hw/core';
 
 export type FetchLike = (input: string, init?: RequestInit) => Promise<Response>;
@@ -14,14 +15,12 @@ export function defaultContext(partial: Partial<AdapterContext> = {}): AdapterCo
   return { fetch: globalThis.fetch.bind(globalThis), config: DEFAULT_CONFIG, regions: activeRegions(), now: new Date(), ...partial };
 }
 
-const USER_AGENT = 'hazard-watch/0.1 (public non-commercial dashboard)';
-const TIMEOUT_MS = 30_000;
 
 async function request(ctx: AdapterContext, url: string, init: RequestInit = {}): Promise<Response> {
   const res = await ctx.fetch(url, {
     ...init,
-    headers: { 'user-agent': USER_AGENT, accept: 'application/json, text/xml;q=0.9, */*;q=0.8', ...init.headers },
-    signal: AbortSignal.timeout(TIMEOUT_MS),
+    headers: { 'user-agent': REQUEST.userAgent, accept: 'application/json, text/xml;q=0.9, */*;q=0.8', ...init.headers },
+    signal: AbortSignal.timeout(REQUEST.timeoutMs),
   });
   if (!res.ok) throw new Error(`${res.status} ${res.statusText} from ${new URL(url).host}`);
   return res;
