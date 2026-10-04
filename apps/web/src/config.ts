@@ -22,6 +22,10 @@ export const WEB = {
     iconSize: { you: 34, floodWatch: 26, floodWarn: 30, floodDanger: 34, pm25: 30, cctv: 24 },
     /** Colour of the "you are here" person marker. */
     youColor: '#1f5fbf',
+    /** Zoom used when jumping to the user's location with the locate button. */
+    locateZoom: 14,
+    /** Legend starts open on screens at least this wide (px); collapsed on phones. */
+    legendOpenMinWidth: 640,
     /** CCTV icons appear only at this zoom or closer, so hundreds of cameras don't bury the hazards. */
     cctvMinZoom: 13,
     cctvColor: '#0f1b2d',

@@ -1,30 +1,47 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { regionFor, type LatLng } from '@hw/core';
 import { WEB } from '@/config';
 
 export type LocationStatus = 'pending' | 'granted' | 'denied' | 'unsupported';
 
-/** Browser location, falling back to the centre of the first active region. Coordinates never leave the device here. */
+/**
+ * Browser location, falling back to the centre of the first active region. Coordinates never leave the device here.
+ * `locate()` asks again (e.g. from the map's "my location" button) and resolves with the new position or null.
+ */
 export function useLocation() {
   const [location, setLocation] = useState<LatLng>(() => regionFor(null).center);
   const [status, setStatus] = useState<LocationStatus>('pending');
 
-  useEffect(() => {
-    if (!('geolocation' in navigator)) {
-      setStatus('unsupported');
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-        setStatus('granted');
-      },
-      () => setStatus('denied'),
-      { enableHighAccuracy: false, maximumAge: WEB.location.maximumAgeMs, timeout: WEB.location.timeoutMs },
-    );
-  }, []);
+  const locate = useCallback(
+    () =>
+      new Promise<LatLng | null>((resolve) => {
+        if (!('geolocation' in navigator)) {
+          setStatus('unsupported');
+          return resolve(null);
+        }
+        setStatus((s) => (s === 'granted' ? s : 'pending'));
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            const next = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+            setLocation(next);
+            setStatus('granted');
+            resolve(next);
+          },
+          () => {
+            setStatus('denied');
+            resolve(null);
+          },
+          { enableHighAccuracy: false, maximumAge: WEB.location.maximumAgeMs, timeout: WEB.location.timeoutMs },
+        );
+      }),
+    [],
+  );
 
-  return { location, status };
+  useEffect(() => {
+    void locate();
+  }, [locate]);
+
+  return { location, status, locate };
 }

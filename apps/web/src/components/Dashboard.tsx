@@ -18,7 +18,7 @@ const MapView = dynamic(() => import('./MapView'), { ssr: false, loading: () => 
 const LAYER_LABEL: Record<LayerKey, MessageKey> = { radar: 'layer.radar', flood: 'layer.flood', pm25: 'layer.pm25', cctv: 'layer.cctv' };
 
 export function Dashboard({ lang }: { lang: Lang }) {
-  const { location, status } = useLocation();
+  const { location, status, locate } = useLocation();
   const [snapshot, setSnapshot] = useState<DashboardSnapshot | null>(null);
   const [weather, setWeather] = useState<WeatherNow | null>(null);
   const [layers, setLayers] = useState<Layers>({ ...WEB.map.defaultLayers });
@@ -88,6 +88,8 @@ export function Dashboard({ lang }: { lang: Lang }) {
           <MapView
             lang={lang}
             center={location}
+            located={status === 'granted'}
+            onLocate={locate}
             layers={layers}
             radarId={radarId}
             floodPoints={view.floodPoints}
