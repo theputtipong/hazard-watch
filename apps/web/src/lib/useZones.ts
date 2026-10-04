@@ -5,7 +5,9 @@ import {
   activeRegions,
   DEFAULT_CONFIG,
   groupByZone,
+  inZone,
   summarizeZone,
+  type LatLng,
   type Observation,
   type ZoneFeature,
   type ZoneSummary,
@@ -50,6 +52,8 @@ export interface ZoneView {
   /** Summary of what the user is looking at: the selected zone, else the current parent, else everything. */
   focusSummary: ZoneSummary;
   hasChildren: (id: string) => boolean;
+  /** District and subdistrict containing a point (computed on the device; the point is not sent anywhere). */
+  zonesAt: (p: LatLng) => { district: ZoneFeature | null; subdistrict: ZoneFeature | null };
   open: (id: string) => void;
   goTo: (depth: number) => void;
   back: () => void;
@@ -74,6 +78,12 @@ export function useZones(readings: Observation[]): ZoneView {
     const focusZone = selected ?? path.at(-1) ?? null;
     const focusReadings = focusZone ? (groupByZone(readings, [focusZone]).get(focusZone.properties.id) ?? []) : readings;
     const hasChildren = (id: string) => !!data?.children.get(id)?.length;
+    const zonesAt = (p: LatLng) => {
+      const all = data ? [...data.byId.values()] : [];
+      const district = all.find((z) => z.properties.level === 2 && inZone(z, p)) ?? null;
+      const subdistrict = district ? (data!.children.get(district.properties.id)?.find((z) => inZone(z, p)) ?? null) : null;
+      return { district, subdistrict };
+    };
 
     return {
       ready: !!data,
@@ -83,6 +93,7 @@ export function useZones(readings: Observation[]): ZoneView {
       summaries,
       focusSummary: summarizeZone(focusReadings, DEFAULT_CONFIG),
       hasChildren,
+      zonesAt,
       open: (id) => {
         if (hasChildren(id)) {
           setPathIds([...pathIds, id]);

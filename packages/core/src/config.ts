@@ -59,9 +59,21 @@ export interface AlertConfig {
     /** How a zone's status is derived from the points inside it. Only 'worst' exists for now. */
     aggregate: 'worst';
   };
+  push: {
+    /** Hazards that can trigger a push. Users can switch each off for themselves. */
+    kinds: PushKind[];
+    /** Don't repeat the same alert (same hazard, same area) to the same person within this many hours. */
+    cooldownHours: number;
+    /** Maximum notifications sent per run (keeps one run inside Worker limits). */
+    maxPerRun: number;
+    /** How long a push service should keep trying to deliver (seconds). */
+    ttlSeconds: number;
+  };
   /** Readings older than this are shown as stale and ignored for alerts. */
   staleAfterMinutes: number;
 }
+
+export type PushKind = 'flood' | 'rain' | 'water' | 'pm25' | 'quake';
 
 export const DEFAULT_CONFIG: AlertConfig = {
   units: {
@@ -104,6 +116,12 @@ export const DEFAULT_CONFIG: AlertConfig = {
   zones: {
     kinds: ['flood', 'pm25', 'rain', 'waterlevel'],
     aggregate: 'worst',
+  },
+  push: {
+    kinds: ['flood', 'rain', 'water', 'pm25', 'quake'],
+    cooldownHours: 3,
+    maxPerRun: 500,
+    ttlSeconds: 3600,
   },
   staleAfterMinutes: 90,
 };

@@ -14,6 +14,8 @@ import { mapPalette, usePrefs } from '@/lib/prefs';
 import { useSpeech } from '@/lib/speech';
 import { spokenSummary } from '@/lib/spokenSummary';
 import { A11yControls } from './A11yControls';
+import { AlertsCard } from './AlertsCard';
+import { registerServiceWorker } from '@/lib/push';
 import { zoneLabel } from './ZonePanel';
 import { ZonePanel } from './ZonePanel';
 import { CctvList } from './CctvList';
@@ -53,6 +55,10 @@ export function Dashboard({ lang }: { lang: Lang }) {
       alive = false;
       clearInterval(timer);
     };
+  }, []);
+
+  useEffect(() => {
+    registerServiceWorker();
   }, []);
 
   useEffect(() => {
@@ -112,6 +118,15 @@ export function Dashboard({ lang }: { lang: Lang }) {
 
   const updatedAt = [snapshot?.edge?.updatedAt, snapshot?.runner?.updatedAt].filter(Boolean).sort().at(-1) ?? null;
   const focusZone = zones.selected ?? zones.path.at(-1) ?? null;
+  // Alert area: from the device location if allowed, otherwise the district picked on the map.
+  const alertArea = useMemo(() => {
+    if (status === 'granted') return zones.zonesAt(location);
+    const picked = [...zones.path, ...(zones.selected ? [zones.selected] : [])];
+    return {
+      district: picked.find((z) => z.properties.level === 2) ?? null,
+      subdistrict: picked.find((z) => z.properties.level === 3) ?? null,
+    };
+  }, [status, location, zones]);
   const spoken = useMemo(
     () =>
       spokenSummary({
@@ -227,6 +242,7 @@ export function Dashboard({ lang }: { lang: Lang }) {
           <FloodCard lang={lang} counts={view.counts} nearestFlooded={view.nearestFlooded} available={view.floodAvailable} note={view.notes.flood} />
           <QuakeCard lang={lang} alerts={view.quakes.alerts} latest={view.quakes.latestRegional} available={view.quakeAvailable} note={view.notes.quake} />
           <WaterLevelCard lang={lang} nearest={view.nearestWater} high={view.highWater} note={view.notes.water} />
+          <AlertsCard lang={lang} district={alertArea.district} subdistrict={alertArea.subdistrict} />
         </aside>
 
         <div className="basis-full">

@@ -62,6 +62,9 @@ export const WEB = {
     timeoutMs: 15_000,
   },
 
+  /** Choices offered for the personal PM2.5 alert level (µg/m³); the default is core config pm25.pushAt. */
+  push: { pm25Choices: [25, 37.5, 50, 75] },
+
   /** Read-aloud (Web Speech API). 1 = normal speed; lower is easier to follow. */
   speech: { rate: 0.95 },
 

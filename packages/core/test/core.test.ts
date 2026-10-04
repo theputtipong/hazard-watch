@@ -18,7 +18,7 @@ import {
   type Earthquake,
 } from '../src';
 import { messages, t } from '../src/i18n';
-import { groupByZone, inZone, summarizeZone, type Observation, type ZoneFeature } from '../src';
+import { districtAlerts, groupByZone, inZone, quakeAlerts, summarizeZone, type Observation, type ZoneFeature } from '../src';
 
 const cfg = DEFAULT_CONFIG;
 const BANGKOK_CENTER = REGIONS['th-bangkok-metro'].center;
@@ -147,5 +147,38 @@ describe('zones', () => {
   it('reports no data instead of normal for empty zones', () => {
     expect(summarizeZone([], cfg).severity).toBeNull();
     expect(summarizeZone([{ ...obs('flood', 100.1, 'ok'), offline: true }], cfg).severity).toBeNull();
+  });
+});
+
+describe('push alerts', () => {
+  const district: ZoneFeature = {
+    type: 'Feature',
+    properties: { id: 'TH1001', parent: 'TH10', level: 2, name_th: 'พระนคร', name_en: 'Phra Nakhon', bbox: [100, 13, 101, 14] },
+    geometry: { type: 'Polygon', coordinates: [[[100, 13], [101, 13], [101, 14], [100, 14], [100, 13]]] },
+  };
+  const reading = (kind: Observation['kind'], value: number, severity: Observation['severity'], observedAt = new Date().toISOString()): Observation => ({
+    id: `${kind}${value}`, kind, source: 'bma-flood', name: { th: 'จุด', en: 'Spot' }, location: { lat: 13.5, lng: 100.5 },
+    observedAt, value, unit: '', severity,
+  });
+  it('builds flood, rain, water and PM2.5 alerts from config thresholds', () => {
+    const alerts = districtAlerts(
+      [reading('flood', 20, 'warn'), reading('rain', 40, 'warn'), reading('waterlevel', 105, 'warn'), reading('pm25', 40, 'warn'), reading('pm25', 20, 'watch')],
+      [district],
+      cfg,
+    ).get('TH1001')!;
+    expect(alerts.map((a) => a.kind).sort()).toEqual(['flood', 'pm25', 'rain', 'water']);
+    expect(alerts.find((a) => a.kind === 'flood')!.title.th).toBe('น้ำท่วมขังในพระนคร');
+    expect(alerts.find((a) => a.kind === 'pm25')).toMatchObject({ key: 'pm25:TH1001', value: 40 });
+  });
+  it('ignores stale readings and values under the thresholds', () => {
+    const old = '2026-01-01T00:00:00Z';
+    const alerts = districtAlerts([reading('flood', 20, 'warn', old), reading('rain', 5, 'ok'), reading('pm25', 12, 'ok')], [district], cfg).get('TH1001')!;
+    expect(alerts).toEqual([]);
+  });
+  it('builds quake alerts from the quake tiers', () => {
+    const q = { id: 'usgs:x', source: 'usgs' as const, magnitude: 7.7, depthKm: 10, location: { lat: 22.01, lng: 95.92 }, place: { th: 'เมียนมา', en: 'Myanmar' }, occurredAt: new Date().toISOString() };
+    const a = quakeAlerts([q], district, cfg);
+    expect(a).toHaveLength(1);
+    expect(a[0]).toMatchObject({ kind: 'quake', severity: 'danger', key: 'quake:usgs:x' });
   });
 });

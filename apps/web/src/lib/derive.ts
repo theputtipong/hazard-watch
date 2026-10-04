@@ -1,11 +1,11 @@
 import {
   distanceKm,
+  mergeQuakes,
   quakeAlertFloor,
   quakeSeverity,
   worst,
   type AlertConfig,
   type DashboardSnapshot,
-  type Earthquake,
   type LatLng,
   type Observation,
   type Severity,
@@ -27,21 +27,6 @@ export function floodCounts(points: Observation[]) {
     else count.normal++;
   }
   return count;
-}
-
-/** USGS and TMD often report the same event; keep one (preferring TMD, which has Thai text). Window is in config. */
-export function mergeQuakes(tmd: Earthquake[], usgs: Earthquake[], cfg: AlertConfig): Earthquake[] {
-  const { duplicateWithinSeconds, duplicateWithinKm } = cfg.quake;
-  const out = [...tmd];
-  for (const q of usgs) {
-    const dup = tmd.some(
-      (t) =>
-        Math.abs(new Date(t.occurredAt).getTime() - new Date(q.occurredAt).getTime()) < duplicateWithinSeconds * 1000 &&
-        distanceKm(t.location, q.location) < duplicateWithinKm,
-    );
-    if (!dup) out.push(q);
-  }
-  return out.sort((a, b) => b.occurredAt.localeCompare(a.occurredAt));
 }
 
 export function quakeSummary(snapshot: DashboardSnapshot | null, from: LatLng, cfg: AlertConfig, now = new Date()) {

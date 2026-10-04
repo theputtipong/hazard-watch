@@ -29,7 +29,6 @@ export const messages = {
     en: 'Location permission denied. Please choose an area.',
   },
 
-  'push.enable': { th: 'เปิดการแจ้งเตือน', en: 'Enable alerts' },
 
   'area.nav': { th: 'ระดับพื้นที่', en: 'Area level' },
   'zone.layer': { th: 'โซนพื้นที่', en: 'Zones' },
@@ -164,6 +163,52 @@ export const messages = {
   'speak.quakeAlert': { th: 'แผ่นดินไหวขนาด {mag} ที่ {place} ห่าง {km} กิโลเมตร', en: 'Magnitude {mag} earthquake at {place}, {km} kilometres away.' },
   'speak.area': { th: 'พื้นที่ที่เลือก {name} สถานะ{status}', en: 'Selected area {name}: {status}.' },
   'speak.noData': { th: '{topic} ไม่มีข้อมูล', en: '{topic}: no data.' },
+
+  'push.title': { th: 'การแจ้งเตือน', en: 'Alerts' },
+  'push.intro': {
+    th: 'รับแจ้งเตือนเมื่อมีภัยใน{area} แม้ปิดหน้าเว็บอยู่',
+    en: 'Get alerts for {area} even when this page is closed',
+  },
+  'push.pickArea': { th: 'อนุญาตตำแหน่ง หรือเลือกเขต/อำเภอบนแผนที่ก่อน', en: 'Allow location, or pick a district on the map first' },
+  'push.enable': { th: 'เปิดการแจ้งเตือน', en: 'Turn on alerts' },
+  'push.disable': { th: 'ปิดการแจ้งเตือน', en: 'Turn off alerts' },
+  'push.test': { th: 'ทดสอบการแจ้งเตือน', en: 'Send a test alert' },
+  'push.on': { th: 'เปิดอยู่ · แจ้งเตือนสำหรับ{area}', en: 'On · alerts for {area}' },
+  'push.update': { th: 'บันทึกการตั้งค่า', en: 'Save settings' },
+  'push.saved': { th: 'บันทึกแล้ว', en: 'Saved' },
+  'push.denied': {
+    th: 'เบราว์เซอร์ปิดสิทธิ์การแจ้งเตือนไว้ เปิดได้ในการตั้งค่าของเว็บไซต์',
+    en: 'Notifications are blocked for this site; allow them in site settings',
+  },
+  'push.unsupported': { th: 'เบราว์เซอร์นี้ไม่รองรับการแจ้งเตือน', en: 'This browser does not support notifications' },
+  'push.ios': {
+    th: 'บน iPhone/iPad: กด แชร์ → "เพิ่มไปยังหน้าจอโฮม" แล้วเปิดแอปจากหน้าจอโฮมเพื่อเปิดการแจ้งเตือน',
+    en: 'On iPhone/iPad: tap Share → "Add to Home Screen", then open it from the Home Screen to turn on alerts',
+  },
+  'push.error': { th: 'เปิดการแจ้งเตือนไม่สำเร็จ ลองใหม่อีกครั้ง', en: 'Could not turn on alerts, please try again' },
+  'push.kinds': { th: 'แจ้งเตือนเรื่อง', en: 'Alert me about' },
+  'push.kind.flood': { th: 'น้ำท่วมขัง', en: 'Street flooding' },
+  'push.kind.rain': { th: 'ฝนตกหนัก', en: 'Heavy rain' },
+  'push.kind.water': { th: 'ระดับน้ำคลอง/แม่น้ำสูง', en: 'High canal/river levels' },
+  'push.kind.pm25': { th: 'ฝุ่น PM2.5 สูง', en: 'High PM2.5' },
+  'push.kind.quake': { th: 'แผ่นดินไหว', en: 'Earthquakes' },
+  'push.pmAt': { th: 'แจ้งฝุ่นเมื่อถึง', en: 'PM2.5 alert at' },
+  'push.privacy': { th: 'ข้อมูลที่เราเก็บและวิธีลบ', en: 'What we store and how to delete it' },
+
+  'alert.flood.title': { th: 'น้ำท่วมขังใน{area}', en: 'Street flooding in {area}' },
+  'alert.flood.body': { th: 'มีจุดน้ำท่วม {n} จุด · ลึกสุด {depth} ซม.', en: '{n} flooded spots · up to {depth} cm deep' },
+  'alert.rain.title': { th: 'ฝนตกหนักใน{area}', en: 'Heavy rain in {area}' },
+  'alert.rain.body': { th: 'ฝน {v} มม. ใน 1 ชั่วโมงที่ผ่านมา', en: '{v} mm in the past hour' },
+  'alert.water.title': { th: 'ระดับน้ำสูงใน{area}', en: 'High water in {area}' },
+  'alert.water.body': { th: '{station} {v}% ของความจุตลิ่ง', en: '{station} at {v}% of bank-full' },
+  'alert.pm25.title': { th: 'ฝุ่น PM2.5 สูงใน{area}', en: 'High PM2.5 in {area}' },
+  'alert.pm25.body': { th: '{v} µg/m³ · ควรลดกิจกรรมกลางแจ้ง', en: '{v} µg/m³ · consider limiting time outdoors' },
+  'alert.quake.title': { th: 'แผ่นดินไหวขนาด {mag}', en: 'Magnitude {mag} earthquake' },
+  'alert.quake.body': { th: '{place} · ห่าง {km} กม.', en: '{place} · {km} km away' },
+  'alert.test.title': { th: 'ทดสอบการแจ้งเตือน', en: 'Test alert' },
+  'alert.test.body': { th: 'การแจ้งเตือนของคุณทำงานแล้ว', en: 'Your alerts are working' },
+
+  'privacy.title': { th: 'ความเป็นส่วนตัว', en: 'Privacy' },
 
   'footer.coffee': { th: 'สนับสนุนค่ากาแฟ', en: 'Buy me a coffee' },
   'footer.credits': {

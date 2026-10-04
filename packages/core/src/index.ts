@@ -5,3 +5,4 @@ export * from './regions';
 export * from './severity';
 export * from './zones';
 export * from './radars';
+export * from './alerts';

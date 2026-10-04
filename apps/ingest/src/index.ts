@@ -1,11 +1,15 @@
-import { activeRegions, regionRadars } from '@hw/core';
+import { activeRegions, DEFAULT_CONFIG, regionRadars, type DashboardSnapshot, type PushKind } from '@hw/core';
+import { t } from '@hw/core/i18n';
 import { defaultContext, fetchWeather, FEEDS, type EdgeFeed, type RunnerFeed } from '@hw/sources';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { INGEST } from './config';
+import { isPushEndpoint } from './push/notifier';
+import { DISTRICT_IDS, messageFor, notifierFor, sendAlerts, type PushEnv } from './push/run';
+import { deleteSubscription, getSubscription, recentlySent, markSent, subscriptionId, upsertSubscription } from './push/store';
 import { KEYS, readGroup, writeGroup, type FeedMap } from './store';
 
-export interface Env {
+export interface Env extends PushEnv {
   SNAPSHOTS: KVNamespace;
   INGEST_TOKEN: string;
   ALLOWED_ORIGINS: string;
@@ -22,10 +26,18 @@ export async function runEdgeFeeds(env: Env, now = new Date()) {
   return writeGroup(env.SNAPSHOTS, KEYS.edge, Object.fromEntries(entries) as FeedMap, now);
 }
 
+/** Reads both snapshot groups and pushes whatever is new to subscribers. */
+async function pushAfterUpdate(env: Env) {
+  const [edge, runner] = await Promise.all([readGroup(env.SNAPSHOTS, KEYS.edge), readGroup(env.SNAPSHOTS, KEYS.runner)]);
+  const stats = await sendAlerts(env, { edge, runner } as DashboardSnapshot);
+  console.log('push', JSON.stringify(stats));
+  return stats;
+}
+
 const app = new Hono<{ Bindings: Env }>();
 
 app.use('/v1/*', async (c, next) =>
-  cors({ origin: c.env.ALLOWED_ORIGINS.split(',').map((o) => o.trim()), allowMethods: ['GET'] })(c, next),
+  cors({ origin: c.env.ALLOWED_ORIGINS.split(',').map((o) => o.trim()), allowMethods: ['GET', 'POST'], allowHeaders: ['content-type'] })(c, next),
 );
 
 app.get('/', (c) => c.text('hw-ingest ok'));
@@ -62,6 +74,74 @@ app.get('/v1/radar/:id', async (c) => {
   });
 });
 
+// ---- Web Push subscriptions (only the area is stored, never coordinates) ----
+
+const PUSH_KINDS = new Set<PushKind>(DEFAULT_CONFIG.push.kinds);
+
+app.get('/v1/push/key', (c) => c.json({ publicKey: c.env.VAPID_PUBLIC_KEY }));
+
+app.post('/v1/push/subscribe', async (c) => {
+  const body = await c.req
+    .json<{
+      subscription?: { endpoint?: string; keys?: { p256dh?: string; auth?: string } };
+      lang?: string;
+      district?: string;
+      subdistrict?: string | null;
+      prefs?: { kinds?: string[]; pm25At?: number };
+    }>()
+    .catch(() => null);
+  const endpoint = body?.subscription?.endpoint ?? '';
+  const { p256dh = '', auth = '' } = body?.subscription?.keys ?? {};
+  if (!isPushEndpoint(endpoint) || !p256dh || !auth || p256dh.length > 200 || auth.length > 100) {
+    return c.json({ error: 'invalid subscription' }, 400);
+  }
+  if (!body?.district || !DISTRICT_IDS.has(body.district)) return c.json({ error: 'unknown district' }, 400);
+  const kinds = (body.prefs?.kinds ?? []).filter((k): k is PushKind => PUSH_KINDS.has(k as PushKind));
+  const pm25At = Number(body.prefs?.pm25At);
+  const id = await upsertSubscription(
+    c.env.PUSH_DB,
+    {
+      endpoint,
+      p256dh,
+      auth,
+      lang: body.lang === 'en' ? 'en' : 'th',
+      district: body.district,
+      subdistrict: body.subdistrict?.startsWith(body.district) ? body.subdistrict : null,
+      prefs: { kinds, ...(Number.isFinite(pm25At) && pm25At > 0 && pm25At < 1000 ? { pm25At } : {}) },
+    },
+    new Date(),
+  );
+  return c.json({ ok: true, id });
+});
+
+app.post('/v1/push/unsubscribe', async (c) => {
+  const body = await c.req.json<{ endpoint?: string }>().catch(() => null);
+  if (!body?.endpoint) return c.json({ error: 'endpoint required' }, 400);
+  await deleteSubscription(c.env.PUSH_DB, await subscriptionId(body.endpoint));
+  return c.json({ ok: true });
+});
+
+/** Sends one test notification to an existing subscription (at most once a minute). */
+app.post('/v1/push/test', async (c) => {
+  const body = await c.req.json<{ endpoint?: string }>().catch(() => null);
+  if (!body?.endpoint) return c.json({ error: 'endpoint required' }, 400);
+  const sub = await getSubscription(c.env.PUSH_DB, await subscriptionId(body.endpoint));
+  if (!sub) return c.json({ error: 'not subscribed' }, 404);
+  const now = new Date();
+  if ((await recentlySent(c.env.PUSH_DB, sub.id, new Date(now.getTime() - 60_000))).has('test')) {
+    return c.json({ error: 'try again in a minute' }, 429);
+  }
+  const alert = {
+    key: 'test',
+    title: { th: t('alert.test.title', 'th'), en: t('alert.test.title', 'en') },
+    body: { th: t('alert.test.body', 'th'), en: t('alert.test.body', 'en') },
+  };
+  const result = await notifierFor(c.env).send(sub, messageFor(alert, sub, c.env.SITE_URL), 300);
+  if (result === 'gone') await deleteSubscription(c.env.PUSH_DB, sub.id);
+  else if (result === 'sent') await markSent(c.env.PUSH_DB, sub.id, 'test', now).run();
+  return c.json({ result });
+});
+
 // ---- Writes from the GitHub Actions runner (feeds blocked from Cloudflare IPs) ----
 
 app.use('/ingest/*', async (c, next) => {
@@ -87,6 +167,7 @@ app.post('/ingest/runner', async (c) => {
   }
   if (!Object.keys(feeds).length) return c.json({ error: 'no known feeds in payload' }, 400);
   const snapshot = await writeGroup(c.env.SNAPSHOTS, KEYS.runner, feeds, new Date());
+  c.executionCtx.waitUntil(pushAfterUpdate(c.env));
   return c.json({ ok: true, feeds: Object.keys(snapshot.feeds) });
 });
 
@@ -102,7 +183,7 @@ app.put('/ingest/radar/:id', async (c) => {
 export default {
   fetch: app.fetch,
   async scheduled(_event, env, ctx) {
-    ctx.waitUntil(runEdgeFeeds(env));
+    ctx.waitUntil(runEdgeFeeds(env).then(() => pushAfterUpdate(env)));
   },
 } satisfies ExportedHandler<Env>;
 
