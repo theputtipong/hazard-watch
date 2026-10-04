@@ -17,8 +17,14 @@ export const WEB = {
     defaultLayers: { radar: true, flood: true, pm25: false, cctv: false } satisfies Record<LayerKey, boolean>,
     defaultRadar: 'nkm',
     radarOpacity: 0.6,
-    /** Marker sizes in pixels. */
-    markerRadius: { floodNormal: 4, floodAlert: 8, pm25: 10, cctv: 5, you: 9 },
+    /** Marker sizes in pixels (icons are square). Normal flood points stay small dots so problems stand out. */
+    markerRadius: { floodNormal: 4 },
+    iconSize: { you: 34, floodWatch: 26, floodWarn: 30, floodDanger: 34, pm25: 30, cctv: 24 },
+    /** Colour of the "you are here" person marker. */
+    youColor: '#1f5fbf',
+    /** CCTV icons appear only at this zoom or closer, so hundreds of cameras don't bury the hazards. */
+    cctvMinZoom: 13,
+    cctvColor: '#0f1b2d',
   },
 
   /** Marker/dot colours per severity (fills for cards are CSS tokens in app/globals.css). */

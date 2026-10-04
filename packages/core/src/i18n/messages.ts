@@ -47,6 +47,7 @@ export const messages = {
   'layer.flood': { th: 'จุดน้ำท่วม', en: 'Flood points' },
   'layer.pm25': { th: 'สถานีฝุ่น', en: 'PM2.5 stations' },
   'layer.cctv': { th: 'กล้อง CCTV', en: 'CCTV' },
+  'map.zoomForCctv': { th: 'ซูมเข้าเพื่อดูกล้อง CCTV', en: 'Zoom in to see CCTV cameras' },
   'radar.source': { th: 'แหล่งเรดาร์', en: 'Radar source' },
   'radar.latest': { th: 'ล่าสุด', en: 'Now' },
   'radar.heavy': { th: 'ฝนหนัก', en: 'Heavy' },
@@ -66,6 +67,7 @@ export const messages = {
 
   'flood.flooded': { th: 'น้ำท่วม', en: 'Flooded' },
   'flood.minor': { th: 'ท่วมเล็กน้อย', en: 'Minor' },
+  'flood.deep': { th: 'ท่วมลึก', en: 'Deep flooding' },
   'flood.normal': { th: 'ปกติ', en: 'Normal' },
   'flood.offline': { th: 'ขัดข้อง', en: 'Offline' },
   'flood.nearest': { th: 'จุดท่วมใกล้คุณที่สุด', en: 'Nearest flooded spot' },
