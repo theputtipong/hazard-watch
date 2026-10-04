@@ -3,13 +3,15 @@
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { CircleMarker, ImageOverlay, MapContainer, Marker, Popup, TileLayer, useMap, useMapEvents } from 'react-leaflet';
-import { regionFor, type CctvCamera, type LatLng, type Observation, type Severity } from '@hw/core';
+import { CircleMarker, GeoJSON, ImageOverlay, MapContainer, Marker, Popup, TileLayer, Tooltip, useMap, useMapEvents } from 'react-leaflet';
+import { regionFor, type CctvCamera, type LatLng, type Observation, type Severity, type ZoneFeature } from '@hw/core';
 import { t, type Lang } from '@hw/core/i18n';
 import { WEB } from '@/config';
 import { radarImageUrl } from '@/lib/api';
 import { RADAR_BOUNDS, type Layers } from '@/lib/layers';
+import type { ZoneView } from '@/lib/useZones';
 import { cctvIcon, floodIcon, LEGEND_GLYPH, pm25Icon, youIcon } from './mapIcons';
+import { zoneLabel } from './ZonePanel';
 
 interface Props {
   lang: Lang;
@@ -22,13 +24,14 @@ interface Props {
   floodPoints: Observation[];
   pmStations: Observation[];
   cameras: CctvCamera[];
+  zones: ZoneView;
 }
 
 /** Draw order: problems above normal points, and "you" above everything. */
 const Z = { cctv: 100, pm25: 200, flood: 300, you: 1000 } as const;
 const FLOOD_RANK: Record<Severity, number> = { ok: 0, watch: 1, warn: 2, danger: 3 };
 
-export default function MapView({ lang, center, located, onLocate, layers, radarId, floodPoints, pmStations, cameras }: Props) {
+export default function MapView({ lang, center, located, onLocate, layers, radarId, floodPoints, pmStations, cameras, zones }: Props) {
   const bounds = RADAR_BOUNDS[radarId];
   const startZoom = regionFor(center).zoom;
   const [zoom, setZoom] = useState(startZoom);
@@ -44,6 +47,8 @@ export default function MapView({ lang, center, located, onLocate, layers, radar
         <TileLayer attribution={WEB.map.attribution} url={WEB.map.tileUrl} />
         <ZoomWatcher onZoom={setZoom} />
         <FollowFirstFix center={center} located={located} />
+        <FitToFocus focus={zones.selected ?? zones.path.at(-1) ?? null} depth={zones.path.length} center={center} />
+        {layers.zones && <ZoneLayer lang={lang} zones={zones} />}
         {layers.radar && bounds && <ImageOverlay url={radarImageUrl(radarId)} bounds={bounds} opacity={WEB.map.radarOpacity} />}
 
         {showCams &&
@@ -124,6 +129,63 @@ export default function MapView({ lang, center, located, onLocate, layers, radar
       )}
     </div>
   );
+}
+
+/** Zone polygons coloured by the worst reading inside; tap to drill down. */
+function ZoneLayer({ lang, zones }: { lang: Lang; zones: ZoneView }) {
+  const z = WEB.zones;
+  return (
+    <>
+      {zones.visible.map((zone: ZoneFeature) => {
+        const id = zone.properties.id;
+        const sev = zones.summaries.get(id)?.severity ?? null;
+        const selected = zones.selected?.properties.id === id;
+        return (
+          <GeoJSON
+            // Style isn't reactive in react-leaflet, so the key changes with what affects the style.
+            key={`${id}:${sev}:${selected}`}
+            data={zone as unknown as GeoJSON.Feature}
+            style={{
+              color: selected ? '#0f1b2d' : z.borderColor,
+              weight: selected ? z.selectedWeight : z.borderWeight,
+              fillColor: sev ? WEB.severityColor[sev] : 'transparent',
+              fillOpacity: sev ? z.fillOpacity[sev] : 0,
+            }}
+            eventHandlers={{ click: () => zones.open(id) }}
+          >
+            <Tooltip sticky>{zoneLabel(zone, lang)}</Tooltip>
+          </GeoJSON>
+        );
+      })}
+    </>
+  );
+}
+
+/** Zooms to the area the user drilled into; back at the top level, returns to the region. */
+function FitToFocus({ focus, depth, center }: { focus: ZoneFeature | null; depth: number; center: LatLng }) {
+  const map = useMap();
+  const last = useRef<string | null | undefined>(undefined);
+  useEffect(() => {
+    const key = focus?.properties.id ?? null;
+    if (last.current === undefined) {
+      last.current = key; // don't move on first render
+      return;
+    }
+    if (last.current === key) return;
+    last.current = key;
+    const [minLng, minLat, maxLng, maxLat] = focus ? focus.properties.bbox : (() => {
+      const b = regionFor(center).bbox;
+      return [b.minLng, b.minLat, b.maxLng, b.maxLat];
+    })();
+    map.flyToBounds(
+      [
+        [minLat, minLng],
+        [maxLat, maxLng],
+      ],
+      { padding: [WEB.zones.fitPadding, WEB.zones.fitPadding] },
+    );
+  }, [focus, depth, center, map]);
+  return null;
 }
 
 function ZoomWatcher({ onZoom }: { onZoom: (zoom: number) => void }) {

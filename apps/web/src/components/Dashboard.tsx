@@ -8,6 +8,8 @@ import { WEB } from '@/config';
 import { fetchSnapshot, fetchWeather } from '@/lib/api';
 import { floodCounts, nearest, quakeSummary, uniqueBy } from '@/lib/derive';
 import { useLocation } from '@/lib/useLocation';
+import { useZones } from '@/lib/useZones';
+import { ZonePanel } from './ZonePanel';
 import { CctvList } from './CctvList';
 import { FloodCard, Pm25Card, QuakeCard, WeatherCard } from './HazardCards';
 import { Header } from './Header';
@@ -15,7 +17,7 @@ import { RADAR_BOUNDS, type LayerKey, type Layers } from '@/lib/layers';
 
 const MapView = dynamic(() => import('./MapView'), { ssr: false, loading: () => <div className="h-[420px] bg-[#eaf0f5] sm:h-[520px]" /> });
 
-const LAYER_LABEL: Record<LayerKey, MessageKey> = { radar: 'layer.radar', flood: 'layer.flood', pm25: 'layer.pm25', cctv: 'layer.cctv' };
+const LAYER_LABEL: Record<LayerKey, MessageKey> = { zones: 'zone.layer', radar: 'layer.radar', flood: 'layer.flood', pm25: 'layer.pm25', cctv: 'layer.cctv' };
 
 export function Dashboard({ lang }: { lang: Lang }) {
   const { location, status, locate } = useLocation();
@@ -59,6 +61,17 @@ export function Dashboard({ lang }: { lang: Lang }) {
     };
   }, [snapshot, location]);
 
+  const readings = useMemo(
+    () => [
+      ...(snapshot?.runner?.feeds.flood?.items ?? []),
+      ...(snapshot?.runner?.feeds.rain?.items ?? []),
+      ...(snapshot?.runner?.feeds.waterlevel?.items ?? []),
+      ...(snapshot?.edge?.feeds.pm25?.items ?? []),
+    ],
+    [snapshot],
+  );
+  const zones = useZones(readings);
+
   const updatedAt = [snapshot?.edge?.updatedAt, snapshot?.runner?.updatedAt].filter(Boolean).sort().at(-1) ?? null;
   const toggle = (key: LayerKey) => setLayers((l) => ({ ...l, [key]: !l[key] }));
 
@@ -95,8 +108,10 @@ export function Dashboard({ lang }: { lang: Lang }) {
             floodPoints={view.floodPoints}
             pmStations={view.pmStations}
             cameras={view.cameras}
+            zones={zones}
           />
           {layers.radar && !RADAR_BOUNDS[radarId] && <p className="px-3.5 py-2 text-xs text-muted">{t('radar.notCalibrated', lang)}</p>}
+          <ZonePanel lang={lang} zones={zones} />
         </section>
 
         <aside className="flex min-w-0 flex-[1_1_340px] flex-col gap-3.5 max-lg:order-first">

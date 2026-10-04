@@ -14,7 +14,7 @@ export const WEB = {
     tileUrl: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     /** Layers switched on when the page opens. */
-    defaultLayers: { radar: true, flood: true, pm25: false, cctv: false } satisfies Record<LayerKey, boolean>,
+    defaultLayers: { zones: true, radar: true, flood: true, pm25: false, cctv: false } satisfies Record<LayerKey, boolean>,
     defaultRadar: 'nkm',
     radarOpacity: 0.6,
     /** Marker sizes in pixels (icons are square). Normal flood points stay small dots so problems stand out. */
@@ -35,6 +35,17 @@ export const WEB = {
   severityColor: { ok: '#2e9e6a', watch: '#d9a400', warn: '#e2632b', danger: '#b4171e' } satisfies Record<Severity, string>,
   /** Colour of flood points that are normal (kept grey so alerts stand out). */
   floodNormalColor: '#6b7787',
+
+  /** Zone (province/district/subdistrict) shading. Status comes from packages/core config `zones`. */
+  zones: {
+    /** Fill opacity per status; zones with no sensors are left unfilled. */
+    fillOpacity: { ok: 0.1, watch: 0.28, warn: 0.32, danger: 0.36 } satisfies Record<Severity, number>,
+    borderColor: '#4a5668',
+    borderWeight: 1.2,
+    selectedWeight: 4,
+    /** Padding (px) around an area when the map zooms to it. */
+    fitPadding: 24,
+  },
 
   /** How many nearby CCTV junctions to list. */
   nearbyCameras: 4,

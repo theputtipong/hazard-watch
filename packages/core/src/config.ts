@@ -1,4 +1,4 @@
-import type { Severity } from './types';
+import type { HazardKind, Severity } from './types';
 
 /**
  * Every value that changes how hazards are judged or displayed lives here, so it can be tuned
@@ -53,6 +53,12 @@ export interface AlertConfig {
     warnMmPerHour: number;
     dangerMmPerHour: number;
   };
+  zones: {
+    /** Which point readings decide a zone's colour. Earthquakes are regional, so they are not zoned. */
+    kinds: HazardKind[];
+    /** How a zone's status is derived from the points inside it. Only 'worst' exists for now. */
+    aggregate: 'worst';
+  };
   /** Readings older than this are shown as stale and ignored for alerts. */
   staleAfterMinutes: number;
 }
@@ -94,6 +100,10 @@ export const DEFAULT_CONFIG: AlertConfig = {
     watchMmPerHour: 10,
     warnMmPerHour: 35,
     dangerMmPerHour: 60,
+  },
+  zones: {
+    kinds: ['flood', 'pm25', 'rain', 'waterlevel'],
+    aggregate: 'worst',
   },
   staleAfterMinutes: 90,
 };

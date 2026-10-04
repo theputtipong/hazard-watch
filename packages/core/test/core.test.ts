@@ -18,6 +18,7 @@ import {
   type Earthquake,
 } from '../src';
 import { messages, t } from '../src/i18n';
+import { groupByZone, inZone, summarizeZone, type Observation, type ZoneFeature } from '../src';
 
 const cfg = DEFAULT_CONFIG;
 const BANGKOK_CENTER = REGIONS['th-bangkok-metro'].center;
@@ -90,9 +91,11 @@ describe('flood and rain', () => {
 
 describe('i18n', () => {
   it('has both languages for every key', () => {
+    // Thai place-name prefixes (เขต, แขวง, อำเภอ, ตำบล) have no English equivalent, so English may be empty.
+    const optionalEn = (key: string) => key.startsWith('zone.prefix');
     for (const [key, v] of Object.entries(messages)) {
       expect(v.th, key).not.toBe('');
-      expect(v.en, key).not.toBe('');
+      if (!optionalEn(key)) expect(v.en, key).not.toBe('');
     }
   });
   it('fills placeholders', () => {
@@ -112,5 +115,33 @@ describe('regions', () => {
   });
   it('lists radars without duplicates', () => {
     expect(regionRadars([...regions, ...regions])).toEqual(['nkm', 'njk', 'svp120']);
+  });
+});
+
+describe('zones', () => {
+  const square = (id: string, x0: number, y0: number, x1: number, y1: number): ZoneFeature => ({
+    type: 'Feature',
+    properties: { id, parent: null, level: 3, name_th: id, name_en: id, bbox: [x0, y0, x1, y1] },
+    geometry: { type: 'Polygon', coordinates: [[[x0, y0], [x1, y0], [x1, y1], [x0, y1], [x0, y0]]] },
+  });
+  const a = square('A', 100, 13, 100.5, 13.5);
+  const b = square('B', 100.5, 13, 101, 13.5);
+  const obs = (kind: Observation['kind'], lng: number, severity: Observation['severity'], value: number | null = 1): Observation => ({
+    id: `${kind}${lng}${severity}`, kind, source: 'bma-flood', name: { th: '', en: '' }, location: { lat: 13.2, lng },
+    observedAt: '2026-10-04T00:00:00Z', value, unit: '', severity,
+  });
+  it('finds the containing zone', () => {
+    expect(inZone(a, { lat: 13.2, lng: 100.2 })).toBe(true);
+    expect(inZone(a, { lat: 13.2, lng: 100.7 })).toBe(false);
+  });
+  it('groups readings and takes the worst', () => {
+    const groups = groupByZone([obs('flood', 100.1, 'ok'), obs('flood', 100.2, 'warn'), obs('pm25', 100.7, 'watch', 30)], [a, b]);
+    const sa = summarizeZone(groups.get('A')!, cfg);
+    expect(sa).toMatchObject({ severity: 'warn', flooded: 1, readings: 2 });
+    expect(summarizeZone(groups.get('B')!, cfg)).toMatchObject({ severity: 'watch', pm25Max: 30 });
+  });
+  it('reports no data instead of normal for empty zones', () => {
+    expect(summarizeZone([], cfg).severity).toBeNull();
+    expect(summarizeZone([{ ...obs('flood', 100.1, 'ok'), offline: true }], cfg).severity).toBeNull();
   });
 });

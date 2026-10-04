@@ -1,4 +1,4 @@
-export type LayerKey = 'radar' | 'flood' | 'pm25' | 'cctv';
+export type LayerKey = 'zones' | 'radar' | 'flood' | 'pm25' | 'cctv';
 export type Layers = Record<LayerKey, boolean>;
 
 /**

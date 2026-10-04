@@ -58,3 +58,6 @@ All thresholds are in `packages/core/src/config.ts` (`DEFAULT_CONFIG`). UI text 
 
 กรมอุตุนิยมวิทยา · สำนักการระบายน้ำ กรุงเทพมหานคร · สถาบันสารสนเทศทรัพยากรน้ำ (ThaiWater) · กรมควบคุมมลพิษ ·
 GISTDA · USGS · Open-Meteo · © OpenStreetMap contributors
+
+Zone boundaries (`apps/web/public/geo`, rebuilt with `python3 tools/boundaries/build.py`): BMA GIS (Bangkok subdistricts),
+geoBoundaries THA ADM1 (OSM, ODbL) and ADM2 (RTSD/OCHA, CC BY-IGO), OCHA COD-AB names (CC BY-IGO).

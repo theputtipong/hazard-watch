@@ -3,3 +3,4 @@ export * from './config';
 export * from './geo';
 export * from './regions';
 export * from './severity';
+export * from './zones';

@@ -12,3 +12,6 @@ dist
 
 # Local working notes (Thai status / TODO) — kept out of git on purpose
 TODO.md
+
+# Boundary source downloads (rebuilt by tools/boundaries/build.py)
+tools/boundaries/.cache

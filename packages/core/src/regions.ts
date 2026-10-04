@@ -19,6 +19,8 @@ export interface Region {
   bbox: BBox;
   center: LatLng;
   zoom: number;
+  /** Province pcodes (OCHA/DOPA, e.g. TH10 = Bangkok) used for the zone map. Keep in sync with tools/boundaries/build.py. */
+  provincePcodes: string[];
   /** Province names exactly as Thai government feeds spell them (used to filter ThaiWater etc.). */
   provincesTh: string[];
   /** ThaiWater radar ids that cover this region. */
@@ -33,6 +35,7 @@ export const REGIONS = {
     bbox: { minLat: 13.4, maxLat: 14.25, minLng: 99.85, maxLng: 101.0 },
     center: { lat: 13.7563, lng: 100.5018 },
     zoom: 11,
+    provincePcodes: ['TH10', 'TH11', 'TH12', 'TH13', 'TH73', 'TH74'],
     provincesTh: ['กรุงเทพมหานคร', 'นนทบุรี', 'ปทุมธานี', 'สมุทรปราการ', 'สมุทรสาคร', 'นครปฐม'],
     radars: ['nkm', 'njk', 'svp120'],
   },
