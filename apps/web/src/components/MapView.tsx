@@ -4,11 +4,11 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { CircleMarker, GeoJSON, ImageOverlay, MapContainer, Marker, Popup, TileLayer, Tooltip, useMap, useMapEvents } from 'react-leaflet';
-import { DEFAULT_CONFIG, isStale, regionFor, type CctvCamera, type LatLng, type Observation, type Severity, type ZoneFeature } from '@hw/core';
+import { DEFAULT_CONFIG, isStale, RADARS, regionFor, type CctvCamera, type LatLng, type Observation, type Severity, type ZoneFeature } from '@hw/core';
 import { t, type Lang } from '@hw/core/i18n';
 import { WEB } from '@/config';
 import { radarImageUrl } from '@/lib/api';
-import { RADAR_BOUNDS, type Layers } from '@/lib/layers';
+import type { Layers } from '@/lib/layers';
 import type { MapPalette } from '@/lib/prefs';
 import type { ZoneView } from '@/lib/useZones';
 import { cctvIcon, floodIcon, LEGEND_GLYPH, pm25Icon, waterIcon, youIcon } from './mapIcons';
@@ -22,6 +22,8 @@ interface Props {
   onLocate: () => Promise<LatLng | null>;
   layers: Layers;
   radarId: string;
+  /** Time of the radar frame (cache key for the image). */
+  radarTime: string | null;
   floodPoints: Observation[];
   pmStations: Observation[];
   cameras: CctvCamera[];
@@ -37,8 +39,8 @@ const FLOOD_RANK: Record<Severity, number> = { ok: 0, watch: 1, warn: 2, danger:
 /** Readings older than `staleAfterMinutes` are drawn faded so they don't read as current. */
 const fade = (o: Observation) => (isStale(o.observedAt, DEFAULT_CONFIG) ? WEB.map.staleOpacity : 1);
 
-export default function MapView({ lang, center, located, onLocate, layers, radarId, floodPoints, pmStations, cameras, waterStations, zones, palette }: Props) {
-  const bounds = RADAR_BOUNDS[radarId];
+export default function MapView({ lang, center, located, onLocate, layers, radarId, radarTime, floodPoints, pmStations, cameras, waterStations, zones, palette }: Props) {
+  const bounds = RADARS[radarId]?.bounds;
   const startZoom = regionFor(center).zoom;
   const [zoom, setZoom] = useState(startZoom);
   const [map, setMap] = useState<L.Map | null>(null);
@@ -55,7 +57,7 @@ export default function MapView({ lang, center, located, onLocate, layers, radar
         <FollowFirstFix center={center} located={located} />
         <FitToFocus focus={zones.selected ?? zones.path.at(-1) ?? null} depth={zones.path.length} center={center} />
         {layers.zones && <ZoneLayer lang={lang} zones={zones} palette={palette} />}
-        {layers.radar && bounds && <ImageOverlay url={radarImageUrl(radarId)} bounds={bounds} opacity={WEB.map.radarOpacity} />}
+        {layers.radar && bounds && <ImageOverlay key={`${radarId}:${radarTime}`} url={radarImageUrl(radarId, radarTime ?? undefined)} bounds={bounds} opacity={WEB.map.radarOpacity} />}
 
         {showCams &&
           cameras.map((c) => (
@@ -150,7 +152,7 @@ export default function MapView({ lang, center, located, onLocate, layers, radar
       {map && <MapButtons map={map} lang={lang} center={center} located={located} onLocate={onLocate} />}
       <Legend lang={lang} layers={layers} palette={palette} />
       {layers.cctv && !showCams && (
-        <p className="pointer-events-none absolute bottom-6 left-1/2 z-[1000] -translate-x-1/2 rounded-full bg-ink/85 px-3 py-1 text-xs text-white">
+        <p className="pointer-events-none absolute bottom-6 left-1/2 z-[1000] -translate-x-1/2 rounded-full bg-ink/85 px-3 py-1 text-xs text-panel">
           {t('map.zoomForCctv', lang)}
         </p>
       )}
@@ -275,7 +277,7 @@ function MapButtons({
     'grid size-11 place-items-center rounded-lg border border-line bg-panel text-ink shadow-sm hover:bg-ground disabled:opacity-60';
   return (
     <div className="absolute bottom-8 left-2.5 z-[1000] flex flex-col items-start gap-2">
-      {hint && <p className="max-w-[220px] rounded-lg bg-ink/90 px-2.5 py-1.5 text-xs text-white">{hint}</p>}
+      {hint && <p className="max-w-[220px] rounded-lg bg-ink/90 px-2.5 py-1.5 text-xs text-panel">{hint}</p>}
       <button type="button" className={btn} onClick={goToMe} disabled={busy} aria-label={busy ? t('map.locating', lang) : t('map.locate', lang)} title={t('map.locate', lang)}>
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={WEB.map.youColor} strokeWidth="2" aria-hidden="true" className={busy ? 'animate-pulse' : ''}>
           <circle cx="12" cy="12" r="7" />

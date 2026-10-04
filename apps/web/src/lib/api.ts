@@ -13,4 +13,6 @@ export const fetchSnapshot = () => getJson<DashboardSnapshot>('/v1/snapshot');
 export const fetchWeather = ({ lat, lng }: LatLng) =>
   getJson<WeatherNow>(`/v1/weather?lat=${lat.toFixed(2)}&lng=${lng.toFixed(2)}`);
 
-export const radarImageUrl = (radarId: string) => `${API_BASE}/v1/radar/${radarId}`;
+/** `time` busts the browser cache when a new frame arrives. */
+export const radarImageUrl = (radarId: string, time?: string) =>
+  `${API_BASE}/v1/radar/${radarId}${time ? `?t=${encodeURIComponent(time)}` : ''}`;

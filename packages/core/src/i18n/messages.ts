@@ -125,7 +125,9 @@ export const messages = {
   'source.pm25': { th: 'ที่มา: กรมควบคุมมลพิษ (Air4Thai)', en: 'Source: Pollution Control Dept. (Air4Thai)' },
   'source.flood': { th: 'ที่มา: สำนักการระบายน้ำ กทม.', en: 'Source: BMA Drainage and Sewerage Dept.' },
   'source.quake': { th: 'ที่มา: กรมอุตุนิยมวิทยา, USGS', en: 'Source: Thai Meteorological Dept., USGS' },
-  'radar.notCalibrated': { th: 'ภาพเรดาร์ยังไม่ได้ปรับพิกัดให้ตรงแผนที่', en: 'Radar image not yet aligned to the map' },
+  'radar.frame': { th: 'ภาพเรดาร์เวลา {time}', en: 'Radar frame {time}' },
+  'radar.old': { th: 'ภาพเรดาร์ไม่อัปเดต (ล่าสุด {time})', en: 'Radar not updated (last {time})' },
+  'radar.none': { th: 'ยังไม่มีภาพเรดาร์', en: 'No radar image yet' },
 
   'a11y.display': { th: 'การแสดงผลและการเข้าถึง', en: 'Display & accessibility' },
   'a11y.theme': { th: 'ธีม: {mode}', en: 'Theme: {mode}' },

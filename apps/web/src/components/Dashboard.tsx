@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import { useEffect, useMemo, useState } from 'react';
-import { activeRegions, DEFAULT_CONFIG, isStale, type DashboardSnapshot, type WeatherNow } from '@hw/core';
+import { activeRegions, DEFAULT_CONFIG, isStale, RADARS, regionRadars, type DashboardSnapshot, type WeatherNow } from '@hw/core';
 import { t, type Lang, type MessageKey } from '@hw/core/i18n';
 import { WEB } from '@/config';
 import { fetchSnapshot, fetchWeather } from '@/lib/api';
@@ -19,7 +19,7 @@ import { ZonePanel } from './ZonePanel';
 import { CctvList } from './CctvList';
 import { FloodCard, Pm25Card, QuakeCard, WaterLevelCard, WeatherCard } from './HazardCards';
 import { Header } from './Header';
-import { RADAR_BOUNDS, type LayerKey, type Layers } from '@/lib/layers';
+import type { LayerKey, Layers } from '@/lib/layers';
 
 const MapView = dynamic(() => import('./MapView'), { ssr: false, loading: () => <div className="h-[420px] bg-map-bg sm:h-[520px]" /> });
 
@@ -31,13 +31,22 @@ export function Dashboard({ lang }: { lang: Lang }) {
   const palette = useMemo(() => mapPalette(prefs), [prefs]);
   const speech = useSpeech(lang);
   const [snapshot, setSnapshot] = useState<DashboardSnapshot | null>(null);
+  /** Clock reading taken when the snapshot arrives (keeps render pure). */
+  const [loadedAt, setLoadedAt] = useState(0);
   const [weather, setWeather] = useState<WeatherNow | null>(null);
   const [layers, setLayers] = useState<Layers>({ ...WEB.map.defaultLayers });
-  const [radarId] = useState<string>(WEB.map.defaultRadar);
+  const [radarId, setRadarId] = useState<string>(WEB.map.defaultRadar);
 
   useEffect(() => {
     let alive = true;
-    const load = () => fetchSnapshot().then((s) => alive && setSnapshot(s)).catch(() => {});
+    const load = () =>
+      fetchSnapshot()
+        .then((s) => {
+          if (!alive) return;
+          setSnapshot(s);
+          setLoadedAt(Date.now());
+        })
+        .catch(() => {});
     load();
     const timer = setInterval(load, WEB.refreshMs);
     return () => {
@@ -118,6 +127,10 @@ export function Dashboard({ lang }: { lang: Lang }) {
       }),
     [lang, updatedAt, weather, view, focusZone, zones.focusSummary],
   );
+  const radarFrame = snapshot?.runner?.feeds.radar?.items.find((f) => f.radarId === radarId) ?? null;
+  const radarOld = !!radarFrame && loadedAt - new Date(radarFrame.time).getTime() > WEB.map.radarStaleMinutes * 60_000;
+  const clock = (iso: string) =>
+    new Date(iso).toLocaleTimeString(lang === 'th' ? 'th-TH' : 'en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok' });
   const toggle = (key: LayerKey) => setLayers((l) => ({ ...l, [key]: !l[key] }));
 
   return (
@@ -157,7 +170,7 @@ export function Dashboard({ lang }: { lang: Lang }) {
                 aria-pressed={layers[key]}
                 onClick={() => toggle(key)}
                 className={`min-h-10 rounded-full border px-3.5 text-sm font-medium ${
-                  layers[key] ? 'border-ink bg-ink text-white' : 'border-chip-line bg-panel text-ink-2'
+                  layers[key] ? 'border-ink bg-ink text-panel' : 'border-chip-line bg-panel text-ink-2'
                 }`}
               >
                 {t(LAYER_LABEL[key], lang)}
@@ -171,6 +184,7 @@ export function Dashboard({ lang }: { lang: Lang }) {
             onLocate={locate}
             layers={layers}
             radarId={radarId}
+            radarTime={radarFrame?.time ?? null}
             floodPoints={view.floodPoints}
             pmStations={view.pmStations}
             cameras={view.cameras}
@@ -178,7 +192,32 @@ export function Dashboard({ lang }: { lang: Lang }) {
             zones={zones}
             palette={palette}
           />
-          {layers.radar && !RADAR_BOUNDS[radarId] && <p className="px-3.5 py-2 text-xs text-muted">{t('radar.notCalibrated', lang)}</p>}
+          {layers.radar && (
+            <div className="flex flex-wrap items-center gap-2 border-t border-line-soft px-3.5 py-2.5 text-sm">
+              <label htmlFor="radar-src" className="text-muted">
+                {t('radar.source', lang)}
+              </label>
+              <select
+                id="radar-src"
+                value={radarId}
+                onChange={(e) => setRadarId(e.target.value)}
+                className="min-h-10 rounded-lg border border-chip-line bg-panel px-2.5 text-ink"
+              >
+                {regionRadars(activeRegions())
+                  .filter((id) => RADARS[id])
+                  .map((id) => (
+                    <option key={id} value={id}>
+                      {RADARS[id]!.name[lang]}
+                    </option>
+                  ))}
+              </select>
+              <span className={radarOld ? 'rounded-md bg-watch px-2 py-0.5 text-xs text-watch-strong' : 'text-xs text-muted'}>
+                {radarFrame
+                  ? t(radarOld ? 'radar.old' : 'radar.frame', lang, { time: clock(radarFrame.time) })
+                  : t('radar.none', lang)}
+              </span>
+            </div>
+          )}
           <ZonePanel lang={lang} zones={zones} />
         </section>
 

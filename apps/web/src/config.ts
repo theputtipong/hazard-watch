@@ -16,7 +16,9 @@ export const WEB = {
     /** Layers switched on when the page opens. */
     defaultLayers: { zones: true, radar: true, flood: true, water: true, pm25: false, cctv: false } satisfies Record<LayerKey, boolean>,
     defaultRadar: 'nkm',
-    radarOpacity: 0.6,
+    radarOpacity: 0.75,
+    /** A radar frame older than this is labelled as not current. */
+    radarStaleMinutes: 30,
     /** Opacity of markers whose reading is older than core config `staleAfterMinutes`. */
     staleOpacity: 0.4,
     /** Marker sizes in pixels (icons are square). Normal flood points stay small dots so problems stand out. */

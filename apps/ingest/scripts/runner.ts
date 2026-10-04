@@ -4,7 +4,8 @@
  *   INGEST_URL=http://localhost:8787 INGEST_TOKEN=dev-token-change-me pnpm --filter @hw/ingest runner
  */
 import { defaultContext, FEEDS, type RunnerFeed } from '@hw/sources';
-import { regionRadars } from '@hw/core';
+import { RADARS, regionRadars } from '@hw/core';
+import { echoesOnly } from './radarImage';
 import { INGEST } from '../src/config';
 
 const base = process.env.INGEST_URL;
@@ -38,10 +39,22 @@ if (radar?.ok) {
       console.log(`radar ${frame.radarId}: download failed ${img.status}`);
       continue;
     }
+    const spec = RADARS[frame.radarId];
+    if (!spec) {
+      console.log(`radar ${frame.radarId}: no calibration in core/radars.ts, skipped`);
+      continue;
+    }
+    let png: Buffer;
+    try {
+      png = echoesOnly(new Uint8Array(await img.arrayBuffer()), spec);
+    } catch (err) {
+      console.log(`radar ${frame.radarId}: ${err instanceof Error ? err.message : err}`);
+      continue;
+    }
     const put = await fetch(`${base}/ingest/radar/${frame.radarId}?time=${encodeURIComponent(frame.time)}`, {
       method: 'PUT',
-      headers: { ...auth, 'content-type': img.headers.get('content-type') ?? 'image/jpeg' },
-      body: await img.arrayBuffer(),
+      headers: { ...auth, 'content-type': 'image/png' },
+      body: png,
     });
     console.log(`radar ${frame.radarId}: ${put.status}`);
   }
