@@ -1,0 +1,35 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-plex-thai), system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+
+  --color-ink: #0f1b2d;
+  --color-ink-2: #2b3647;
+  --color-muted: #4a5668;
+  --color-line: #d9dee5;
+  --color-ground: #f4f6f8;
+  --color-panel: #ffffff;
+  --color-accent: #1f5fbf;
+
+  /* Severity: fills for areas/pills, strong for dots and text. Differ in lightness, not only hue. */
+  --color-ok: #ddf1e7;
+  --color-ok-strong: #155c40;
+  --color-watch: #fff0cc;
+  --color-watch-strong: #704800;
+  --color-warn: #fde3d6;
+  --color-warn-strong: #9a3409;
+  --color-danger: #fbe0e5;
+  --color-danger-strong: #8c0f28;
+}
+
+body {
+  background: var(--color-ground);
+  color: var(--color-ink);
+}
+
+.num {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}

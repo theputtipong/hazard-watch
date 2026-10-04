@@ -1,0 +1,77 @@
+{
+ "radar": {
+  "data": {
+   "result": "OK",
+   "data": [
+    {
+     "radar_type": "cri240",
+     "radar_name": "เรดาร์เชียงราย รัศมี 240 กม.",
+     "agency": "tmd",
+     "timezone": "UTC",
+     "media_datetime": "2026-10-03 14:30",
+     "file_path": "product/radar/history/tmd/cri/2026/10/03",
+     "filename": "cri240_202610031430.jpg",
+     "media_path": "AAECAwQFBgcICQoLDA0ODz2sq-vcpj7l0Vg-_1TJBMA29wuxlNjZm6PMr23gvMuW6BY0u_s2XwNLiTAyZM_PaKnOVh8lP8kKkdvJe9M5aHE=",
+     "filename_thumb": "thumb-cri240_202610031430.jpg",
+     "media_path_thumb": "AAECAwQFBgcICQoLDA0ODz2sq-vcpj7l0Vg-_1TJBMA29wuxlNjZm6PMr23gvMuW6BY0u_s2XwNLniouO5nSVELSNdcveejnk94GyVyQIoyMvMwGtYc=",
+     "file_path_animation": null,
+     "filename_animation": null,
+     "media_path_animation": null,
+     "agency_id": "13",
+     "media_type_id": "30"
+    },
+    {
+     "radar_type": "svp120",
+     "radar_name": "เรดาร์สุวรรณภูมิ รัศมี 120 กม.",
+     "agency": "tmd",
+     "timezone": "UTC",
+     "media_datetime": "2026-10-03 14:20",
+     "file_path": "product/radar/history/tmd/svp/2026/10/03",
+     "filename": "svp120_202610031420.jpg",
+     "media_path": "AAECAwQFBgcICQoLDA0ODz2sq-vcpj7l0Vg-_1TJBMA29wuxlNjZm6PMv2n5vMuWZItFJaI-WLGKyNu8BNc4dQP7sblOe6Gu36-3FHNxFq4=",
+     "filename_thumb": "thumb-svp120_202610031420.jpg",
+     "media_path_thumb": "AAECAwQFBgcICQoLDA0ODz2sq-vcpj7l0Vg-_1TJBMA29wuxlNjZm6PMv2n5vMuWZItFJaI-WLGKz8W5WIclWSvVQnztSJ-JA-j7hHb-Uj-1iEjztuI=",
+     "file_path_animation": null,
+     "filename_animation": null,
+     "media_path_animation": null,
+     "agency_id": "13",
+     "media_type_id": "30"
+    },
+    {
+     "radar_type": "njk",
+     "radar_name": "เรดาร์หนองจอก รัศมี 120 กม.",
+     "agency": "bma",
+     "timezone": "TST",
+     "media_datetime": "2026-10-03 14:25",
+     "file_path": "product/radar/history/bma/njk/2026/10/03",
+     "filename": "NJ_202610031425.jpg",
+     "media_path": "AAECAwQFBgcICQoLDA0ODz2sq-vcpj7l0Vg-_1TJBMA29wuxlNjPm6bMonXivMuWsdRp1MT9nJ2cWMOc71bWIQjB_Q0coZw-_Gt-hg==",
+     "filename_thumb": "thumb-NJ_202610031425.jpg",
+     "media_path_thumb": "AAECAwQFBgcICQoLDA0ODz2sq-vcpj7l0Vg-_1TJBMA29wuxlNjPm6bMonXivMuWsdRp1MT9nJ2cYuG2sATJWeZBzGom1zkTyBanswvP8QqkdA==",
+     "file_path_animation": null,
+     "filename_animation": null,
+     "media_path_animation": null,
+     "agency_id": "10",
+     "media_type_id": "30"
+    },
+    {
+     "radar_type": "nkm",
+     "radar_name": "เรดาร์หนองแขม รัศมี 150 กม.",
+     "agency": "bma",
+     "timezone": "TST",
+     "media_datetime": "2026-10-03 14:25",
+     "file_path": "product/radar/history/bma/nkm/2026/10/03",
+     "filename": "NK_202610031425.jpg",
+     "media_path": "AAECAwQFBgcICQoLDA0ODz2sq-vcpj7l0Vg-_1TJBMA29wuxlNjPm6bMonTkvMuWDAbeJK6V0iNHqrFxC9ES3Ao5DtyC6NkoQwT7Ng==",
+     "filename_thumb": "thumb-NK_202610031425.jpg",
+     "media_path_thumb": "AAECAwQFBgcICQoLDA0ODz2sq-vcpj7l0Vg-_1TJBMA29wuxlNjPm6bMonTkvMuWDAbeJK6V0iNHkJJbVIMNpIv31RkZDgcrCMXXWaF7RWEpcg==",
+     "file_path_animation": null,
+     "filename_animation": null,
+     "media_path_animation": null,
+     "agency_id": "10",
+     "media_type_id": "30"
+    }
+   ]
+  }
+ }
+}

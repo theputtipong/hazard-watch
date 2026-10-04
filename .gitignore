@@ -1,0 +1,11 @@
+node_modules
+.turbo
+.next
+.open-next
+.wrangler
+dist
+.dev.vars
+.env*
+!.env.example
+*.log
+.DS_Store

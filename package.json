@@ -1,0 +1,17 @@
+{
+  "name": "hazard-watch",
+  "private": true,
+  "packageManager": "pnpm@10.34.6",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "typecheck": "turbo run typecheck",
+    "lint": "turbo run lint"
+  },
+  "devDependencies": {
+    "turbo": "^2.11.7",
+    "typescript": "^5.9.0"
+  }
+}

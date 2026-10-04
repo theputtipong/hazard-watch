@@ -1,0 +1,19 @@
+{
+  "name": "@hw/sources",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@hw/core": "workspace:*",
+    "fast-xml-parser": "^5.2.0"
+  },
+  "devDependencies": {
+    "vitest": "^4.0.0",
+    "@types/node": "^22.0.0"
+  }
+}

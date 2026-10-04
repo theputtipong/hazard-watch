@@ -1,0 +1,95 @@
+/**
+ * All UI text, both languages side by side. Add a key here, then use t('key').
+ * Placeholders use {name} and are filled by t(key, lang, { name: value }).
+ */
+export const messages = {
+  'app.name': { th: 'เฝ้าระวังภัย', en: 'HazardWatch' },
+  'app.tagline': {
+    th: 'เตือนภัยอากาศ น้ำท่วม ฝุ่น แผ่นดินไหว ตามตำแหน่งของคุณ',
+    en: 'Weather, flood, PM2.5 & quake alerts for where you are',
+  },
+  'app.coverage': { th: 'พื้นที่ที่ให้บริการตอนนี้: {regions}', en: 'Currently covering: {regions}' },
+  'common.updated': { th: 'อัปเดต', en: 'Updated' },
+  'common.back': { th: 'ย้อนกลับ', en: 'Back' },
+  'common.language': { th: 'ภาษา', en: 'Language' },
+  'common.source': { th: 'ที่มา', en: 'Source' },
+  'common.stale': { th: 'ข้อมูลไม่อัปเดต', en: 'Data is stale' },
+  'common.noData': { th: 'ไม่มีข้อมูล', en: 'No data' },
+  'common.viewAtSource': { th: 'ดูที่ต้นทาง', en: 'View at source' },
+
+  'severity.ok': { th: 'ปกติ', en: 'Normal' },
+  'severity.watch': { th: 'เฝ้าระวัง', en: 'Watch' },
+  'severity.warn': { th: 'ระวัง', en: 'Warning' },
+  'severity.danger': { th: 'อันตราย', en: 'Danger' },
+
+  'location.change': { th: 'เปลี่ยนตำแหน่ง', en: 'Change location' },
+  'location.useMine': { th: 'ใช้ตำแหน่งของฉัน', en: 'Use my location' },
+  'location.denied': {
+    th: 'ไม่ได้รับอนุญาตให้ใช้ตำแหน่ง กรุณาเลือกพื้นที่เอง',
+    en: 'Location permission denied. Please choose an area.',
+  },
+
+  'push.enable': { th: 'เปิดการแจ้งเตือน', en: 'Enable alerts' },
+
+  'area.nav': { th: 'ระดับพื้นที่', en: 'Area level' },
+  'area.hint.province': { th: 'แตะจังหวัดเพื่อดูรายเขต/อำเภอ', en: 'Tap a province to see its districts' },
+  'area.hint.district': { th: 'แตะเพื่อดูรายแขวง/ตำบล', en: 'Tap to see subdistricts' },
+  'area.hint.subdistrict': { th: 'แตะเพื่อดูสรุปของพื้นที่นั้น', en: 'Tap an area for its summary' },
+  'area.sortNote': { th: 'เรียงจากรุนแรงที่สุด', en: 'most severe first' },
+  'area.overview': { th: 'ภาพรวม', en: 'Overview' },
+  'area.situation': { th: 'สถานการณ์', en: 'Situation' },
+
+  'map.title': { th: 'แผนที่', en: 'Map' },
+  'map.layers': { th: 'ชั้นข้อมูล', en: 'Layers' },
+  'map.legend': { th: 'สัญลักษณ์', en: 'Legend' },
+  'map.you': { th: 'ตำแหน่งของคุณ', en: 'You are here' },
+  'layer.radar': { th: 'เรดาร์ฝน', en: 'Rain radar' },
+  'layer.flood': { th: 'จุดน้ำท่วม', en: 'Flood points' },
+  'layer.pm25': { th: 'สถานีฝุ่น', en: 'PM2.5 stations' },
+  'layer.cctv': { th: 'กล้อง CCTV', en: 'CCTV' },
+  'radar.source': { th: 'แหล่งเรดาร์', en: 'Radar source' },
+  'radar.latest': { th: 'ล่าสุด', en: 'Now' },
+  'radar.heavy': { th: 'ฝนหนัก', en: 'Heavy' },
+
+  'card.weather': { th: 'สภาพอากาศ', en: 'Weather' },
+  'card.pm25': { th: 'ฝุ่น PM2.5', en: 'PM2.5' },
+  'card.flood': { th: 'น้ำท่วมขัง', en: 'Street flooding' },
+  'card.quake': { th: 'แผ่นดินไหว', en: 'Earthquake' },
+  'card.cctv': { th: 'กล้อง CCTV ใกล้คุณ', en: 'CCTV near you' },
+
+  'weather.humidity': { th: 'ความชื้น', en: 'Humidity' },
+  'weather.rainNow': { th: 'ฝนตอนนี้', en: 'Rain now' },
+
+  'pm25.nearest': { th: 'สถานีใกล้คุณ: {name}', en: 'Nearest station: {name}' },
+  'pm25.who': { th: 'ค่าแนะนำ WHO {value}', en: 'WHO guideline {value}' },
+  'pm25.pushAt': { th: 'แจ้งเตือนเมื่อ ≥ {value}', en: 'Alert at ≥ {value}' },
+
+  'flood.flooded': { th: 'น้ำท่วม', en: 'Flooded' },
+  'flood.minor': { th: 'ท่วมเล็กน้อย', en: 'Minor' },
+  'flood.normal': { th: 'ปกติ', en: 'Normal' },
+  'flood.offline': { th: 'ขัดข้อง', en: 'Offline' },
+  'flood.nearest': { th: 'จุดท่วมใกล้คุณที่สุด', en: 'Nearest flooded spot' },
+
+  'quake.none': {
+    th: 'ไม่มีเหตุ M{mag} ขึ้นไป ในรัศมี {km} กม. ช่วง {days} วันที่ผ่านมา',
+    en: 'No M{mag}+ within {km} km in the past {days} days',
+  },
+  'quake.latest': { th: 'ล่าสุดในภูมิภาค', en: 'Latest in region' },
+
+  'settings.title': { th: 'ตั้งค่าการแจ้งเตือน', en: 'Alert settings' },
+  'settings.thresholds': { th: 'เกณฑ์การแจ้งเตือน', en: 'Thresholds' },
+  'settings.channels': { th: 'ช่องทาง', en: 'Channels' },
+  'settings.soon': { th: 'เร็ว ๆ นี้', en: 'Coming soon' },
+
+  'source.weather': { th: 'ที่มา: Open-Meteo', en: 'Source: Open-Meteo' },
+  'source.pm25': { th: 'ที่มา: กรมควบคุมมลพิษ (Air4Thai)', en: 'Source: Pollution Control Dept. (Air4Thai)' },
+  'source.flood': { th: 'ที่มา: สำนักการระบายน้ำ กทม.', en: 'Source: BMA Drainage and Sewerage Dept.' },
+  'source.quake': { th: 'ที่มา: กรมอุตุนิยมวิทยา, USGS', en: 'Source: Thai Meteorological Dept., USGS' },
+  'radar.notCalibrated': { th: 'ภาพเรดาร์ยังไม่ได้ปรับพิกัดให้ตรงแผนที่', en: 'Radar image not yet aligned to the map' },
+
+  'footer.coffee': { th: 'สนับสนุนค่ากาแฟ', en: 'Buy me a coffee' },
+  'footer.credits': {
+    th: 'ข้อมูลจาก กรมอุตุนิยมวิทยา · สำนักการระบายน้ำ กทม. · สสน. (ThaiWater) · กรมควบคุมมลพิษ · GISTDA · USGS · Open-Meteo · แผนที่ © OpenStreetMap',
+    en: 'Data: TMD · BMA Drainage Dept. · HII ThaiWater · PCD · GISTDA · USGS · Open-Meteo · Map © OpenStreetMap',
+  },
+} as const satisfies Record<string, { th: string; en: string }>;

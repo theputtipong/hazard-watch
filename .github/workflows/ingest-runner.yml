@@ -1,0 +1,29 @@
+# Fetches BMA and ThaiWater feeds (blocked from Cloudflare IPs) and pushes them to the ingest worker.
+name: ingest-runner
+
+on:
+  schedule:
+    # Every 30 minutes. Private repos get ~2,000 free minutes/month; every 10 min would need ~4,300.
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: ingest-runner
+  cancel-in-progress: true
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --filter @hw/ingest...
+      - run: pnpm --filter @hw/ingest runner
+        env:
+          INGEST_URL: ${{ secrets.INGEST_URL }}
+          INGEST_TOKEN: ${{ secrets.INGEST_TOKEN }}

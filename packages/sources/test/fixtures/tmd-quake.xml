@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<rss version="2.0"  xmlns:geo="http://www.w3.org/2003/01/geo/" xmlns:tmd="http://www.earthquake.tmd.go.th" >
+
+<channel>
+<title>แผ่นดินไหว</title>
+<link>https://earthquake.tmd.go.th</link>
+<description>กองเฝ้าระวังแผ่นดินไหว</description>
+
+<item>
+	<title>ประเทศลาว (Laos)</title>
+	<link>https://earthquake.tmd.go.th/inside-info.html?earthquake=17163</link>
+	<geo:lat>18.764</geo:lat>
+	<geo:long>102.308</geo:long>
+	<tmd:depth>10</tmd:depth>
+	<tmd:magnitude>2.1</tmd:magnitude>
+	<tmd:time>2026-10-03 10:59:25 UTC</tmd:time>
+	<comments>ทางทิศตะวันออกเฉียงเหนือของ อ.สังคม จ.หนองคาย ประมาณ 78 กม. </comments>
+	<pubDate>Sat, 03 Oct 2026 18:21:18 +0700</pubDate>
+	<description><![CDATA[ แผ่นดินไหว ประเทศลาว <br>2026-10-03 17:59:25 น.<br>Lat. 18.764 , Long. 102.308<br>ขนาด 2.1 <br><br> ]]></description>
+</item>
+<item>
+	<title>ประเทศเมียนมา (Myanmar)</title>
+	<link>https://earthquake.tmd.go.th/inside-info.html?earthquake=17162</link>
+	<geo:lat>21.244</geo:lat>
+	<geo:long>98.280</geo:long>
+	<tmd:depth>1</tmd:depth>
+	<tmd:magnitude>2.6</tmd:magnitude>
+	<tmd:time>2026-10-03 00:15:16 UTC</tmd:time>
+	<comments>ทางทิศตะวันตกเฉียงเหนือของ อ.ฝาง จ.เชียงใหม่ ประมาณ 176 กม. </comments>
+	<pubDate>Sat, 03 Oct 2026 07:24:44 +0700</pubDate>
+	<description><![CDATA[ แผ่นดินไหว ประเทศเมียนมา <br>2026-10-03 07:15:16 น.<br>Lat. 21.244 , Long. 98.280<br>ขนาด 2.6 <br><br> ]]></description>
+</item>
+<item>
+	<title>ประเทศเมียนมา (Myanmar)</title>
+	<link>https://earthquake.tmd.go.th/inside-info.html?earthquake=17161</link>
+	<geo:lat>23.088</geo:lat>
+	<geo:long>94.381</geo:long>
+	<tmd:depth>129</tmd:depth>
+	<tmd:magnitude>4.3</tmd:magnitude>
+	<tmd:time>2026-10-02 16:55:32 UTC</tmd:time>
+	<comments>ทางทิศตะวันตกเฉียงเหนือของ อ.เมือง จ.แม่ฮ่องสอน ประมาณ 562 กม. </comments>
+	<pubDate>Sat, 03 Oct 2026 00:06:21 +0700</pubDate>
+	<description><![CDATA[ แผ่นดินไหว ประเทศเมียนมา <br>2026-10-02 23:55:32 น.<br>Lat. 23.088 , Long. 94.381<br>ขนาด 4.3 <br><br> ]]></description>
+</item>
+<item>
+	<title>ประเทศเวียดนาม (Vietnam)</title>
+	<link>https://earthquake.tmd.go.th/inside-info.html?earthquake=17160</link>
+	<geo:lat>15.174</geo:lat>
+	<geo:long>107.657</geo:long>
+	<tmd:depth>10</tmd:depth>
+	<tmd:magnitude>3.0</tmd:magnitude>
+	<tmd:time>2026-10-02 16:41:09 UTC</tmd:time>
+	<comments>ทางทิศตะวันออกเฉียงใต้ของ อ. โขงเจียม จ.อุบลราชธานี ประมาณ 232 กม. </comments>
+	<pubDate>Fri, 02 Oct 2026 23:53:22 +0700</pubDate>
+	<description><![CDATA[ แผ่นดินไหว ประเทศเวียดนาม <br>2026-10-02 23:41:09 น.<br>Lat. 15.174 , Long. 107.657<br>ขนาด 3.0 <br><br> ]]></description>
+</item>
+<item>
+	<title>ประเทศเวียดนาม (Vietnam)</title>
+	<link>https://earthquake.tmd.go.th/inside-info.html?earthquake=17159</link>
+	<geo:lat>14.963</geo:lat>
+	<geo:long>107.556</geo:long>
+	<tmd:depth>10</tmd:depth>
+	<tmd:magnitude>3.4</tmd:magnitude>
+	<tmd:time>2026-10-02 15:58:00 UTC</tmd:time>
+	<comments>ทางทิศตะวันออกเฉียงใต้ของ อ. โขงเจียม จ.อุบลราชธานี ประมาณ 225 กม. </comments>
+	<pubDate>Fri, 02 Oct 2026 23:06:41 +0700</pubDate>
+	<description><![CDATA[ แผ่นดินไหว ประเทศเวียดนาม <br>2026-10-02 22:58:00 น.<br>Lat. 14.963 , Long. 107.556<br>ขนาด 3.4 <br><br> ]]></description>
+</item>
+<item>
+	<title>ต.เมืองนะ อ.เชียงดาว จ.เชียงใหม่ (Tambon Mueang Na, Amphoe ChiangDao, ChiangMai)</title>
+	<link>https://earthquake.tmd.go.th/inside-info.html?earthquake=17158</link>
+	<geo:lat>19.639</geo:lat>
+	<geo:long>98.995</geo:long>
+	<tmd:depth>1</tmd:depth>
+	<tmd:magnitude>1.9</tmd:magnitude>
+	<tmd:time>2026-10-02 04:22:36 UTC</tmd:time>
+	<comments></comments>
+	<pubDate>Fri, 02 Oct 2026 11:29:06 +0700</pubDate>
+	<description><![CDATA[ แผ่นดินไหว ต.เมืองนะ อ.เชียงดาว จ.เชียงใหม่ <br>2026-10-02 11:22:36 น.<br>Lat. 19.639 , Long. 98.995<br>ขนาด 1.9 <br><br> ]]></description>
+</item>
+<item>
+	<title>หมู่เกาะอันดามัน ประเทศอินเดีย (Andaman Islands, India Region)</title>
+	<link>https://earthquake.tmd.go.th/inside-info.html?earthquake=17157</link>
+	<geo:lat>14.277</geo:lat>
+	<geo:long>93.502</geo:long>
+	<tmd:depth>9</tmd:depth>
+	<tmd:magnitude>3.5</tmd:magnitude>
+	<tmd:time>2026-10-02 00:52:41 UTC</tmd:time>
+	<comments>ทางทิศตะวันตกเฉียงใต้ของ อ.พบพระ จ.ตาก ประมาณ 604 กม. </comments>
+	<pubDate>Fri, 02 Oct 2026 08:37:53 +0700</pubDate>
+	<description><![CDATA[ แผ่นดินไหว หมู่เกาะอันดามัน ประเทศอินเดีย <br>2026-10-02 07:52:41 น.<br>Lat. 14.277 , Long. 93.502<br>ขนาด 3.5 <br><br> ]]></description>
+</item>
+<item>
+	<title>ประเทศเวียดนาม (Vietnam)</title>
+	<link>https://earthquake.tmd.go.th/inside-info.html?earthquake=17156</link>
+	<geo:lat>15.083</geo:lat>
+	<geo:long>107.742</geo:long>
+	<tmd:depth>10</tmd:depth>
+	<tmd:magnitude>3.2</tmd:magnitude>
+	<tmd:time>2026-10-01 23:52:29 UTC</tmd:time>
+	<comments>ทางทิศตะวันออกเฉียงใต้ของ อ. โขงเจียม จ.อุบลราชธานี ประมาณ 242 กม. </comments>
+	<pubDate>Fri, 02 Oct 2026 08:01:56 +0700</pubDate>
+	<description><![CDATA[ แผ่นดินไหว ประเทศเวียดนาม <br>2026-10-02 06:52:29 น.<br>Lat. 15.083 , Long. 107.742<br>ขนาด 3.2 <br><br> ]]></description>
+</item>
+<item>
+	<title>ต.นาคอเรือ  อ.ฮอด จ.เชียงใหม่ (Tambon Na Kho Ruea, Amphoe Hot, ChiangMai)</title>
+	<link>https://earthquake.tmd.go.th/inside-info.html?earthquake=17155</link>
+	<geo:lat>18.014</geo:lat>
+	<geo:long>98.529</geo:long>
+	<tmd:depth>2</tmd:depth>
+	<tmd:magnitude>1.5</tmd:magnitude>
+	<tmd:time>2026-10-01 20:24:36 UTC</tmd:time>
+	<comments></comments>
+	<pubDate>Fri, 02 Oct 2026 03:32:29 +0700</pubDate>
+	<description><![CDATA[ แผ่นดินไหว ต.นาคอเรือ  อ.ฮอด จ.เชียงใหม่ <br>2026-10-02 03:24:36 น.<br>Lat. 18.014 , Long. 98.529<br>ขนาด 1.5 <br><br> ]]></description>
+</item>
+<item>
+	<title>ต.นาคอเรือ อ.ฮอด จ.เชียงใหม่ (Tambon Na Kho Ruea, Amphoe Hot, ChiangMai)</title>
+	<link>https://earthquake.tmd.go.th/inside-info.html?earthquake=17154</link>
+	<geo:lat>18.000</geo:lat>
+	<geo:long>98.538</geo:long>
+	<tmd:depth>2</tmd:depth>
+	<tmd:magnitude>1.7</tmd:magnitude>
+	<tmd:time>2026-10-01 19:22:33 UTC</tmd:time>
+	<comments></comments>
+	<pubDate>Fri, 02 Oct 2026 02:26:33 +0700</pubDate>
+	<description><![CDATA[ แผ่นดินไหว ต.นาคอเรือ อ.ฮอด จ.เชียงใหม่ <br>2026-10-02 02:22:33 น.<br>Lat. 18.000 , Long. 98.538<br>ขนาด 1.7 <br><br> ]]></description>
+</item></channel></rss>

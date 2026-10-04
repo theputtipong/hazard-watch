@@ -1,0 +1,200 @@
+{
+ "stations": [
+  {
+   "stationID": "02t",
+   "nameTH": "มหาวิทยาลัยราชภัฏบ้านสมเด็จเจ้าพระยา",
+   "nameEN": "Bansomdejchaopraya Rajabhat University",
+   "areaTH": "แขวงหิรัญรูจี เขตธนบุรี, กรุงเทพฯ",
+   "areaEN": "Hiran Ruchi, Khet Thon Buri, Bangkok",
+   "stationType": "GROUND",
+   "lat": "13.732846",
+   "long": "100.487662",
+   "AQILast": {
+    "date": "2026-10-03",
+    "time": "21:00",
+    "PM25": {
+     "color_id": "2",
+     "aqi": "42",
+     "value": "21.7"
+    },
+    "PM10": {
+     "color_id": "0",
+     "aqi": "-1",
+     "value": "-1"
+    },
+    "O3": {
+     "color_id": "0",
+     "aqi": "-1",
+     "value": "-1"
+    },
+    "CO": {
+     "color_id": "0",
+     "aqi": "-1",
+     "value": "-1"
+    },
+    "NO2": {
+     "color_id": "0",
+     "aqi": "-1",
+     "value": "-1"
+    },
+    "SO2": {
+     "color_id": "0",
+     "aqi": "-1",
+     "value": "-1"
+    },
+    "AQI": {
+     "color_id": "2",
+     "aqi": "42",
+     "param": "PM25"
+    }
+   }
+  },
+  {
+   "stationID": "03t",
+   "nameTH": "ริมถนนทางหลวงหมายเลข 3902 ",
+   "nameEN": "Highway NO.3902 km.13 +600",
+   "areaTH": "ริมถนนกาญจนาภิเษก เขตบางขุนเทียน, กรุงเทพฯ",
+   "areaEN": "Kanchanaphisek Rd, Bang Khun Thian, Bangkok",
+   "stationType": "GROUND",
+   "lat": "13.636514",
+   "long": "100.414262",
+   "AQILast": {
+    "date": "2026-10-02",
+    "time": "12:00",
+    "PM25": {
+     "color_id": "3",
+     "aqi": "72",
+     "value": "-1"
+    },
+    "PM10": {
+     "color_id": "0",
+     "aqi": "-1",
+     "value": "-1"
+    },
+    "O3": {
+     "color_id": "0",
+     "aqi": "-1",
+     "value": "-1"
+    },
+    "CO": {
+     "color_id": "0",
+     "aqi": "-1",
+     "value": "-1"
+    },
+    "NO2": {
+     "color_id": "0",
+     "aqi": "-1",
+     "value": "-1"
+    },
+    "SO2": {
+     "color_id": "0",
+     "aqi": "-999",
+     "value": "-1"
+    },
+    "AQI": {
+     "color_id": "-3",
+     "aqi": "72",
+     "param": "PM25"
+    }
+   }
+  },
+  {
+   "stationID": "05t",
+   "nameTH": "กรมอุตุนิยมวิทยาบางนา",
+   "nameEN": "Thai Meteorological Department ",
+   "areaTH": "แขวงบางนา เขตบางนา, กรุงเทพฯ",
+   "areaEN": "Bang Na, Khet Bang Na, Bangkok",
+   "stationType": "GROUND",
+   "lat": "13.666183",
+   "long": "100.605742",
+   "AQILast": {
+    "date": "2026-10-03",
+    "time": "17:00",
+    "PM25": {
+     "color_id": "2",
+     "aqi": "47",
+     "value": "23.7"
+    },
+    "PM10": {
+     "color_id": "0",
+     "aqi": "-1",
+     "value": "-1"
+    },
+    "O3": {
+     "color_id": "0",
+     "aqi": "-1",
+     "value": "-1"
+    },
+    "CO": {
+     "color_id": "0",
+     "aqi": "-1",
+     "value": "-1"
+    },
+    "NO2": {
+     "color_id": "0",
+     "aqi": "-1",
+     "value": "-1"
+    },
+    "SO2": {
+     "color_id": "0",
+     "aqi": "-1",
+     "value": "-1"
+    },
+    "AQI": {
+     "color_id": "2",
+     "aqi": "47",
+     "param": "PM25"
+    }
+   }
+  },
+  {
+   "stationID": "35t",
+   "nameTH": "ศูนย์ราชการจังหวัดเชียงใหม่ ",
+   "nameEN": "City Hall, Chiangmai",
+   "areaTH": "ต.ช้างเผือก อ.เมือง, เชียงใหม่",
+   "areaEN": "Chang Phueak, Meuang, Chiang Mai",
+   "stationType": "GROUND",
+   "lat": "18.840732",
+   "long": "98.96978",
+   "AQILast": {
+    "date": "2026-10-03",
+    "time": "21:00",
+    "PM25": {
+     "color_id": "2",
+     "aqi": "31",
+     "value": "17.2"
+    },
+    "PM10": {
+     "color_id": "0",
+     "aqi": "-1",
+     "value": "-1"
+    },
+    "O3": {
+     "color_id": "0",
+     "aqi": "-1",
+     "value": "-1"
+    },
+    "CO": {
+     "color_id": "0",
+     "aqi": "-1",
+     "value": "-1"
+    },
+    "NO2": {
+     "color_id": "0",
+     "aqi": "-1",
+     "value": "-1"
+    },
+    "SO2": {
+     "color_id": "0",
+     "aqi": "-1",
+     "value": "-1"
+    },
+    "AQI": {
+     "color_id": "2",
+     "aqi": "31",
+     "param": "PM25"
+    }
+   }
+  }
+ ]
+}

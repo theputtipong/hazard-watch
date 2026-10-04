@@ -1,0 +1,61 @@
+import type { LatLng, LocalizedText } from './types';
+
+export interface BBox {
+  minLat: number;
+  maxLat: number;
+  minLng: number;
+  maxLng: number;
+}
+
+/**
+ * A coverage area. Adding a region (another Thai province group, or another country)
+ * should only need a new entry here plus adapters for any sources specific to it.
+ */
+export interface Region {
+  id: string;
+  /** ISO 3166-1 alpha-2. */
+  country: string;
+  name: LocalizedText;
+  bbox: BBox;
+  center: LatLng;
+  zoom: number;
+  /** Province names exactly as Thai government feeds spell them (used to filter ThaiWater etc.). */
+  provincesTh: string[];
+  /** ThaiWater radar ids that cover this region. */
+  radars: string[];
+}
+
+export const REGIONS = {
+  'th-bangkok-metro': {
+    id: 'th-bangkok-metro',
+    country: 'TH',
+    name: { th: 'กรุงเทพฯ และปริมณฑล', en: 'Greater Bangkok' },
+    bbox: { minLat: 13.4, maxLat: 14.25, minLng: 99.85, maxLng: 101.0 },
+    center: { lat: 13.7563, lng: 100.5018 },
+    zoom: 11,
+    provincesTh: ['กรุงเทพมหานคร', 'นนทบุรี', 'ปทุมธานี', 'สมุทรปราการ', 'สมุทรสาคร', 'นครปฐม'],
+    radars: ['nkm', 'njk', 'svp120'],
+  },
+} as const satisfies Record<string, Region>;
+
+export type RegionId = keyof typeof REGIONS;
+
+/** Regions currently switched on. Expanding coverage = adding ids here. */
+export const ACTIVE_REGION_IDS: RegionId[] = ['th-bangkok-metro'];
+
+export const activeRegions = (ids: readonly RegionId[] = ACTIVE_REGION_IDS): Region[] => ids.map((id) => REGIONS[id]);
+
+export function inBBox({ lat, lng }: LatLng, b: BBox): boolean {
+  return lat >= b.minLat && lat <= b.maxLat && lng >= b.minLng && lng <= b.maxLng;
+}
+
+export const inRegions = (p: LatLng, regions: readonly Region[]) => regions.some((r) => inBBox(p, r.bbox));
+
+export const regionProvinces = (regions: readonly Region[]) => new Set(regions.flatMap((r) => r.provincesTh));
+
+export const regionRadars = (regions: readonly Region[]) => [...new Set(regions.flatMap((r) => r.radars))];
+
+/** Region containing the point, else the first active one (used as the map's default view). */
+export function regionFor(p: LatLng | null, regions: readonly Region[] = activeRegions()): Region {
+  return (p && regions.find((r) => inBBox(p, r.bbox))) || regions[0]!;
+}

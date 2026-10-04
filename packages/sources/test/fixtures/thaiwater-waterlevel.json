@@ -1,0 +1,427 @@
+{
+ "waterlevel_data": {
+  "result": "OK",
+  "data": [
+   {
+    "id": 1317773150,
+    "waterlevel_datetime": "2026-10-03 21:00",
+    "waterlevel_m": null,
+    "waterlevel_msl": "2.58",
+    "waterlevel_msl_previous": "2.58",
+    "flow_rate": null,
+    "discharge": null,
+    "storage_percent": "110.34",
+    "sort_order": null,
+    "station_type": "tele_waterlevel",
+    "situation_level": 5,
+    "agency": {
+     "id": 12,
+     "agency_name": {
+      "th": "กรมชลประทาน ",
+      "en": "Royal Irrigation Department",
+      "jp": ""
+     },
+     "agency_shortname": {
+      "th": "ชป.",
+      "en": "RID",
+      "jp": ""
+     }
+    },
+    "basin": {
+     "id": 14,
+     "basin_code": 13,
+     "basin_name": {
+      "th": "ลุ่มน้ำท่าจีน",
+      "en": "Tha Chin Basin"
+     }
+    },
+    "station": {
+     "id": 528052,
+     "tele_station_name": {
+      "th": "วัดบางไผ่นารถ"
+     },
+     "tele_station_lat": 14.05221,
+     "tele_station_long": 100.175087,
+     "tele_station_oldcode": "T.15",
+     "tele_station_type": "tele_waterlevel",
+     "left_bank": -2.582,
+     "right_bank": -2.785,
+     "min_bank": 1.8,
+     "ground_level": -5.74,
+     "offset": -6,
+     "sub_basin_id": 259,
+     "agency_id": 12,
+     "geocode_id": 6897,
+     "hydro_id": 7,
+     "qmax": null,
+     "is_key_station": true,
+     "warning_level_m": null,
+     "critical_level_m": null,
+     "critical_level_msl": null
+    },
+    "geocode": {
+     "area_code": "2",
+     "area_name": {
+      "th": "ภาคกลาง",
+      "en": "Central"
+     },
+     "amphoe_code": "05",
+     "amphoe_name": {
+      "th": "บางเลน",
+      "en": "Bang Len District"
+     },
+     "tumbon_code": "06",
+     "tumbon_name": {
+      "th": "บางไทรป่า",
+      "en": "Bang Sai Pa"
+     },
+     "province_code": "73",
+     "province_name": {
+      "th": "นครปฐม",
+      "en": "Nakhon Pathom"
+     }
+    },
+    "diff_wl_bank": "0.78",
+    "diff_wl_bank_text": "ล้นตลิ่ง (ม.)",
+    "river_gid": 184977,
+    "river_name": "แม่น้ำท่าจีน"
+   },
+   {
+    "id": 1317781879,
+    "waterlevel_datetime": "2026-10-03 21:40",
+    "waterlevel_m": null,
+    "waterlevel_msl": "1.51",
+    "waterlevel_msl_previous": "1.52",
+    "flow_rate": null,
+    "discharge": null,
+    "storage_percent": "109.36",
+    "sort_order": null,
+    "station_type": "tele_waterlevel",
+    "situation_level": 5,
+    "agency": {
+     "id": 9,
+     "agency_name": {
+      "th": "สถาบันสารสนเทศทรัพยากรน้ำ (องค์การมหาชน)",
+      "en": "Hydro – Informatics Institute (Public Organization)",
+      "jp": ""
+     },
+     "agency_shortname": {
+      "th": "สสน.",
+      "en": "HII",
+      "jp": ""
+     }
+    },
+    "basin": {
+     "id": 10,
+     "basin_code": 10,
+     "basin_name": {
+      "th": "ลุ่มน้ำเจ้าพระยา",
+      "en": "Chao Phraya Basin"
+     }
+    },
+    "station": {
+     "id": 575566,
+     "tele_station_name": {
+      "en": "Wat Bangkachao Nok Gate",
+      "th": "ปตร.วัดบางกระเจ้านอก"
+     },
+     "tele_station_lat": 13.689612,
+     "tele_station_long": 100.554886,
+     "tele_station_oldcode": "BKC002",
+     "tele_station_type": "tele_waterlevel",
+     "left_bank": 1.74,
+     "right_bank": 1.26,
+     "min_bank": 1.26,
+     "ground_level": -1.41,
+     "offset": null,
+     "sub_basin_id": 240,
+     "agency_id": 9,
+     "geocode_id": 250,
+     "hydro_id": null,
+     "qmax": null,
+     "is_key_station": false,
+     "warning_level_m": null,
+     "critical_level_m": null,
+     "critical_level_msl": null
+    },
+    "geocode": {
+     "area_code": "2",
+     "area_name": {
+      "th": "ภาคกลาง",
+      "en": "Central"
+     },
+     "amphoe_code": "04",
+     "amphoe_name": {
+      "th": "พระประแดง",
+      "en": "Phra Pradaeng District"
+     },
+     "tumbon_code": "09",
+     "tumbon_name": {
+      "th": "บางกระเจ้า",
+      "en": "Bang Krachao"
+     },
+     "province_code": "11",
+     "province_name": {
+      "th": "สมุทรปราการ",
+      "en": "Samut Prakan"
+     }
+    },
+    "diff_wl_bank": "0.25",
+    "diff_wl_bank_text": "ล้นตลิ่ง (ม.)",
+    "river_gid": 188003,
+    "river_name": "คลองบางกะเจ้า"
+   },
+   {
+    "id": 1317773146,
+    "waterlevel_datetime": "2026-10-03 21:00",
+    "waterlevel_m": null,
+    "waterlevel_msl": "2.27",
+    "waterlevel_msl_previous": "2.27",
+    "flow_rate": null,
+    "discharge": null,
+    "storage_percent": "107.26",
+    "sort_order": null,
+    "station_type": "tele_waterlevel",
+    "situation_level": 5,
+    "agency": {
+     "id": 12,
+     "agency_name": {
+      "th": "กรมชลประทาน ",
+      "en": "Royal Irrigation Department",
+      "jp": ""
+     },
+     "agency_shortname": {
+      "th": "ชป.",
+      "en": "RID",
+      "jp": ""
+     }
+    },
+    "basin": {
+     "id": 14,
+     "basin_code": 13,
+     "basin_name": {
+      "th": "ลุ่มน้ำท่าจีน",
+      "en": "Tha Chin Basin"
+     }
+    },
+    "station": {
+     "id": 2676,
+     "tele_station_name": {
+      "th": "ที่ว่าการอ.นครชัยศรี"
+     },
+     "tele_station_lat": 13.80096,
+     "tele_station_long": 100.188026,
+     "tele_station_oldcode": "T.1",
+     "tele_station_type": "tele_waterlevel",
+     "left_bank": -7.585999999999999,
+     "right_bank": -7.577999999999999,
+     "min_bank": 1.5,
+     "ground_level": -9.1,
+     "offset": -9.7,
+     "sub_basin_id": 259,
+     "agency_id": 12,
+     "geocode_id": 6858,
+     "hydro_id": 7,
+     "qmax": null,
+     "is_key_station": true,
+     "warning_level_m": null,
+     "critical_level_m": 1.6,
+     "critical_level_msl": 1.6
+    },
+    "geocode": {
+     "area_code": "2",
+     "area_name": {
+      "th": "ภาคกลาง",
+      "en": "Central"
+     },
+     "amphoe_code": "03",
+     "amphoe_name": {
+      "th": "นครชัยศรี",
+      "en": "Nakhon Chai Si District"
+     },
+     "tumbon_code": "01",
+     "tumbon_name": {
+      "th": "นครชัยศรี",
+      "en": "Nakhon Chai Si"
+     },
+     "province_code": "73",
+     "province_name": {
+      "th": "นครปฐม",
+      "en": "Nakhon Pathom"
+     }
+    },
+    "diff_wl_bank": "0.77",
+    "diff_wl_bank_text": "ล้นตลิ่ง (ม.)",
+    "river_gid": 186788,
+    "river_name": "แม่น้ำท่าจีน"
+   },
+   {
+    "id": 1317781890,
+    "waterlevel_datetime": "2026-10-03 21:40",
+    "waterlevel_m": null,
+    "waterlevel_msl": "0.60",
+    "waterlevel_msl_previous": "0.60",
+    "flow_rate": null,
+    "discharge": null,
+    "storage_percent": "106.43",
+    "sort_order": null,
+    "station_type": "tele_waterlevel",
+    "situation_level": 5,
+    "agency": {
+     "id": 9,
+     "agency_name": {
+      "th": "สถาบันสารสนเทศทรัพยากรน้ำ (องค์การมหาชน)",
+      "en": "Hydro – Informatics Institute (Public Organization)",
+      "jp": ""
+     },
+     "agency_shortname": {
+      "th": "สสน.",
+      "en": "HII",
+      "jp": ""
+     }
+    },
+    "basin": {
+     "id": 16,
+     "basin_code": 15,
+     "basin_name": {
+      "th": "ลุ่มน้ำบางปะกง",
+      "en": "Bang Pakong Basin"
+     }
+    },
+    "station": {
+     "id": 21,
+     "tele_station_name": {
+      "en": "Sri Varee Noi Temple",
+      "th": "คลองจระเข้ใหญ่ บางเสาธง (วัดศรีวารีน้อย)"
+     },
+     "tele_station_lat": 13.66949,
+     "tele_station_long": 100.80058,
+     "tele_station_oldcode": "BKK017",
+     "tele_station_type": "tele_waterlevel",
+     "left_bank": 0.432,
+     "right_bank": 0.518,
+     "min_bank": 0.43,
+     "ground_level": -2.181,
+     "offset": null,
+     "sub_basin_id": 286,
+     "agency_id": 9,
+     "geocode_id": 266,
+     "hydro_id": null,
+     "qmax": null,
+     "is_key_station": false,
+     "warning_level_m": null,
+     "critical_level_m": null,
+     "critical_level_msl": null
+    },
+    "geocode": {
+     "area_code": "2",
+     "area_name": {
+      "th": "ภาคกลาง",
+      "en": "Central"
+     },
+     "amphoe_code": "06",
+     "amphoe_name": {
+      "th": "บางเสาธง",
+      "en": "Bang Sao Thong District"
+     },
+     "tumbon_code": "03",
+     "tumbon_name": {
+      "th": "ศีรษะจรเข้ใหญ่",
+      "en": "Sisa Chorakhe Yai"
+     },
+     "province_code": "11",
+     "province_name": {
+      "th": "สมุทรปราการ",
+      "en": "Samut Prakan"
+     }
+    },
+    "diff_wl_bank": "0.17",
+    "diff_wl_bank_text": "ล้นตลิ่ง (ม.)",
+    "river_gid": 197605,
+    "river_name": "คลองหัวตะเข้"
+   },
+   {
+    "id": 1317770007,
+    "waterlevel_datetime": "2026-10-03 21:00",
+    "waterlevel_m": null,
+    "waterlevel_msl": "5.46",
+    "waterlevel_msl_previous": "5.45",
+    "flow_rate": null,
+    "discharge": null,
+    "storage_percent": "129.05",
+    "sort_order": null,
+    "station_type": "tele_waterlevel",
+    "situation_level": 5,
+    "agency": {
+     "id": 12,
+     "agency_name": {
+      "th": "กรมชลประทาน ",
+      "en": "Royal Irrigation Department",
+      "jp": ""
+     },
+     "agency_shortname": {
+      "th": "ชป.",
+      "en": "RID",
+      "jp": ""
+     }
+    },
+    "basin": {
+     "id": 10,
+     "basin_code": 10,
+     "basin_name": {
+      "th": "ลุ่มน้ำเจ้าพระยา",
+      "en": "Chao Phraya Basin"
+     }
+    },
+    "station": {
+     "id": 1095849,
+     "tele_station_name": {
+      "th": "สะพานหัวเวียง"
+     },
+     "tele_station_lat": 14.36851,
+     "tele_station_long": 100.414391,
+     "tele_station_oldcode": "C.67",
+     "tele_station_type": "tele_waterlevel",
+     "left_bank": 6.576,
+     "right_bank": 6.698,
+     "min_bank": 2.75,
+     "ground_level": -6.58,
+     "offset": null,
+     "sub_basin_id": 240,
+     "agency_id": 12,
+     "geocode_id": 570,
+     "hydro_id": 5,
+     "qmax": null,
+     "is_key_station": false,
+     "warning_level_m": null,
+     "critical_level_m": null,
+     "critical_level_msl": null
+    },
+    "geocode": {
+     "area_code": "2",
+     "area_name": {
+      "th": "ภาคกลาง",
+      "en": "Central"
+     },
+     "amphoe_code": "12",
+     "amphoe_name": {
+      "th": "เสนา",
+      "en": "Sena District"
+     },
+     "tumbon_code": "06",
+     "tumbon_name": {
+      "th": "หัวเวียง",
+      "en": "Hua Wiang"
+     },
+     "province_code": "14",
+     "province_name": {
+      "th": "พระนครศรีอยุธยา",
+      "en": "Phra Nakhon Si Ayutthaya"
+     }
+    },
+    "diff_wl_bank": "2.71",
+    "diff_wl_bank_text": "ล้นตลิ่ง (ม.)"
+   }
+  ]
+ }
+}
