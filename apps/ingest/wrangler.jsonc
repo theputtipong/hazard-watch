@@ -8,11 +8,11 @@
   // Edge feeds (Air4Thai, USGS, TMD) every 10 minutes.
   "triggers": { "crons": ["*/10 * * * *"] },
   "kv_namespaces": [
-    // Created with `wrangler kv namespace create SNAPSHOTS`; replace the id before the first deploy.
-    { "binding": "SNAPSHOTS", "id": "REPLACE_WITH_KV_ID" }
+    // Created with `wrangler kv namespace create SNAPSHOTS`.
+    { "binding": "SNAPSHOTS", "id": "377230799e294be5a12ecc9ca7a9b0f3" }
   ],
   "vars": {
-    "ALLOWED_ORIGINS": "http://localhost:3000"
+    "ALLOWED_ORIGINS": "https://hw-web.pdouvch.workers.dev,http://localhost:3000"
   }
   // Secret (set with `wrangler secret put INGEST_TOKEN`): shared with the GitHub Actions runner.
 }

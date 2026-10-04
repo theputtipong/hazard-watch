@@ -72,6 +72,12 @@ app.use('/ingest/*', async (c, next) => {
   await next();
 });
 
+/** Runs the edge feeds now instead of waiting for the cron (for checks after a deploy). */
+app.post('/ingest/run-edge', async (c) => {
+  const snapshot = await runEdgeFeeds(c.env);
+  return c.json(Object.fromEntries(Object.entries(snapshot.feeds).map(([name, r]) => [name, { ok: r!.ok, items: r!.items.length, error: r!.error }])));
+});
+
 app.post('/ingest/runner', async (c) => {
   const body = await c.req.json<{ feeds: FeedMap }>();
   const feeds: FeedMap = {};

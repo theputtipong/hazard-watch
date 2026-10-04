@@ -47,7 +47,9 @@ export function Dashboard({ lang }: { lang: Lang }) {
       pmStations: pm,
       nearestPm: nearest(pm.filter((s) => s.value !== null), location)[0] ?? null,
       floodPoints: flood,
-      floodAvailable: !!snapshot?.runner?.feeds.flood,
+      // A feed counts as available only if it has data; a failed fetch must never read as "normal".
+      floodAvailable: flood.length > 0,
+      quakeAvailable: !!(snapshot?.edge?.feeds.quakesTmd?.items.length || snapshot?.edge?.feeds.quakesUsgs?.items.length),
       counts: floodCounts(flood),
       nearestFlooded: nearest(flood.filter((p) => !p.offline && (p.severity === 'warn' || p.severity === 'danger')), location)[0] ?? null,
       cameras: cams,
@@ -98,7 +100,7 @@ export function Dashboard({ lang }: { lang: Lang }) {
           <WeatherCard lang={lang} weather={weather} />
           <Pm25Card lang={lang} station={view.nearestPm} />
           <FloodCard lang={lang} counts={view.counts} nearestFlooded={view.nearestFlooded} available={view.floodAvailable} />
-          <QuakeCard lang={lang} alerts={view.quakes.alerts} latest={view.quakes.latestRegional} />
+          <QuakeCard lang={lang} alerts={view.quakes.alerts} latest={view.quakes.latestRegional} available={view.quakeAvailable} />
         </aside>
 
         <div className="basis-full">

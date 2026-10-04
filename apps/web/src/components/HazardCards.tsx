@@ -116,8 +116,10 @@ export function QuakeCard({
   lang,
   alerts,
   latest,
+  available,
 }: {
   lang: Lang;
+  available: boolean;
   alerts: { quake: Earthquake; severity: 'ok' | 'watch' | 'warn' | 'danger'; km: number }[];
   latest: { quake: Earthquake; km: number } | null;
 }) {
@@ -125,8 +127,10 @@ export function QuakeCard({
   const time = (iso: string) =>
     new Date(iso).toLocaleString(lang === 'th' ? 'th-TH' : 'en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok' });
   return (
-    <Card title={t('card.quake', lang)} status={<SeverityPill severity={severity} lang={lang} />} source={t('source.quake', lang)}>
-      {alerts.length ? (
+    <Card title={t('card.quake', lang)} status={available && <SeverityPill severity={severity} lang={lang} />} source={t('source.quake', lang)}>
+      {!available ? (
+        <p className="text-sm text-muted">{t('common.noData', lang)}</p>
+      ) : alerts.length ? (
         <ul className="flex flex-col gap-1 text-sm">
           {alerts.map(({ quake, km }) => (
             <li key={quake.id} className="flex justify-between gap-2">
