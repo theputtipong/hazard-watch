@@ -72,7 +72,7 @@ export function ZonePanel({ lang, zones }: { lang: Lang; zones: ZoneView }) {
                     {c.label}
                   </span>
                 ) : (
-                  <button type="button" onClick={() => zones.goTo(c.depth)} className="min-h-9 px-1 text-accent underline underline-offset-4">
+                  <button type="button" onClick={() => zones.goTo(c.depth)} className="min-h-11 px-1 text-accent underline underline-offset-4">
                     {c.label}
                   </button>
                 )}

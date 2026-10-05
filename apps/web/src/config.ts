@@ -6,6 +6,9 @@ import type { LayerKey } from './lib/layers';
  * they live in packages/core/src/config.ts so the server and the web agree.
  */
 export const WEB = {
+  /** Public address of the site (link previews, absolute URLs). Change when a custom domain is added. */
+  siteUrl: process.env.NEXT_PUBLIC_SITE_URL ?? 'https://hw-web.pdouvch.workers.dev',
+
   /** How often the dashboard re-fetches the snapshot. */
   refreshMs: 2 * 60_000,
 

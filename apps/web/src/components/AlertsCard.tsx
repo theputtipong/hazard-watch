@@ -78,7 +78,7 @@ export function AlertsCard({ lang, district, subdistrict }: { lang: Lang; distri
           <fieldset className="flex flex-col gap-1.5">
             <legend className="mb-1 text-xs text-muted">{t('push.kinds', lang)}</legend>
             {DEFAULT_CONFIG.push.kinds.map((k) => (
-              <label key={k} className="flex min-h-9 items-center gap-2 text-sm">
+              <label key={k} className="flex min-h-11 items-center gap-2 text-sm">
                 <input type="checkbox" className="size-5 accent-[var(--color-accent)]" checked={prefs.kinds.includes(k)} onChange={() => toggleKind(k)} />
                 {t(`push.kind.${k}`, lang)}
               </label>
@@ -90,7 +90,7 @@ export function AlertsCard({ lang, district, subdistrict }: { lang: Lang; distri
               <select
                 value={prefs.pm25At}
                 onChange={(e) => setPrefs((p) => ({ ...p, pm25At: Number(e.target.value) }))}
-                className="min-h-10 rounded-lg border border-chip-line bg-panel px-2 text-ink"
+                className="min-h-11 rounded-lg border border-chip-line bg-panel px-2 text-ink"
               >
                 {WEB.push.pm25Choices.map((v) => (
                   <option key={v} value={v}>
@@ -144,7 +144,7 @@ export function AlertsCard({ lang, district, subdistrict }: { lang: Lang; distri
           )}
         </>
       )}
-      <Link href={`/${lang}/privacy`} className="text-xs text-accent underline underline-offset-4">
+      <Link href={`/${lang}/privacy`} className="inline-flex min-h-11 items-center text-xs text-accent underline underline-offset-4">
         {t('push.privacy', lang)}
       </Link>
     </Card>

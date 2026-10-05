@@ -15,6 +15,15 @@ export const messages = {
   'common.source': { th: 'ที่มา', en: 'Source' },
   'common.stale': { th: 'ข้อมูลไม่อัปเดต', en: 'Data is stale' },
   'common.noData': { th: 'ไม่มีข้อมูล', en: 'No data' },
+  'common.loading': { th: 'กำลังโหลดข้อมูล…', en: 'Loading…' },
+  'common.retry': { th: 'ลองใหม่', en: 'Try again' },
+  'common.offline': {
+    th: 'เชื่อมต่อระบบข้อมูลไม่ได้ ข้อมูลที่เห็นอาจไม่เป็นปัจจุบัน',
+    en: 'Cannot reach the data service; what you see may be out of date',
+  },
+  'common.home': { th: 'กลับหน้าหลัก', en: 'Back to the main page' },
+  'notFound.title': { th: 'ไม่พบหน้านี้', en: 'Page not found' },
+  'notFound.body': { th: 'ลิงก์อาจผิดหรือหน้านี้ถูกย้ายไปแล้ว', en: 'The link may be wrong or the page has moved' },
   'common.viewAtSource': { th: 'ดูที่ต้นทาง', en: 'View at source' },
   'cctv.viewLive': { th: 'ดูภาพสด', en: 'Watch live' },
   'cctv.opening': { th: 'เปิดผ่านเว็บไซต์ กทม. ใช้เวลาประมาณ 3 วินาที', en: 'Opens via the BMA website, takes about 3 seconds' },
@@ -27,9 +36,10 @@ export const messages = {
   'location.change': { th: 'เปลี่ยนตำแหน่ง', en: 'Change location' },
   'location.useMine': { th: 'ใช้ตำแหน่งของฉัน', en: 'Use my location' },
   'location.denied': {
-    th: 'ไม่ได้รับอนุญาตให้ใช้ตำแหน่ง กรุณาเลือกพื้นที่เอง',
-    en: 'Location permission denied. Please choose an area.',
+    th: 'ไม่ได้ใช้ตำแหน่งของคุณ จึงแสดงภาพรวมทั้งพื้นที่ เลือกเขต/อำเภอของคุณได้จากรายการใต้แผนที่',
+    en: 'Your location is not in use, so this shows the whole area. Pick your district from the list under the map.',
   },
+  'location.pick': { th: 'เลือกพื้นที่', en: 'Choose area' },
 
 
   'area.nav': { th: 'ระดับพื้นที่', en: 'Area level' },
@@ -59,6 +69,8 @@ export const messages = {
   'area.hint.subdistrict': { th: 'แตะเพื่อดูสรุปของพื้นที่นั้น', en: 'Tap an area for its summary' },
   'area.sortNote': { th: 'เรียงจากรุนแรงที่สุด', en: 'most severe first' },
   'area.overview': { th: 'ภาพรวม', en: 'Overview' },
+  'area.nearYou': { th: 'ใกล้คุณ', en: 'Near you' },
+  'area.now': { th: 'ภาพรวมตอนนี้', en: 'Right now' },
   'area.situation': { th: 'สถานการณ์', en: 'Situation' },
 
   'map.title': { th: 'แผนที่', en: 'Map' },
@@ -94,6 +106,7 @@ export const messages = {
   'source.water': { th: 'ที่มา: สสน. (ThaiWater)', en: 'Source: HII ThaiWater' },
   'layer.water': { th: 'ระดับน้ำ', en: 'Water levels' },
   'fresh.stale': { th: 'ข้อมูลไม่อัปเดต · ล่าสุด {time}', en: 'Data not updated · last {time}' },
+  'fresh.failedNoData': { th: 'ดึงข้อมูลจากต้นทางไม่สำเร็จ จึงยังไม่มีข้อมูลให้แสดง', en: 'The source could not be reached, so there is nothing to show yet' },
   'fresh.failed': { th: 'ดึงข้อมูลล่าสุดไม่สำเร็จ · แสดงข้อมูลเมื่อ {time}', en: 'Latest update failed · showing data from {time}' },
   'card.cctv': { th: 'กล้อง CCTV ใกล้คุณ', en: 'CCTV near you' },
 

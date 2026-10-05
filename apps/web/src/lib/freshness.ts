@@ -25,6 +25,7 @@ export function feedFreshness(
 }
 
 export function freshnessNote(f: Freshness | null, lang: Lang): string | undefined {
+  if (f?.state === 'failed' && !f.at) return t('fresh.failedNoData', lang);
   if (!f || f.state === 'fresh' || !f.at) return undefined;
   const time = new Date(f.at).toLocaleString(lang === 'th' ? 'th-TH' : 'en-GB', {
     day: 'numeric',

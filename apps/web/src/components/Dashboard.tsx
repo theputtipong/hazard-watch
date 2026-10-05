@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import { useEffect, useMemo, useState } from 'react';
-import { activeRegions, DEFAULT_CONFIG, isStale, RADARS, regionRadars, type DashboardSnapshot, type WeatherNow } from '@hw/core';
+import { activeRegions, DEFAULT_CONFIG, groupByZone, isStale, summarizeZone, RADARS, regionRadars, type DashboardSnapshot, type WeatherNow } from '@hw/core';
 import { t, type Lang, type MessageKey } from '@hw/core/i18n';
 import { WEB } from '@/config';
 import { fetchSnapshot, fetchWeather } from '@/lib/api';
@@ -18,6 +18,8 @@ import { AlertsCard } from './AlertsCard';
 import { registerServiceWorker } from '@/lib/push';
 import { zoneLabel } from './ZonePanel';
 import { ZonePanel } from './ZonePanel';
+import { SummaryBanner } from './SummaryBanner';
+import { LoadStateContext, type LoadState } from '@/lib/loadState';
 import { CctvList } from './CctvList';
 import { FloodCard, Pm25Card, QuakeCard, WaterLevelCard, WeatherCard } from './HazardCards';
 import { Header } from './Header';
@@ -33,6 +35,8 @@ export function Dashboard({ lang }: { lang: Lang }) {
   const palette = useMemo(() => mapPalette(prefs), [prefs]);
   const speech = useSpeech(lang);
   const [snapshot, setSnapshot] = useState<DashboardSnapshot | null>(null);
+  const [loadState, setLoadState] = useState<LoadState>('loading');
+  const [retry, setRetry] = useState(0);
   /** Clock reading taken when the snapshot arrives (keeps render pure). */
   const [loadedAt, setLoadedAt] = useState(0);
   const [weather, setWeather] = useState<WeatherNow | null>(null);
@@ -47,15 +51,17 @@ export function Dashboard({ lang }: { lang: Lang }) {
           if (!alive) return;
           setSnapshot(s);
           setLoadedAt(Date.now());
+          setLoadState('ready');
         })
-        .catch(() => {});
+        // Keep showing the last snapshot if there is one, but say the service can't be reached.
+        .catch(() => alive && setLoadState('error'));
     load();
     const timer = setInterval(load, WEB.refreshMs);
     return () => {
       alive = false;
       clearInterval(timer);
     };
-  }, []);
+  }, [retry]);
 
   useEffect(() => {
     registerServiceWorker();
@@ -146,10 +152,23 @@ export function Dashboard({ lang }: { lang: Lang }) {
   const radarOld = !!radarFrame && loadedAt - new Date(radarFrame.time).getTime() > WEB.map.radarStaleMinutes * 60_000;
   const clock = (iso: string) =>
     new Date(iso).toLocaleTimeString(lang === 'th' ? 'th-TH' : 'en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok' });
+  // Banner: the user's own district first (when location is known), then the whole coverage area.
+  const summaryLines = useMemo(() => {
+    const regionName = activeRegions()
+      .map((r) => r.name[lang])
+      .join(', ');
+    const lines = [{ label: t('area.now', lang), area: regionName, summary: summarizeZone(readings, DEFAULT_CONFIG) }];
+    const mine = status === 'granted' ? alertArea.district : null;
+    if (mine) {
+      const inside = groupByZone(readings, [mine]).get(mine.properties.id) ?? [];
+      lines.unshift({ label: t('area.nearYou', lang), area: zoneLabel(mine, lang), summary: summarizeZone(inside, DEFAULT_CONFIG) });
+    }
+    return lines;
+  }, [readings, status, alertArea, lang]);
   const toggle = (key: LayerKey) => setLayers((l) => ({ ...l, [key]: !l[key] }));
 
   return (
-    <>
+    <LoadStateContext.Provider value={snapshot ? 'ready' : loadState}>
       <a
         href="#summary"
         className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[2000] focus:rounded-lg focus:bg-panel focus:px-3 focus:py-2"
@@ -173,7 +192,31 @@ export function Dashboard({ lang }: { lang: Lang }) {
           <h2>{t('a11y.summary', lang)}</h2>
           <p>{spoken}</p>
         </section>
-        {status === 'denied' && <p className="basis-full rounded-xl bg-watch px-4 py-2 text-sm text-watch-strong">{t('location.denied', lang)}</p>}
+        {loadState === 'error' && (
+          <div role="alert" className="flex basis-full flex-wrap items-center gap-3 rounded-xl bg-danger max-lg:order-first px-4 py-2.5 text-sm text-danger-strong">
+            <span className="flex-1">{t('common.offline', lang)}</span>
+            <button
+              type="button"
+              onClick={() => setRetry((n) => n + 1)}
+              className="min-h-11 rounded-full border border-danger-strong px-4 font-semibold"
+            >
+              {t('common.retry', lang)}
+            </button>
+          </div>
+        )}
+        {/* Only with data: without a snapshot it would wrongly read as "no sensors". */}
+        {snapshot && <SummaryBanner lang={lang} lines={summaryLines} />}
+        {status === 'denied' && (
+          <div className="flex basis-full flex-wrap items-center gap-2 rounded-xl bg-sunken px-4 py-2.5 text-sm max-lg:order-first">
+            <span className="flex-[1_1_260px]">{t('location.denied', lang)}</span>
+            <a href="#zones" className="inline-flex min-h-11 items-center rounded-full border border-chip-line bg-panel px-4 font-medium">
+              {t('location.pick', lang)}
+            </a>
+            <button type="button" onClick={() => void locate()} className="min-h-11 rounded-full border border-chip-line bg-panel px-4 font-medium">
+              {t('location.useMine', lang)}
+            </button>
+          </div>
+        )}
 
         <section aria-label={t('map.title', lang)} className="min-w-0 flex-[999_1_560px] overflow-hidden rounded-2xl border border-line bg-panel">
           <div className="flex flex-wrap items-center gap-2 border-b border-line-soft px-3.5 py-3">
@@ -184,7 +227,7 @@ export function Dashboard({ lang }: { lang: Lang }) {
                 type="button"
                 aria-pressed={layers[key]}
                 onClick={() => toggle(key)}
-                className={`min-h-10 rounded-full border px-3.5 text-sm font-medium ${
+                className={`min-h-11 rounded-full border px-3.5 text-sm font-medium ${
                   layers[key] ? 'border-ink bg-ink text-panel' : 'border-chip-line bg-panel text-ink-2'
                 }`}
               >
@@ -216,7 +259,7 @@ export function Dashboard({ lang }: { lang: Lang }) {
                 id="radar-src"
                 value={radarId}
                 onChange={(e) => setRadarId(e.target.value)}
-                className="min-h-10 rounded-lg border border-chip-line bg-panel px-2.5 text-ink"
+                className="min-h-11 rounded-lg border border-chip-line bg-panel px-2.5 text-ink"
               >
                 {regionRadars(activeRegions())
                   .filter((id) => RADARS[id])
@@ -236,7 +279,9 @@ export function Dashboard({ lang }: { lang: Lang }) {
               )}
             </div>
           )}
-          <ZonePanel lang={lang} zones={zones} />
+          <div id="zones" className="scroll-mt-4">
+            <ZonePanel lang={lang} zones={zones} />
+          </div>
         </section>
 
         <aside className="flex min-w-0 flex-[1_1_340px] flex-col gap-3.5 max-lg:order-first">
@@ -261,11 +306,11 @@ export function Dashboard({ lang }: { lang: Lang }) {
           href={WEB.donateUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex min-h-10 items-center rounded-full bg-[#ffdd00] px-3.5 font-semibold text-[#0f1b2d]"
+          className="inline-flex min-h-11 items-center rounded-full bg-[#ffdd00] px-3.5 font-semibold text-[#0f1b2d]"
         >
           {t('footer.coffee', lang)}
         </a>
       </footer>
-    </>
+    </LoadStateContext.Provider>
   );
 }

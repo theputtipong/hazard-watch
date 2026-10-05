@@ -9,9 +9,17 @@ export default async function PrivacyPage({ params }: PageProps<'/[lang]/privacy
   const doc = privacy[lang];
   return (
     <main className="mx-auto flex max-w-[760px] flex-col gap-6 px-4 py-8 sm:px-6">
-      <Link href={`/${lang}`} className="text-sm text-accent underline underline-offset-4">
-        ‹ {t('common.back', lang)}
-      </Link>
+      <div className="flex items-center justify-between gap-3">
+        <Link href={`/${lang}`} className="inline-flex min-h-11 items-center text-sm text-accent underline underline-offset-4">
+          ‹ {t('common.home', lang)}
+        </Link>
+        <Link
+          href={`/${lang === 'th' ? 'en' : 'th'}/privacy`}
+          className="inline-flex min-h-11 items-center rounded-full border border-chip-line px-4 text-sm font-semibold"
+        >
+          {lang === 'th' ? 'English' : 'ภาษาไทย'}
+        </Link>
+      </div>
       <header className="flex flex-col gap-1">
         <h1 className="text-2xl font-bold">
           {t('privacy.title', lang)} · {t('app.name', lang)}

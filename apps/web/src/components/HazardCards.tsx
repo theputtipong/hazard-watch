@@ -1,5 +1,6 @@
 import { DEFAULT_CONFIG, pm25Severity, quakeAlertFloor, worst, type Earthquake, type Observation, type WeatherNow } from '@hw/core';
 import { t, type Lang } from '@hw/core/i18n';
+import { NoData } from '@/lib/loadState';
 import { Card } from './Card';
 import { SeverityPill } from './Severity';
 
@@ -34,7 +35,7 @@ export function WeatherCard({ lang, weather }: { lang: Lang; weather: WeatherNow
           </dl>
         </>
       ) : (
-        <p className="text-sm text-muted">{t('common.noData', lang)}</p>
+        <NoData lang={lang} />
       )}
     </Card>
   );
@@ -66,7 +67,7 @@ export function Pm25Card({ lang, station, note }: { lang: Lang; station: (Observ
           </p>
         </>
       ) : (
-        <p className="text-sm text-muted">{t('common.noData', lang)}</p>
+        <NoData lang={lang} />
       )}
     </Card>
   );
@@ -113,7 +114,7 @@ export function FloodCard({
           )}
         </>
       ) : (
-        <p className="text-sm text-muted">{t('common.noData', lang)}</p>
+        <NoData lang={lang} />
       )}
     </Card>
   );
@@ -149,7 +150,7 @@ export function QuakeCard({
   return (
     <Card title={t('card.quake', lang)} status={available && <SeverityPill severity={severity} lang={lang} />} source={t('source.quake', lang)} note={note}>
       {!available ? (
-        <p className="text-sm text-muted">{t('common.noData', lang)}</p>
+        <NoData lang={lang} />
       ) : alerts.length ? (
         <ul className="flex flex-col gap-1 text-sm">
           {alerts.map(({ quake, km }) => (
@@ -234,7 +235,7 @@ export function WaterLevelCard({
           </div>
         </>
       ) : (
-        <p className="text-sm text-muted">{t('common.noData', lang)}</p>
+        <NoData lang={lang} />
       )}
     </Card>
   );

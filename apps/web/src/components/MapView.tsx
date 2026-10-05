@@ -351,7 +351,7 @@ function Legend({ lang, layers, palette }: { lang: Lang; layers: Layers; palette
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        className="flex min-h-7 items-center justify-between gap-3 text-[13px] font-semibold text-ink"
+        className="flex min-h-11 items-center justify-between gap-3 text-[13px] font-semibold text-ink"
       >
         {t('map.legend', lang)}
         <span aria-hidden="true">{open ? '▴' : '▾'}</span>

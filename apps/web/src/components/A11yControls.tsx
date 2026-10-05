@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { t, type Lang } from '@hw/core/i18n';
 import type { ThemePref } from '@/lib/prefs';
 
@@ -42,10 +43,12 @@ function ThemeIcon({ theme }: { theme: ThemePref }) {
 export function A11yControls({ lang, theme, cvd, onTheme, onCvd, speech, onListen }: Props) {
   const themeLabel = t('a11y.theme', lang, { mode: t(`a11y.theme.${theme}`, lang) });
   const listenLabel = speech.speaking ? t('a11y.stop', lang) : t('a11y.listen', lang);
+  // Shown after the first press, so the header stays short until it matters.
+  const [tried, setTried] = useState(false);
   const voiceNote = !speech.supported ? t('a11y.noSpeech', lang) : !speech.hasVoice ? t('a11y.noVoice', lang) : null;
 
   return (
-    <div role="group" aria-label={t('a11y.display', lang)} className="flex flex-wrap items-center gap-1.5">
+    <div role="group" aria-label={t('a11y.display', lang)} className="contents">
       <button type="button" className={btn} onClick={onTheme} aria-label={themeLabel} title={themeLabel}>
         <ThemeIcon theme={theme} />
         <span className="hidden sm:inline">{t(`a11y.theme.${theme}`, lang)}</span>
@@ -67,7 +70,10 @@ export function A11yControls({ lang, theme, cvd, onTheme, onCvd, speech, onListe
       <button
         type="button"
         className={`${btn} ${speech.speaking ? 'border-accent text-accent' : ''}`}
-        onClick={onListen}
+        onClick={() => {
+          setTried(true);
+          onListen();
+        }}
         disabled={!speech.supported}
         aria-label={listenLabel}
         title={voiceNote ?? listenLabel}
@@ -78,7 +84,11 @@ export function A11yControls({ lang, theme, cvd, onTheme, onCvd, speech, onListe
         </svg>
         <span className="hidden sm:inline">{listenLabel}</span>
       </button>
-      {voiceNote && <span className="basis-full text-xs text-muted">{voiceNote}</span>}
+      {voiceNote && tried && (
+        <span role="status" className="basis-full text-xs text-muted">
+          {voiceNote}
+        </span>
+      )}
     </div>
   );
 }
