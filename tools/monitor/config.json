@@ -1,0 +1,18 @@
+{
+  "$comment": "Thresholds for tools/monitor/check.mjs (run hourly by .github/workflows/monitor.yml). A feed is down when its last successful fetch is older than maxStaleMinutes.",
+  "snapshotUrl": "https://api.hazard.pdouvch.com/v1/snapshot",
+  "requestTimeoutMs": 20000,
+  "label": "outage",
+  "titlePrefix": "แหล่งข้อมูลล่ม: ",
+  "apiIssueName": "api",
+  "groups": {
+    "$comment": "Default per snapshot group. edge = Cloudflare cron every 10 min. runner = GitHub Actions every 30 min, but GitHub schedules can lag 2-3 h, so allow 6 h.",
+    "edge": { "maxStaleMinutes": 60 },
+    "runner": { "maxStaleMinutes": 360 }
+  },
+  "feeds": {
+    "$comment": "Per-feed overrides of the group default, e.g. \"radar\": { \"maxStaleMinutes\": 180 }."
+  },
+  "$ignoreComment": "flood (bma-flood) and rain (bma-rain) are known blocked: BMA answers 403 to both Cloudflare and GitHub Actions IPs. Remove them from ignore once a working fetch path exists.",
+  "ignore": ["flood", "rain"]
+}

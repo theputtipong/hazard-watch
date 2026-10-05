@@ -93,6 +93,10 @@ export interface SourceResult<T> {
   ok: boolean;
   error?: string;
   items: T[];
+  /** Set by the ingest store: time of the last successful fetch (kept across failures). */
+  lastOkAt?: string;
+  /** Set by the ingest store while `ok` is false: time of the first failure in the current run of failures. */
+  failingSince?: string;
 }
 
 export interface GroupSnapshot<F> {

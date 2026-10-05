@@ -26,14 +26,22 @@ export async function readGroup(kv: KVNamespace, key: string): Promise<GroupSnap
 /**
  * Keeps the previous items of a feed that failed this run, so one bad fetch
  * doesn't blank the dashboard; the stale data is flagged by `ok: false`.
+ * Also carries `lastOkAt` / `failingSince` forward so outages can be dated (tools/monitor);
+ * this adds no KV writes, it rides on the one put per group.
  */
 export function mergeWithPrevious(next: FeedMap, prev: GroupSnapshot | null): FeedMap {
   const out: FeedMap = { ...next };
   for (const [name, result] of Object.entries(next) as [FeedName, SourceResult<unknown>][]) {
     const old = prev?.feeds[name];
-    if (!result.ok && old && old.items.length) {
-      out[name] = { ...result, items: old.items, fetchedAt: old.fetchedAt };
+    if (result.ok) {
+      const { failingSince: _drop, ...rest } = result;
+      out[name] = { ...rest, lastOkAt: result.fetchedAt };
+      continue;
     }
+    const lastOkAt = old?.lastOkAt ?? (old?.ok ? old.fetchedAt : undefined);
+    const failingSince = (old && !old.ok && old.failingSince) || result.fetchedAt;
+    const merged = old && old.items.length ? { ...result, items: old.items, fetchedAt: old.fetchedAt } : { ...result };
+    out[name] = { ...merged, failingSince, ...(lastOkAt ? { lastOkAt } : {}) };
   }
   return out;
 }

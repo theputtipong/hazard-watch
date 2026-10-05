@@ -19,6 +19,7 @@ packages/
 .github/workflows/
   ingest-runner.yml  Fetches feeds that block Cloudflare IPs (BMA, ThaiWater) and pushes them to ingest.
   ci.yml             Typecheck + tests.
+  monitor.yml        Hourly source-outage check; opens/closes `outage` issues (tools/monitor).
 ```
 
 ## Data flow
@@ -84,6 +85,21 @@ once in `apps/web/src/app/globals.css`; components use only these names.
 
 All thresholds are in `packages/core/src/config.ts` (`DEFAULT_CONFIG`). UI text for both languages is in
 `packages/core/src/i18n/messages.ts`.
+
+## Monitoring
+
+`.github/workflows/monitor.yml` runs `tools/monitor/check.mjs` every hour (and on demand via *Run workflow*).
+It reads `/v1/snapshot` and treats a feed as down when its last successful fetch (`lastOkAt`, kept by the ingest
+store across failures; `failingSince` marks the first failure) is older than the feed's threshold.
+
+- One open GitHub issue per down feed, labelled `outage`, titled `แหล่งข้อมูลล่ม: <feed>`. No repeat comments while it
+  stays down; when the feed recovers the issue gets a comment and is closed automatically.
+- If the API itself is unreachable, it opens `แหล่งข้อมูลล่ม: api` and leaves the per-feed issues alone.
+- Thresholds and the ignore list are in `tools/monitor/config.json`: group defaults (`edge` 60 min for the Cloudflare
+  cron, `runner` 6 h because GitHub schedules can run hours late), per-feed overrides under `feeds`, and `ignore`
+  (default: BMA `flood` and `rain`, which answer 403 to both Cloudflare and GitHub IPs).
+- Uses only the built-in `GITHUB_TOKEN` (`issues: write`). Try it locally without touching GitHub:
+  `node tools/monitor/check.mjs --dry-run` (tests: `node --test tools/monitor/check.test.mjs`).
 
 ## Data credits
 

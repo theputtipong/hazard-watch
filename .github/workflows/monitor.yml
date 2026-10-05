@@ -1,0 +1,33 @@
+# Opens one `outage` issue per data source that is down or stale, and closes it when the source recovers.
+# Thresholds and the ignore list: tools/monitor/config.json. Uses only the built-in GITHUB_TOKEN.
+name: monitor
+
+on:
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: monitor
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: tools/monitor
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node --test tools/monitor/check.test.mjs
+      - run: node tools/monitor/check.mjs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
