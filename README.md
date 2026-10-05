@@ -88,7 +88,7 @@ All thresholds are in `packages/core/src/config.ts` (`DEFAULT_CONFIG`). UI text 
 
 ## Monitoring
 
-`.github/workflows/monitor.yml` runs `tools/monitor/check.mjs` every hour (and on demand via *Run workflow*).
+`.github/workflows/monitor.yml` runs `tools/monitor/check.mjs` every 2 hours (to stay inside the free Actions minutes) (and on demand via *Run workflow*).
 It reads `/v1/snapshot` and treats a feed as down when its last successful fetch (`lastOkAt`, kept by the ingest
 store across failures; `failingSince` marks the first failure) is older than the feed's threshold.
 

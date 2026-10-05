@@ -15,4 +15,9 @@ export const INGEST = {
    */
   runnerDispatchEveryMinutes: 30,
   runnerWorkflow: 'ingest-runner.yml',
+  /**
+   * Runner feeds refreshed less often than every run (hours). The BMA camera list barely changes, and the
+   * data request to BMA promises at most one fetch a day; skipped feeds keep their last stored copy.
+   */
+  runnerFeedEveryHours: { cctv: 24 } as Partial<Record<'flood' | 'rain' | 'waterlevel' | 'radar' | 'cctv', number>>,
 } as const;

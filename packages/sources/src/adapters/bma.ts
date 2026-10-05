@@ -82,7 +82,7 @@ export function parseBmaRain(gauges: RainGauge[], ctx: AdapterContext): Observat
       observedAt: aspNetDate(g.site_timestamp) ?? ctx.now.toISOString(),
       value: offline ? null : g.rf1hr,
       unit: ctx.config.units.rain,
-      severity: offline || g.rf1hr === null ? 'ok' : rainSeverity(g.rf1hr, ctx.config),
+      severity: offline || g.rf1hr === null ? 'ok' : rainSeverity(g.rf1hr, ctx.config, g.rf24hr),
       offline,
       extra: { rain24h: g.rf24hr, district: g.district_name },
     } satisfies Observation;

@@ -93,6 +93,16 @@ describe('flood and rain', () => {
   it('grades hourly rain', () => {
     expect(rainSeverity(0, cfg)).toBe('ok');
     expect(rainSeverity(40, cfg)).toBe('warn');
+    expect(rainSeverity(30, cfg)).toBe('warn');
+    expect(rainSeverity(29.9, cfg)).toBe('watch');
+    expect(rainSeverity(60, cfg)).toBe('danger');
+    // 24 h totals (TMD classes) raise a gauge whose hourly rain is light.
+    expect(rainSeverity(2, cfg, 34)).toBe('ok');
+    expect(rainSeverity(2, cfg, 35.1)).toBe('watch');
+    expect(rainSeverity(2, cfg, 60)).toBe('warn');
+    expect(rainSeverity(2, cfg, 90.1)).toBe('danger');
+    expect(rainSeverity(65, cfg, 0)).toBe('danger');
+    expect(rainSeverity(2, cfg, null)).toBe('ok');
   });
   it('takes the worst severity', () => {
     expect(worst(['ok', 'warn', 'watch'])).toBe('warn');

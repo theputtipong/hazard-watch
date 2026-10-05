@@ -24,12 +24,14 @@ export function pm25ShouldPush(value: number, cfg: AlertConfig): boolean {
   return value >= cfg.pm25.pushAt;
 }
 
-export function rainSeverity(mmPerHour: number, cfg: AlertConfig): Severity {
+/** Rain level from the past hour and, when the source has it, the past 24 h — whichever is worse. */
+export function rainSeverity(mmPerHour: number, cfg: AlertConfig, mm24h?: number | null): Severity {
   const r = cfg.rain;
-  if (mmPerHour >= r.dangerMmPerHour) return 'danger';
-  if (mmPerHour >= r.warnMmPerHour) return 'warn';
-  if (mmPerHour >= r.watchMmPerHour) return 'watch';
-  return 'ok';
+  const hourly: Severity =
+    mmPerHour >= r.dangerMmPerHour ? 'danger' : mmPerHour >= r.warnMmPerHour ? 'warn' : mmPerHour >= r.watchMmPerHour ? 'watch' : 'ok';
+  if (mm24h === null || mm24h === undefined) return hourly;
+  const daily: Severity = mm24h >= r.danger24hMm ? 'danger' : mm24h >= r.warn24hMm ? 'warn' : mm24h >= r.watch24hMm ? 'watch' : 'ok';
+  return worst([hourly, daily]);
 }
 
 export function waterLevelSeverity(bankFullPct: number, cfg: AlertConfig): Severity {

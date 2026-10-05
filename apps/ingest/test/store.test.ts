@@ -14,6 +14,11 @@ describe('mergeWithPrevious', () => {
     const out = mergeWithPrevious({ pm25: { source: 'air4thai', fetchedAt: 'now', ok: true, items: [3] } }, prev);
     expect(out.pm25!.items).toEqual([3]);
   });
+  it('keeps a feed that was not fetched this run (e.g. the daily CCTV list)', () => {
+    const out = mergeWithPrevious({ quakesUsgs: { source: 'usgs', fetchedAt: 'now', ok: true, items: [] } }, prev);
+    expect(out.pm25).toMatchObject({ ok: true, items: [1, 2], fetchedAt: '2026-10-03T14:00:00Z' });
+    expect(out.quakesUsgs!.fetchedAt).toBe('now');
+  });
 });
 
 describe('outage timestamps', () => {

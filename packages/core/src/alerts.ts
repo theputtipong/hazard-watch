@@ -66,10 +66,13 @@ export function districtAlerts(
       make('flood', sev, 'alert.flood.title', 'alert.flood.body', { n: flooded.length, depth: Math.round(deepest) });
     }
 
-    const rain = inside.filter((o) => o.kind === 'rain' && (o.value ?? 0) >= cfg.rain.warnMmPerHour);
+    // Severity already folds in the 24 h total (rainSeverity), so a long steady rain alerts too.
+    const rain = inside.filter((o) => o.kind === 'rain' && rank(o.severity) >= rank('warn'));
     if (rain.length) {
-      const top = rain.reduce((a, b) => ((a.value ?? 0) >= (b.value ?? 0) ? a : b));
-      make('rain', top.severity, 'alert.rain.title', 'alert.rain.body', { v: top.value ?? 0 });
+      const top = rain.reduce((a, b) => (rank(a.severity) > rank(b.severity) || (a.severity === b.severity && (a.value ?? 0) >= (b.value ?? 0)) ? a : b));
+      const day = typeof top.extra?.rain24h === 'number' ? top.extra.rain24h : null;
+      if (day !== null && (top.value ?? 0) < cfg.rain.warnMmPerHour) make('rain', top.severity, 'alert.rain.title', 'alert.rain.body24h', { v: day });
+      else make('rain', top.severity, 'alert.rain.title', 'alert.rain.body', { v: top.value ?? 0 });
     }
 
     const water = inside.filter((o) => o.kind === 'waterlevel' && (o.value ?? 0) >= cfg.waterLevel.warnPct);

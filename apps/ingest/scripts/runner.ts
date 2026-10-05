@@ -15,8 +15,28 @@ if (!base || !token) throw new Error('INGEST_URL and INGEST_TOKEN are required')
 const ctx = defaultContext();
 const auth = { authorization: `Bearer ${token}` };
 
+/** Feeds fetched recently enough (INGEST.runnerFeedEveryHours) are skipped; the ingest keeps their stored copy. */
+async function recentlyFetched(): Promise<Set<string>> {
+  const skip = new Set<string>();
+  try {
+    const res = await fetch(`${base}/v1/snapshot`);
+    const prev = res.ok ? ((await res.json()) as { runner?: { feeds?: Record<string, { ok: boolean; fetchedAt: string; lastOkAt?: string }> } }).runner?.feeds : undefined;
+    for (const [name, hours] of Object.entries(INGEST.runnerFeedEveryHours)) {
+      const last = prev?.[name]?.ok ? (prev[name]!.lastOkAt ?? prev[name]!.fetchedAt) : undefined;
+      if (hours && last && Date.now() - new Date(last).getTime() < hours * 3_600_000) skip.add(name);
+    }
+  } catch {
+    // Snapshot unreadable: fetch everything.
+  }
+  return skip;
+}
+
+const skip = await recentlyFetched();
+for (const name of skip) console.log(`${name.padEnd(10)} skip (fetched within ${INGEST.runnerFeedEveryHours[name as RunnerFeed]} h)`);
 const entries = await Promise.all(
-  (Object.entries(FEEDS.runner) as [RunnerFeed, (typeof FEEDS.runner)[RunnerFeed]][]).map(async ([name, run]) => [name, await run(ctx)] as const),
+  (Object.entries(FEEDS.runner) as [RunnerFeed, (typeof FEEDS.runner)[RunnerFeed]][])
+    .filter(([name]) => !skip.has(name))
+    .map(async ([name, run]) => [name, await run(ctx)] as const),
 );
 const feeds = Object.fromEntries(entries);
 for (const [name, r] of entries) console.log(`${name.padEnd(10)} ${r.ok ? 'ok ' : 'ERR'} ${r.items.length} items ${r.error ?? ''}`);

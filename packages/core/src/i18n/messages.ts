@@ -245,6 +245,7 @@ export const messages = {
   'alert.flood.body': { th: 'มีจุดน้ำท่วม {n} จุด · ลึกสุด {depth} ซม.', en: '{n} flooded spots · up to {depth} cm deep' },
   'alert.rain.title': { th: 'ฝนตกหนักใน{area}', en: 'Heavy rain in {area}' },
   'alert.rain.body': { th: 'ฝน {v} มม. ใน 1 ชั่วโมงที่ผ่านมา', en: '{v} mm in the past hour' },
+  'alert.rain.body24h': { th: 'ฝนสะสม {v} มม. ใน 24 ชั่วโมงที่ผ่านมา', en: '{v} mm in the past 24 hours' },
   'alert.water.title': { th: 'ระดับน้ำสูงใน{area}', en: 'High water in {area}' },
   'alert.water.body': { th: '{station} {v}% ของความจุตลิ่ง', en: '{station} at {v}% of bank-full' },
   'alert.pm25.title': { th: 'ฝุ่น PM2.5 สูงใน{area}', en: 'High PM2.5 in {area}' },

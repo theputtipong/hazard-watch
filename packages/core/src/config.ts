@@ -42,16 +42,26 @@ export interface AlertConfig {
     dangerDepthCm: number;
   };
   waterLevel: {
-    /** Percent of bank-full at a river/canal gauge (ThaiWater storage_percent). */
+    /** Percent of bank-full at a river/canal gauge (ThaiWater storage_percent). 70 = ThaiWater "น้ำมาก", 100 = "ล้นตลิ่ง"; 120 is our own. */
     watchPct: number;
     warnPct: number;
     dangerPct: number;
   };
   rain: {
-    /** Rain in the past hour (in `units.rain`). ⚠️ Estimates; not yet tied to an official standard. */
+    /**
+     * Rain in the past hour (in `units.rain`). No official Thai hourly scale exists: 10 = WMO/JMA "heavy",
+     * 30 = JMA "very heavy", 60 = BMA drains cannot keep up (see notes/thresholds-th.md).
+     */
     watchMmPerHour: number;
     warnMmPerHour: number;
     dangerMmPerHour: number;
+    /**
+     * Rain over the past 24 h (mm), where a source reports it (BMA gauges). TMD 24 h classes: heavy from 35.1,
+     * very heavy from 90.1; 60 sits between. A gauge takes the worse of its hourly and 24 h levels.
+     */
+    watch24hMm: number;
+    warn24hMm: number;
+    danger24hMm: number;
   };
   zones: {
     /** Which point readings decide a zone's colour. Earthquakes are regional, so they are not zoned. */
@@ -109,14 +119,17 @@ export const DEFAULT_CONFIG: AlertConfig = {
     dangerDepthCm: 30,
   },
   waterLevel: {
-    watchPct: 80,
+    watchPct: 70,
     warnPct: 100,
     dangerPct: 120,
   },
   rain: {
     watchMmPerHour: 10,
-    warnMmPerHour: 35,
+    warnMmPerHour: 30,
     dangerMmPerHour: 60,
+    watch24hMm: 35.1,
+    warn24hMm: 60,
+    danger24hMm: 90.1,
   },
   zones: {
     kinds: ['flood', 'pm25', 'rain', 'waterlevel'],
