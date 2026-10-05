@@ -12,8 +12,10 @@ export const INGEST = {
   /**
    * GitHub's own schedule for ingest-runner.yml is often hours late, so the edge cron starts it instead
    * (workflow_dispatch) every this many minutes — only when the GITHUB_DISPATCH_TOKEN secret is set.
+   * Must be a multiple of the 10-min edge cron. 40 keeps the private repo inside 2,000 free Actions minutes/month
+   * (36 dispatched + ~8 late GitHub-scheduled runs a day ≈ 1,320 min, plus the 2-hourly monitor ≈ 360 min).
    */
-  runnerDispatchEveryMinutes: 30,
+  runnerDispatchEveryMinutes: 40,
   runnerWorkflow: 'ingest-runner.yml',
   /**
    * Runner feeds refreshed less often than every run (hours). The BMA camera list barely changes, and the
