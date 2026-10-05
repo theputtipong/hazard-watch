@@ -65,6 +65,13 @@ needs its own adapters in `packages/sources`.
 - Radars and where their images sit on the map: `packages/core/src/radars.ts` (11 calibrated, nationwide).
 - Adding or re-fitting a radar: `tools/radar-calibrate/README.md`.
 
+## Sharing an area
+
+- Links `/<lang>?area=<id>` open the dashboard on that area (ids nest by prefix: `TH10` province, `TH1028`
+  district, `TH102803` subdistrict). The address bar follows the area the user selects.
+- The Share button (levels in `WEB.share.levels`) uses the device share sheet, or copy link / LINE / Facebook / X.
+- Link previews use `apps/web/public/geo/names.json` (built with the boundaries) so the server never loads polygons.
+
 ## Design tokens
 
 Colours, the type scale (`text-caption … text-figure`) and corner radii (`rounded-tiny … rounded-card`) are defined
