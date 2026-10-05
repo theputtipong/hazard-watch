@@ -65,7 +65,7 @@ needs its own adapters in `packages/sources`.
 
 ## Radar
 
-- Radars and where their images sit on the map: `packages/core/src/radars.ts` (11 calibrated, nationwide).
+- Radars and where their images sit on the map: `packages/core/src/radars.ts` (24 calibrated, nationwide: BMA 2, TMD 14, DRRAA 8).
 - Adding or re-fitting a radar: `tools/radar-calibrate/README.md`.
 
 ## Sharing an area
