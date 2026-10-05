@@ -270,6 +270,7 @@ export function Dashboard({ lang, initialArea }: { lang: Lang; initialArea?: str
             waterStations={view.waterStations}
             zones={zones}
             palette={palette}
+            dark={prefs.dark}
           />
           {layers.radar && (
             <div className="flex flex-wrap items-center gap-2 border-t border-line-soft px-3.5 py-2.5 text-body">

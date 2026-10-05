@@ -1,6 +1,17 @@
 import type { Severity } from '@hw/core';
 import type { LayerKey } from './lib/layers';
 
+export type TileProvider = 'stadia' | 'osm';
+export interface TileSource {
+  /** Leaflet URL templates; `{r}` becomes `@2x` on retina screens. */
+  light: string;
+  dark: string;
+  attribution: string;
+  maxZoom: number;
+  /** Darken the light tiles with a CSS filter in dark mode (only for providers without a dark style). */
+  invertInDark: boolean;
+}
+
 /**
  * Display settings for the web app. Alert thresholds and units are NOT here —
  * they live in packages/core/src/config.ts so the server and the web agree.
@@ -13,9 +24,31 @@ export const WEB = {
   refreshMs: 2 * 60_000,
 
   map: {
-    /** ⚠️ tile.openstreetmap.org forbids heavy use; switch provider before a public launch (TODO.md). */
-    tileUrl: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    /**
+     * Base-map provider. Stadia Maps (free non-commercial plan) is the default; it authenticates
+     * browsers by domain, so every public domain must be registered in the Stadia dashboard
+     * (localhost works without it). NEXT_PUBLIC_TILE_PROVIDER=osm falls back to the OpenStreetMap
+     * standard tiles — local dev only, tile.openstreetmap.org forbids heavy use.
+     */
+    tileProvider: (process.env.NEXT_PUBLIC_TILE_PROVIDER === 'osm' ? 'osm' : 'stadia') as TileProvider,
+    tiles: {
+      stadia: {
+        light: 'https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png',
+        dark: 'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png',
+        attribution:
+          '&copy; <a href="https://stadiamaps.com/" target="_blank" rel="noopener">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/" target="_blank" rel="noopener">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors',
+        maxZoom: 20,
+        invertInDark: false,
+      },
+      osm: {
+        light: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+        dark: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors',
+        maxZoom: 19,
+        /** No dark style: light tiles are CSS-inverted in dark mode (.hw-tiles-invert in app/globals.css). */
+        invertInDark: true,
+      },
+    } satisfies Record<TileProvider, TileSource>,
     /** Layers switched on when the page opens. */
     defaultLayers: { zones: true, radar: true, flood: true, water: true, pm25: false, cctv: false } satisfies Record<LayerKey, boolean>,
     defaultRadar: 'nkm',

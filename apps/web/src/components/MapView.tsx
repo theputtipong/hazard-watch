@@ -34,6 +34,8 @@ interface Props {
   zones: ZoneView;
   /** Severity colours for the current theme / colour-blind setting. */
   palette: MapPalette;
+  /** Dark theme is showing (picks the dark base-map style). */
+  dark: boolean;
 }
 
 /** Draw order: problems above normal points, and "you" above everything. */
@@ -42,7 +44,7 @@ const FLOOD_RANK: Record<Severity, number> = { ok: 0, watch: 1, warn: 2, danger:
 /** Readings older than `staleAfterMinutes` are drawn faded so they don't read as current. */
 const fade = (o: Observation) => (isStale(o.observedAt, DEFAULT_CONFIG) ? WEB.map.staleOpacity : 1);
 
-export default function MapView({ lang, center, located, onLocate, layers, radarId, radarTime, radarFocus, floodPoints, pmStations, cameras, waterStations, zones, palette }: Props) {
+export default function MapView({ lang, center, located, onLocate, layers, radarId, radarTime, radarFocus, floodPoints, pmStations, cameras, waterStations, zones, palette, dark }: Props) {
   const bounds = RADARS[radarId]?.bounds;
   const startZoom = regionFor(center).zoom;
   const [zoom, setZoom] = useState(startZoom);
@@ -55,7 +57,7 @@ export default function MapView({ lang, center, located, onLocate, layers, radar
   return (
     <div className="relative">
       <MapContainer ref={setMap} center={[center.lat, center.lng]} zoom={startZoom} scrollWheelZoom className="h-[420px] w-full sm:h-[520px]">
-        <TileLayer attribution={WEB.map.attribution} url={WEB.map.tileUrl} />
+        <BaseTiles dark={dark} />
         <ZoomWatcher onZoom={setZoom} />
         <FollowFirstFix center={center} located={located} />
         <FlyToRadar radarId={radarId} focus={radarFocus} />
@@ -171,6 +173,22 @@ export default function MapView({ lang, center, located, onLocate, layers, radar
         </p>
       )}
     </div>
+  );
+}
+
+/** Base map from the provider chosen in config; switches style with the theme. */
+function BaseTiles({ dark }: { dark: boolean }) {
+  const src = WEB.map.tiles[WEB.map.tileProvider];
+  const url = dark ? src.dark : src.light;
+  return (
+    <TileLayer
+      // Re-mount on a style/provider change so the attribution is replaced too.
+      key={`${WEB.map.tileProvider}:${url}`}
+      url={url}
+      attribution={src.attribution}
+      maxZoom={src.maxZoom}
+      className={src.invertInDark ? 'hw-tiles-invert' : undefined}
+    />
   );
 }
 
@@ -306,7 +324,8 @@ function MapButtons({
   const btn =
     'grid size-11 place-items-center rounded-control border border-line bg-panel text-ink shadow-sm hover:bg-ground disabled:opacity-60';
   return (
-    <div className="absolute bottom-8 left-2.5 z-[1000] flex flex-col items-start gap-2">
+    // Higher on phones, where the map credits wrap onto two lines.
+    <div className="absolute bottom-12 left-2.5 z-[1000] sm:bottom-8 flex flex-col items-start gap-2">
       {hint && <p className="max-w-[220px] rounded-control bg-ink/90 px-2.5 py-1.5 text-caption text-panel">{hint}</p>}
       <button type="button" className={btn} onClick={goToMe} disabled={busy} aria-label={busy ? t('map.locating', lang) : t('map.locate', lang)} title={t('map.locate', lang)}>
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={WEB.map.youColor} strokeWidth="2" aria-hidden="true" className={busy ? 'animate-pulse' : ''}>
