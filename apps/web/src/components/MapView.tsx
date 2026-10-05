@@ -13,7 +13,7 @@ import { openCamera } from '@/lib/openCamera';
 import type { MapPalette } from '@/lib/prefs';
 import type { ZoneView } from '@/lib/useZones';
 import { cctvIcon, floodIcon, LEGEND_GLYPH, pm25Icon, waterIcon, youIcon } from './mapIcons';
-import { zoneLabel } from './ZonePanel';
+import { zoneLabel } from '@/lib/zoneText';
 
 interface Props {
   lang: Lang;

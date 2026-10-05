@@ -59,13 +59,29 @@ export interface ZoneView {
   back: () => void;
 }
 
-export function useZones(readings: Observation[]): ZoneView {
+/**
+ * @param initialArea zone id from a shared link (?area=); the view opens on it once boundaries load.
+ */
+export function useZones(readings: Observation[], initialArea?: string | null): ZoneView {
   const [data, setData] = useState<ZoneData | null>(null);
   const [pathIds, setPathIds] = useState<string[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   useEffect(() => {
-    loadZones().then(setData).catch(() => setData(null));
+    loadZones()
+      .then((d) => {
+        setData(d);
+        const start = initialArea ? d.byId.get(initialArea) : null;
+        if (!start) return;
+        // Ids nest by prefix: TH10 province → TH1028 district → TH102803 subdistrict.
+        const chain = [4, 6, 8].map((n) => start.properties.id.slice(0, n)).filter((id, i) => i < start.properties.level && d.byId.has(id));
+        const leaf = !d.children.get(start.properties.id)?.length;
+        setPathIds(leaf ? chain.slice(0, -1) : chain);
+        setSelectedId(leaf ? start.properties.id : null);
+      })
+      .catch(() => setData(null));
+    // Only the first load uses the shared link.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return useMemo(() => {

@@ -294,6 +294,12 @@ def main():
         path = os.path.join(OUT, f'{name}.json')
         json.dump({'type': 'FeatureCollection', 'features': feats}, open(path, 'w'), ensure_ascii=False, separators=(',', ':'))
         print(f'{name:13} {len(feats):4} features  {os.path.getsize(path) / 1024:7.0f} KB')
+    # Small id → name index for the server (link previews) without loading the polygons.
+    names = {f['properties']['id']: [f['properties']['name_th'], f['properties']['name_en']]
+             for f in provinces + districts + subdistricts}
+    path = os.path.join(OUT, 'names.json')
+    json.dump(names, open(path, 'w'), ensure_ascii=False, separators=(',', ':'), sort_keys=True)
+    print(f'names         {len(names):4} entries   {os.path.getsize(path) / 1024:7.0f} KB')
     if any(missing.values()):
         print('WARNING: unmatched', missing, file=sys.stderr)
 

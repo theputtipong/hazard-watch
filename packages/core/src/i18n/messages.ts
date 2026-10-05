@@ -227,6 +227,20 @@ export const messages = {
   'alert.test.title': { th: 'ทดสอบการแจ้งเตือน', en: 'Test alert' },
   'alert.test.body': { th: 'การแจ้งเตือนของคุณทำงานแล้ว', en: 'Your alerts are working' },
 
+  'share.button': { th: 'แชร์', en: 'Share' },
+  'share.label': { th: 'แชร์สถานการณ์ของ{area}', en: 'Share the situation in {area}' },
+  'share.copy': { th: 'คัดลอกลิงก์', en: 'Copy link' },
+  'share.copied': { th: 'คัดลอกลิงก์แล้ว', en: 'Link copied' },
+  'share.line': { th: 'LINE', en: 'LINE' },
+  'share.facebook': { th: 'Facebook', en: 'Facebook' },
+  'share.x': { th: 'X', en: 'X' },
+  'share.close': { th: 'ปิด', en: 'Close' },
+  'share.text': { th: '{area}: {status} — {detail}', en: '{area}: {status} — {detail}' },
+  'share.metaTitle': { th: '{area} · {app}', en: '{area} · {app}' },
+  'share.metaDescription': {
+    th: 'สถานการณ์น้ำท่วม ฝน ระดับน้ำ ฝุ่น และแผ่นดินไหวล่าสุดของ{area}',
+    en: 'Latest flooding, rain, water levels, PM2.5 and earthquakes for {area}',
+  },
   'privacy.title': { th: 'ความเป็นส่วนตัว', en: 'Privacy' },
 
   'footer.coffee': { th: 'สนับสนุนค่ากาแฟ', en: 'Buy me a coffee' },

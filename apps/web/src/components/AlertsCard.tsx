@@ -7,7 +7,7 @@ import { t, type Lang } from '@hw/core/i18n';
 import { WEB } from '@/config';
 import { currentSubscription, pushSupport, savedPrefs, sendTest, subscribe, unsubscribe, type PushPrefs, type PushSupport } from '@/lib/push';
 import { Card } from './Card';
-import { zoneLabel } from './ZonePanel';
+import { zoneLabel } from '@/lib/zoneText';
 
 type Status = 'loading' | 'off' | 'on' | 'busy';
 

@@ -1,7 +1,7 @@
 import type { ZoneSummary } from '@hw/core';
 import { t, type Lang } from '@hw/core/i18n';
 import { SeverityPill } from './Severity';
-import { describe } from './ZonePanel';
+import { describe } from '@/lib/zoneText';
 
 const TONE = { ok: 'bg-ok', watch: 'bg-watch', warn: 'bg-warn', danger: 'bg-danger' } as const;
 

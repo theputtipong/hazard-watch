@@ -17,7 +17,7 @@ import { spokenSummary } from '@/lib/spokenSummary';
 import { A11yControls } from './A11yControls';
 import { AlertsCard } from './AlertsCard';
 import { registerServiceWorker } from '@/lib/push';
-import { zoneLabel } from './ZonePanel';
+import { zoneLabel } from '@/lib/zoneText';
 import { ZonePanel } from './ZonePanel';
 import { SummaryBanner } from './SummaryBanner';
 import { LoadStateContext, type LoadState } from '@/lib/loadState';
@@ -30,7 +30,7 @@ const MapView = dynamic(() => import('./MapView'), { ssr: false, loading: () => 
 
 const LAYER_LABEL: Record<LayerKey, MessageKey> = { zones: 'zone.layer', radar: 'layer.radar', flood: 'layer.flood', water: 'layer.water', pm25: 'layer.pm25', cctv: 'layer.cctv' };
 
-export function Dashboard({ lang }: { lang: Lang }) {
+export function Dashboard({ lang, initialArea }: { lang: Lang; initialArea?: string | null }) {
   const { location, status, locate } = useLocation();
   const { prefs, cycleTheme, toggleCvd } = usePrefs();
   const palette = useMemo(() => mapPalette(prefs), [prefs]);
@@ -124,7 +124,21 @@ export function Dashboard({ lang }: { lang: Lang }) {
     ],
     [snapshot],
   );
-  const zones = useZones(readings);
+  const zones = useZones(readings, initialArea);
+  const focusId = (zones.selected ?? zones.path.at(-1))?.properties.id ?? null;
+
+  // Keep ?area= in the address bar in step with the map, so the URL itself can be copied and shared.
+  useEffect(() => {
+    if (!zones.ready) return;
+    const url = new URL(window.location.href);
+    if (focusId) url.searchParams.set('area', focusId);
+    else url.searchParams.delete('area');
+    if (url.href !== window.location.href) window.history.replaceState(null, '', url);
+    const focus = zones.selected ?? zones.path.at(-1) ?? null;
+    document.title = focus ? t('share.metaTitle', lang, { area: zoneLabel(focus, lang), app: t('app.name', lang) }) : t('app.name', lang);
+    // focusId captures every change of the selected/drilled zone.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [zones.ready, focusId, lang]);
 
   const updatedAt = [snapshot?.edge?.updatedAt, snapshot?.runner?.updatedAt].filter(Boolean).sort().at(-1) ?? null;
   const focusZone = zones.selected ?? zones.path.at(-1) ?? null;

@@ -75,6 +75,9 @@ export const WEB = {
   /** Choices offered for the personal PM2.5 alert level (µg/m³); the default is core config pm25.pushAt. */
   push: { pm25Choices: [25, 37.5, 50, 75] },
 
+  /** Which area levels get a Share button (1 province, 2 เขต/อำเภอ, 3 แขวง/ตำบล). */
+  share: { levels: [2, 3] as number[] },
+
   /** Read-aloud (Web Speech API). 1 = normal speed; lower is easier to follow. */
   speech: { rate: 0.95 },
 
