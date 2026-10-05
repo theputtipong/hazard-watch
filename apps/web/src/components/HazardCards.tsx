@@ -1,4 +1,4 @@
-import { DEFAULT_CONFIG, pm25Severity, quakeAlertFloor, worst, type Earthquake, type Observation, type WeatherNow } from '@hw/core';
+import { DEFAULT_CONFIG, pm25Severity, quakeAlertFloor, quakePlace, quakePlaceHasDistance, worst, type Earthquake, type Observation, type WeatherNow } from '@hw/core';
 import { t, type Lang } from '@hw/core/i18n';
 import { NoData } from '@/lib/loadState';
 import { Card } from './Card';
@@ -155,9 +155,11 @@ export function QuakeCard({
         <ul className="flex flex-col gap-1 text-body">
           {alerts.map(({ quake, km }) => (
             <li key={quake.id} className="flex justify-between gap-2">
-              <span>{quake.place[lang]}</span>
-              <span className="num">
-                M{quake.magnitude.toFixed(1)} · {Math.round(km)} {u.distance}
+              <span>{quakePlace(quake, lang, km)}</span>
+              <span className="num shrink-0">
+                M{quake.magnitude.toFixed(1)}
+                {/* Thai USGS names already say how far away it is. */}
+                {!quakePlaceHasDistance(quake, lang) && ` · ${Math.round(km)} ${u.distance}`}
               </span>
             </li>
           ))}
@@ -170,9 +172,9 @@ export function QuakeCard({
       {latest && (
         <p className="flex justify-between gap-2 border-t border-sunken pt-2 text-body text-muted">
           <span>
-            {t('quake.latest', lang)}: {latest.quake.place[lang]}
+            {t('quake.latest', lang)}: {quakePlace(latest.quake, lang, latest.km)}
           </span>
-          <span className="num">
+          <span className="num shrink-0">
             M{latest.quake.magnitude.toFixed(1)} · {time(latest.quake.occurredAt)}
           </span>
         </p>

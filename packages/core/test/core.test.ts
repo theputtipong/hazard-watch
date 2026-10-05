@@ -17,6 +17,7 @@ import {
   type Earthquake,
 } from '../src';
 import { messages, t } from '../src/i18n';
+import { quakePlace, quakePlaceHasDistance, thaiQuakeArea } from '../src';
 import {
   districtAlerts,
   groupByZone,
@@ -227,5 +228,47 @@ describe('push alerts', () => {
     it('knows the widest limit anyone can pick', () => {
       expect(loosestQuakeLimit(cfg)).toEqual({ minMagnitude: 5, maxDistanceKm: 1500 });
     });
+  });
+  it('names USGS quakes in Thai in the push body', () => {
+    const q = { id: 'usgs:y', source: 'usgs' as const, magnitude: 7.7, depthKm: 10, location: { lat: 22.01, lng: 95.92 }, place: { th: '16 km NNW of Sagaing, Myanmar', en: '16 km NNW of Sagaing, Myanmar' }, occurredAt: new Date().toISOString() };
+    const [a] = quakeAlerts([q], district, cfg);
+    expect(a!.body.th).toMatch(/^ประเทศเมียนมา · ห่าง \d+ กม\.$/);
+    expect(a!.body.en).toContain('16 km NNW of Sagaing, Myanmar');
+  });
+});
+
+describe('quake place names', () => {
+  const usgs = (place: string) => ({ source: 'usgs' as const, place: { th: place, en: place } });
+  it('finds the country at the end of a USGS place', () => {
+    expect(thaiQuakeArea('45 km NNE of Mawlaik, Myanmar')).toBe('ประเทศเมียนมา');
+    expect(thaiQuakeArea('Laos')).toBe('ประเทศลาว');
+    expect(thaiQuakeArea('121 km WNW of Chauk, Burma (Myanmar)')).toBe('ประเทศเมียนมา');
+    expect(thaiQuakeArea('81 km SSW of Banda Aceh, Indonesia')).toBe('ประเทศอินโดนีเซีย');
+    expect(thaiQuakeArea('12 km W of Phan Thiet, Vietnam')).toBe('ประเทศเวียดนาม');
+    expect(thaiQuakeArea('Mindanao, Philippines')).toBe('ประเทศฟิลิปปินส์');
+    expect(thaiQuakeArea('Andaman Islands, India region')).toBe('ประเทศอินเดีย');
+    expect(thaiQuakeArea('5 km S of Mae Lao, Thailand')).toBe('ประเทศไทย');
+  });
+  it('handles borders, seas and islands without a country', () => {
+    expect(thaiQuakeArea('Myanmar-China border region')).toBe('ชายแดนเมียนมา–จีน');
+    expect(thaiQuakeArea('India-Bangladesh border region')).toBe('ชายแดนอินเดีย–บังกลาเทศ');
+    expect(thaiQuakeArea('Andaman Sea')).toBe('ทะเลอันดามัน');
+    expect(thaiQuakeArea('off the west coast of northern Sumatra')).toBe('ประเทศอินโดนีเซีย');
+    expect(thaiQuakeArea('Kermadec Islands, New Zealand')).toBeNull();
+    expect(thaiQuakeArea('')).toBeNull();
+  });
+  it('describes USGS quakes in Thai with the distance', () => {
+    expect(quakePlace(usgs('45 km NNE of Mawlaik, Myanmar'), 'th', 254.4)).toBe('ประเทศเมียนมา ห่าง 254 กม. จากตำแหน่งของคุณ');
+    expect(quakePlace(usgs('Kermadec Islands, New Zealand'), 'th', 9876)).toBe('ห่าง 9,876 กม. จากตำแหน่งของคุณ');
+    expect(quakePlace(usgs('45 km NNE of Mawlaik, Myanmar'), 'th')).toBe('ประเทศเมียนมา');
+    expect(quakePlace(usgs('Kermadec Islands, New Zealand'), 'th')).toBe('Kermadec Islands, New Zealand');
+    expect(quakePlaceHasDistance({ source: 'usgs' }, 'th')).toBe(true);
+  });
+  it('keeps English and TMD names unchanged', () => {
+    expect(quakePlace(usgs('45 km NNE of Mawlaik, Myanmar'), 'en', 254)).toBe('45 km NNE of Mawlaik, Myanmar');
+    const tmd = { source: 'tmd' as const, place: { th: 'ประเทศลาว', en: 'Laos' } };
+    expect(quakePlace(tmd, 'th', 100)).toBe('ประเทศลาว');
+    expect(quakePlace(tmd, 'en', 100)).toBe('Laos');
+    expect(quakePlaceHasDistance(tmd, 'th')).toBe(false);
   });
 });

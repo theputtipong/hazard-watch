@@ -20,3 +20,7 @@ tools/boundaries/.cache
 tools/radar-calibrate/images
 tools/radar-calibrate/*.jsonl
 tools/radar-calibrate/best*.json
+
+# Local drafts (letters, research) — not in git
+notes/
+.claude/worktrees/

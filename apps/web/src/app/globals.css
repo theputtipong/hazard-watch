@@ -25,6 +25,12 @@
   --color-map-bg: #eaf0f5;
   --color-accent: #1f5fbf;
 
+  /* Header logo: a dark tile on light pages, a brighter blue tile on dark pages so it never blends in. */
+  --color-logo-bg: #0f1b2d;
+  --color-logo-line: #0f1b2d;
+  --color-logo-mark: #ffffff;
+  --color-logo-rain: #7fb2ff;
+
   /*
    * Type scale — use only these sizes (text-caption … text-figure). Line heights are a little taller
    * than usual so Thai vowels and tone marks never clip.
@@ -74,6 +80,10 @@
   --color-seg: #1f2935;
   --color-map-bg: #1a222d;
   --color-accent: #8ab8ff;
+  --color-logo-bg: #2f6fd6;
+  --color-logo-line: #8ab8ff;
+  --color-logo-mark: #ffffff;
+  --color-logo-rain: #d6e6ff;
   --color-ok: #123a2a;
   --color-ok-strong: #8fe0b8;
   --color-watch: #3d2f08;

@@ -161,9 +161,12 @@ export default function MapView({ lang, center, located, onLocate, layers, radar
             </Marker>
           ))}
 
-        <Marker position={[center.lat, center.lng]} icon={youIcon()} zIndexOffset={Z.you}>
-          <Popup>{t('map.you', lang)}</Popup>
-        </Marker>
+        {/* Only a real device position is "you"; a hand-picked area or the default centre is not. */}
+        {located && (
+          <Marker position={[center.lat, center.lng]} icon={youIcon()} zIndexOffset={Z.you}>
+            <Popup>{t('map.you', lang)}</Popup>
+          </Marker>
+        )}
       </MapContainer>
       {map && <MapButtons map={map} lang={lang} center={center} located={located} onLocate={onLocate} />}
       <Legend lang={lang} layers={layers} palette={palette} />

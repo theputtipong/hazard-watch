@@ -61,8 +61,9 @@ export interface ZoneView {
 
 /**
  * @param initialArea zone id from a shared link (?area=); the view opens on it once boundaries load.
+ * @param fallbackArea read when there is no shared link (e.g. the area the user picked last time).
  */
-export function useZones(readings: Observation[], initialArea?: string | null): ZoneView {
+export function useZones(readings: Observation[], initialArea?: string | null, fallbackArea?: () => string | null): ZoneView {
   const [data, setData] = useState<ZoneData | null>(null);
   const [pathIds, setPathIds] = useState<string[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -71,7 +72,8 @@ export function useZones(readings: Observation[], initialArea?: string | null): 
     loadZones()
       .then((d) => {
         setData(d);
-        const start = initialArea ? d.byId.get(initialArea) : null;
+        const startId = initialArea ?? fallbackArea?.() ?? null;
+        const start = startId ? d.byId.get(startId) : null;
         if (!start) return;
         // Ids nest by prefix: TH10 province → TH1028 district → TH102803 subdistrict.
         const chain = [4, 6, 8].map((n) => start.properties.id.slice(0, n)).filter((id, i) => i < start.properties.level && d.byId.has(id));
