@@ -8,7 +8,8 @@ Currently covers Bangkok and the five metropolitan provinces; built to expand to
 ```
 apps/
   web/      Next.js 16 (App Router) on Cloudflare Workers via OpenNext. Leaflet map. /th and /en routes.
-  ingest/   Cloudflare Worker (Hono): cron for edge feeds, KV snapshots, public read API, authenticated writes.
+  ingest/   Cloudflare Worker (Hono): cron for edge feeds, KV snapshots, public read API, authenticated writes,
+            Web Push (D1 subscriptions, alerts after every data update).
 packages/
   core/     Shared types, coverage regions (src/regions.ts), alert thresholds (src/config.ts), severity rules,
             i18n (src/i18n/messages.ts).
@@ -26,7 +27,7 @@ packages/
 | Earthquakes | TMD RSS + USGS | ingest cron, every 10 min | |
 | Weather | Open-Meteo | ingest, on request per location (cached 10 min) | |
 | Street flooding, rain gauges | BMA Drainage Dept. (unofficial endpoints) | GitHub Actions, every 30 min | 403 bot challenge from Cloudflare IPs |
-| Canal/river levels, radar images | ThaiWater (HII) | GitHub Actions, every 30 min | 429 rate limit from Cloudflare IPs |
+| Canal/river levels, radar images | ThaiWater (HII) | GitHub Actions, every 30 min | 429 rate limit from Cloudflare IPs; radar frames are cut to rain echoes only (`apps/ingest/scripts/radarImage.ts`) and placed with `packages/core/src/radars.ts` |
 | CCTV list | BMA Traffic | GitHub Actions | pins + link to source only |
 
 ## Develop
@@ -35,7 +36,8 @@ Requires Node 22 and pnpm 10 (`corepack install -g pnpm@10.34.6`).
 
 ```bash
 pnpm install
-cp apps/ingest/.dev.vars.example apps/ingest/.dev.vars
+cp apps/ingest/.dev.vars.example apps/ingest/.dev.vars   # add VAPID_PRIVATE_KEY=... for push
+pnpm --filter @hw/ingest exec wrangler d1 migrations apply hw-push --local
 cp apps/web/.env.example apps/web/.env.local
 pnpm --filter @hw/ingest dev        # http://localhost:8787 (curl /__scheduled to run the cron)
 INGEST_URL=http://localhost:8787 INGEST_TOKEN=dev-token-change-me pnpm --filter @hw/ingest runner
@@ -48,6 +50,15 @@ pnpm test && pnpm typecheck
 Add a region to `REGIONS` in `packages/core/src/regions.ts` and its id to `ACTIVE_REGION_IDS`. Adapters filter by
 the active regions automatically; sources that only exist for one area (e.g. BMA) need no change. A new country
 needs its own adapters in `packages/sources`.
+
+## Push notifications
+
+- Subscriptions live in D1 `hw-push` (schema in `apps/ingest/migrations`); only district/subdistrict codes are stored.
+- VAPID: public key in `apps/ingest/wrangler.jsonc`, private key as the Worker secret `VAPID_PRIVATE_KEY`.
+  Changing the key pair invalidates every existing subscription.
+- New migration: add `apps/ingest/migrations/000N_*.sql`, then `wrangler d1 migrations apply hw-push --remote`.
+- Another channel (Telegram, LINE): implement `Notifier` in `apps/ingest/src/push/notifier.ts`.
+- App icons: `node tools/icons/make-icons.mjs`.
 
 ## Tuning alerts
 
