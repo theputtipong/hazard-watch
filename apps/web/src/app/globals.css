@@ -117,8 +117,9 @@ body {
   letter-spacing: -0.02em;
 }
 
-/* Dark map: invert the light OSM tiles (cheap, no second tile provider needed). */
-:root[data-theme='dark'] .leaflet-tile-pane {
+/* Dark map: the default provider (Stadia) serves its own dark style, so no filter. Only a provider
+   without one (the OSM dev fallback, WEB.map.tiles.osm) gets its light tiles inverted. */
+:root[data-theme='dark'] .hw-tiles-invert {
   filter: invert(1) hue-rotate(180deg) brightness(0.92) contrast(0.88);
 }
 :root[data-theme='dark'] .leaflet-container {
