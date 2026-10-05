@@ -25,6 +25,29 @@
   --color-map-bg: #eaf0f5;
   --color-accent: #1f5fbf;
 
+  /*
+   * Type scale — use only these sizes (text-caption … text-figure). Line heights are a little taller
+   * than usual so Thai vowels and tone marks never clip.
+   */
+  --text-caption: 0.75rem; /* 12px: sources, notes, legend */
+  --text-caption--line-height: 1.5;
+  --text-body: 0.875rem; /* 14px: general text, buttons, lists */
+  --text-body--line-height: 1.55;
+  --text-title: 1rem; /* 16px: card titles, summary sentences */
+  --text-title--line-height: 1.5;
+  --text-heading: 1.125rem; /* 18px: app name */
+  --text-heading--line-height: 1.35;
+  --text-display: 1.5rem; /* 24px: page headings */
+  --text-display--line-height: 1.3;
+  --text-figure: 2.5rem; /* 40px: big numbers */
+  --text-figure--line-height: 1;
+
+  /* Corner radii — use only these (plus rounded-full for pills). */
+  --radius-tiny: 4px; /* small legend symbols */
+  --radius-control: 8px; /* selects, small badges, segmented controls */
+  --radius-box: 12px; /* boxes inside cards, list buttons, banners */
+  --radius-card: 16px; /* cards and main panels */
+
   /* Severity: fills for pills/cards and strong text on them. */
   --color-ok: #ddf1e7;
   --color-ok-strong: #155c40;

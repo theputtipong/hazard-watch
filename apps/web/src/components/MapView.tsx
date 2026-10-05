@@ -77,7 +77,7 @@ export default function MapView({ lang, center, located, onLocate, layers, radar
                   >
                     {t('cctv.viewLive', lang)} ↗
                   </a>
-                  <span className="text-xs text-muted">{t('cctv.opening', lang)}</span>
+                  <span className="text-caption text-muted">{t('cctv.opening', lang)}</span>
                 </PopupBody>
               </Popup>
             </Marker>
@@ -163,7 +163,7 @@ export default function MapView({ lang, center, located, onLocate, layers, radar
       {map && <MapButtons map={map} lang={lang} center={center} located={located} onLocate={onLocate} />}
       <Legend lang={lang} layers={layers} palette={palette} />
       {layers.cctv && !showCams && (
-        <p className="pointer-events-none absolute bottom-6 left-1/2 z-[1000] -translate-x-1/2 rounded-full bg-ink/85 px-3 py-1 text-xs text-panel">
+        <p className="pointer-events-none absolute bottom-6 left-1/2 z-[1000] -translate-x-1/2 rounded-full bg-ink/85 px-3 py-1 text-caption text-panel">
           {t('map.zoomForCctv', lang)}
         </p>
       )}
@@ -285,10 +285,10 @@ function MapButtons({
   };
 
   const btn =
-    'grid size-11 place-items-center rounded-lg border border-line bg-panel text-ink shadow-sm hover:bg-ground disabled:opacity-60';
+    'grid size-11 place-items-center rounded-control border border-line bg-panel text-ink shadow-sm hover:bg-ground disabled:opacity-60';
   return (
     <div className="absolute bottom-8 left-2.5 z-[1000] flex flex-col items-start gap-2">
-      {hint && <p className="max-w-[220px] rounded-lg bg-ink/90 px-2.5 py-1.5 text-xs text-panel">{hint}</p>}
+      {hint && <p className="max-w-[220px] rounded-control bg-ink/90 px-2.5 py-1.5 text-caption text-panel">{hint}</p>}
       <button type="button" className={btn} onClick={goToMe} disabled={busy} aria-label={busy ? t('map.locating', lang) : t('map.locate', lang)} title={t('map.locate', lang)}>
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={WEB.map.youColor} strokeWidth="2" aria-hidden="true" className={busy ? 'animate-pulse' : ''}>
           <circle cx="12" cy="12" r="7" />
@@ -307,8 +307,8 @@ function MapButtons({
 
 function PopupBody({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <div className="flex min-w-[160px] flex-col gap-1 font-sans text-[13px] leading-snug">
-      <strong className="text-sm">{title}</strong>
+    <div className="flex min-w-[160px] flex-col gap-1 font-sans text-body leading-snug">
+      <strong className="text-body">{title}</strong>
       {children}
     </div>
   );
@@ -323,12 +323,13 @@ function TimeLine({ lang, iso }: { lang: Lang; iso: string }) {
     timeZone: 'Asia/Bangkok',
   });
   return (
-    <span className="text-xs text-muted">
+    <span className="text-caption text-muted">
       {t('popup.time', lang)} {time}
     </span>
   );
 }
 
+/** Tiny legend symbols. Their 7–8px labels are part of the icon artwork, the only sizes outside the type scale. */
 function Glyph({ bg, paths, size = 18, children }: { bg: string; paths?: string; size?: number; children?: ReactNode }) {
   return (
     <span
@@ -346,12 +347,12 @@ function Legend({ lang, layers, palette }: { lang: Lang; layers: Layers; palette
   const c = palette.severity;
   const row = 'flex items-center gap-2';
   return (
-    <div className="absolute top-3 right-3 z-[1000] flex max-w-[210px] flex-col gap-1.5 rounded-xl border border-line bg-panel/95 px-3 py-2 text-xs text-ink-2 shadow-sm">
+    <div className="absolute top-3 right-3 z-[1000] flex max-w-[210px] flex-col gap-1.5 rounded-box border border-line bg-panel/95 px-3 py-2 text-caption text-ink-2 shadow-sm">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        className="flex min-h-11 items-center justify-between gap-3 text-[13px] font-semibold text-ink"
+        className="flex min-h-11 items-center justify-between gap-3 text-body font-semibold text-ink"
       >
         {t('map.legend', lang)}
         <span aria-hidden="true">{open ? '▴' : '▾'}</span>
@@ -386,7 +387,7 @@ function Legend({ lang, layers, palette }: { lang: Lang; layers: Layers; palette
           {layers.water && (
             <span className={row}>
               <span
-                className="grid size-[18px] shrink-0 place-items-center rounded-[5px] border-2 border-white text-[7px] font-bold text-white shadow-sm"
+                className="grid size-[18px] shrink-0 place-items-center rounded-tiny border-2 border-white text-[7px] font-bold text-white shadow-sm"
                 style={{ background: c.watch }}
                 aria-hidden="true"
               >

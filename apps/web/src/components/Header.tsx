@@ -23,8 +23,8 @@ export function Header({ lang, updatedAt, children }: { lang: Lang; updatedAt: s
             <path d="M12 22l-1 3M17 22l-1 3M22 22l-1 3" stroke="#7FB2FF" strokeWidth="1.8" strokeLinecap="round" />
           </svg>
           <div className="flex min-w-0 flex-col">
-            <strong className="text-lg leading-tight">{t('app.name', lang)}</strong>
-            <span className="text-xs text-muted">
+            <strong className="text-heading leading-tight">{t('app.name', lang)}</strong>
+            <span className="text-caption text-muted">
               {t('app.tagline', lang)} · {t('common.updated', lang)} <span className="num">{time}</span>
             </span>
           </div>
@@ -32,14 +32,14 @@ export function Header({ lang, updatedAt, children }: { lang: Lang; updatedAt: s
         {/* One row of controls on phones too, so the header stays short. */}
         <div className="flex flex-wrap items-center gap-1.5">
         {children}
-        <nav aria-label={t('common.language', lang)} className="flex gap-0.5 rounded-xl bg-seg p-[3px]">
+        <nav aria-label={t('common.language', lang)} className="flex gap-0.5 rounded-box bg-seg p-[3px]">
           {LANGS.map((l) => (
             <Link
               key={l}
               href={`/${l}`}
               onClick={() => setLangCookie(l)}
               aria-current={l === lang ? 'page' : undefined}
-              className={`grid min-h-10 min-w-11 place-items-center rounded-lg text-[13px] font-semibold ${
+              className={`grid min-h-10 min-w-11 place-items-center rounded-control text-body font-semibold ${
                 l === lang ? 'bg-panel text-ink shadow-sm' : 'text-muted'
               }`}
             >

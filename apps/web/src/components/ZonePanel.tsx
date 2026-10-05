@@ -35,7 +35,7 @@ export function describe(s: ZoneSummary, lang: Lang): string {
 
 function Status({ s, lang }: { s: ZoneSummary | undefined; lang: Lang }) {
   if (!s || s.severity === null) {
-    return <span className="inline-flex rounded-full bg-sunken px-2.5 py-0.5 text-xs font-semibold text-muted">{t('zone.noData', lang)}</span>;
+    return <span className="inline-flex rounded-full bg-sunken px-2.5 py-0.5 text-caption font-semibold text-muted">{t('zone.noData', lang)}</span>;
   }
   return <SeverityPill severity={s.severity} lang={lang} />;
 }
@@ -58,10 +58,10 @@ export function ZonePanel({ lang, zones }: { lang: Lang; zones: ZoneView }) {
     <div className="flex flex-col gap-3 border-t border-line-soft px-3.5 py-3">
       {(zones.path.length > 0 || zones.selected) && (
       <div className="flex flex-wrap items-center gap-2">
-        <button type="button" onClick={zones.back} className="min-h-10 rounded-full border border-chip-line bg-panel px-3.5 text-sm font-medium">
+        <button type="button" onClick={zones.back} className="min-h-10 rounded-full border border-chip-line bg-panel px-3.5 text-body font-medium">
           ‹ {t('common.back', lang)}
         </button>
-        <nav aria-label={t('area.nav', lang)} className="flex flex-wrap items-center gap-1 text-[15px]">
+        <nav aria-label={t('area.nav', lang)} className="flex flex-wrap items-center gap-1 text-title">
           {crumbs.map((c, i) => {
             const last = i === crumbs.length - 1 && !zones.selected;
             return (
@@ -91,19 +91,19 @@ export function ZonePanel({ lang, zones }: { lang: Lang; zones: ZoneView }) {
       </div>
       )}
 
-      <div className="flex flex-col gap-1 rounded-xl bg-ground px-3.5 py-2.5">
+      <div className="flex flex-col gap-1 rounded-box bg-ground px-3.5 py-2.5">
         <div className="flex flex-wrap items-center gap-2">
-          <strong className="text-[15px]">{focus ? zoneLabel(focus, lang) : regionName}</strong>
+          <strong className="text-title">{focus ? zoneLabel(focus, lang) : regionName}</strong>
           <Status s={zones.focusSummary} lang={lang} />
         </div>
-        <p className="text-[15px] leading-relaxed">{describe(zones.focusSummary, lang)}</p>
+        <p className="text-title leading-relaxed">{describe(zones.focusSummary, lang)}</p>
       </div>
 
       {zones.visible.length > 0 ? (
         <div>
           <div className="mb-2 flex flex-wrap items-baseline gap-2">
-            <h3 className="text-sm font-semibold">{t('zone.list', lang, { level: levelName(childLevel, bangkok, lang) })}</h3>
-            <span className="text-xs text-muted">
+            <h3 className="text-body font-semibold">{t('zone.list', lang, { level: levelName(childLevel, bangkok, lang) })}</h3>
+            <span className="text-caption text-muted">
               {t('area.sortNote', lang)} · {t('zone.tapHint', lang)}
             </span>
           </div>
@@ -117,7 +117,7 @@ export function ZonePanel({ lang, zones }: { lang: Lang; zones: ZoneView }) {
                     type="button"
                     onClick={() => zones.open(z.properties.id)}
                     aria-current={current || undefined}
-                    className={`flex min-h-13 w-full items-center gap-2 rounded-[10px] border bg-panel px-3 py-1.5 text-left text-sm ${
+                    className={`flex min-h-13 w-full items-center gap-2 rounded-box border bg-panel px-3 py-1.5 text-left text-body ${
                       current ? 'border-ink shadow-[inset_0_0_0_1px_var(--color-ink)]' : 'border-line'
                     }`}
                   >
@@ -128,7 +128,7 @@ export function ZonePanel({ lang, zones }: { lang: Lang; zones: ZoneView }) {
                       </span>
                     </span>
                     {zones.hasChildren(z.properties.id) && (
-                      <span aria-hidden="true" className="text-lg text-muted">
+                      <span aria-hidden="true" className="text-heading text-muted">
                         ›
                       </span>
                     )}
@@ -139,7 +139,7 @@ export function ZonePanel({ lang, zones }: { lang: Lang; zones: ZoneView }) {
           </ul>
         </div>
       ) : (
-        <p className="text-sm text-muted">{t('zone.noChildren', lang, { level: levelName(childLevel, bangkok, lang) })}</p>
+        <p className="text-body text-muted">{t('zone.noChildren', lang, { level: levelName(childLevel, bangkok, lang) })}</p>
       )}
     </div>
   );

@@ -171,7 +171,7 @@ export function Dashboard({ lang }: { lang: Lang }) {
     <LoadStateContext.Provider value={snapshot ? 'ready' : loadState}>
       <a
         href="#summary"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[2000] focus:rounded-lg focus:bg-panel focus:px-3 focus:py-2"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[2000] focus:rounded-control focus:bg-panel focus:px-3 focus:py-2"
       >
         {t('a11y.skip', lang)}
       </a>
@@ -193,7 +193,7 @@ export function Dashboard({ lang }: { lang: Lang }) {
           <p>{spoken}</p>
         </section>
         {loadState === 'error' && (
-          <div role="alert" className="flex basis-full flex-wrap items-center gap-3 rounded-xl bg-danger max-lg:order-first px-4 py-2.5 text-sm text-danger-strong">
+          <div role="alert" className="flex basis-full flex-wrap items-center gap-3 rounded-box bg-danger max-lg:order-first px-4 py-2.5 text-body text-danger-strong">
             <span className="flex-1">{t('common.offline', lang)}</span>
             <button
               type="button"
@@ -207,7 +207,7 @@ export function Dashboard({ lang }: { lang: Lang }) {
         {/* Only with data: without a snapshot it would wrongly read as "no sensors". */}
         {snapshot && <SummaryBanner lang={lang} lines={summaryLines} />}
         {status === 'denied' && (
-          <div className="flex basis-full flex-wrap items-center gap-2 rounded-xl bg-sunken px-4 py-2.5 text-sm max-lg:order-first">
+          <div className="flex basis-full flex-wrap items-center gap-2 rounded-box bg-sunken px-4 py-2.5 text-body max-lg:order-first">
             <span className="flex-[1_1_260px]">{t('location.denied', lang)}</span>
             <a href="#zones" className="inline-flex min-h-11 items-center rounded-full border border-chip-line bg-panel px-4 font-medium">
               {t('location.pick', lang)}
@@ -218,16 +218,16 @@ export function Dashboard({ lang }: { lang: Lang }) {
           </div>
         )}
 
-        <section aria-label={t('map.title', lang)} className="min-w-0 flex-[999_1_560px] overflow-hidden rounded-2xl border border-line bg-panel">
+        <section aria-label={t('map.title', lang)} className="min-w-0 flex-[999_1_560px] overflow-hidden rounded-card border border-line bg-panel">
           <div className="flex flex-wrap items-center gap-2 border-b border-line-soft px-3.5 py-3">
-            <strong className="mr-1.5 text-[15px]">{t('map.layers', lang)}</strong>
+            <strong className="mr-1.5 text-title">{t('map.layers', lang)}</strong>
             {(Object.keys(LAYER_LABEL) as LayerKey[]).map((key) => (
               <button
                 key={key}
                 type="button"
                 aria-pressed={layers[key]}
                 onClick={() => toggle(key)}
-                className={`min-h-11 rounded-full border px-3.5 text-sm font-medium ${
+                className={`min-h-11 rounded-full border px-3.5 text-body font-medium ${
                   layers[key] ? 'border-ink bg-ink text-panel' : 'border-chip-line bg-panel text-ink-2'
                 }`}
               >
@@ -251,7 +251,7 @@ export function Dashboard({ lang }: { lang: Lang }) {
             palette={palette}
           />
           {layers.radar && (
-            <div className="flex flex-wrap items-center gap-2 border-t border-line-soft px-3.5 py-2.5 text-sm">
+            <div className="flex flex-wrap items-center gap-2 border-t border-line-soft px-3.5 py-2.5 text-body">
               <label htmlFor="radar-src" className="text-muted">
                 {t('radar.source', lang)}
               </label>
@@ -259,7 +259,7 @@ export function Dashboard({ lang }: { lang: Lang }) {
                 id="radar-src"
                 value={radarId}
                 onChange={(e) => setRadarId(e.target.value)}
-                className="min-h-11 rounded-lg border border-chip-line bg-panel px-2.5 text-ink"
+                className="min-h-11 rounded-control border border-chip-line bg-panel px-2.5 text-ink"
               >
                 {regionRadars(activeRegions())
                   .filter((id) => RADARS[id])
@@ -269,13 +269,13 @@ export function Dashboard({ lang }: { lang: Lang }) {
                     </option>
                   ))}
               </select>
-              <span className={radarOld ? 'rounded-md bg-watch px-2 py-0.5 text-xs text-watch-strong' : 'text-xs text-muted'}>
+              <span className={radarOld ? 'rounded-control bg-watch px-2 py-0.5 text-caption text-watch-strong' : 'text-caption text-muted'}>
                 {radarFrame
                   ? t(radarOld ? 'radar.old' : 'radar.frame', lang, { time: clock(radarFrame.time) })
                   : t('radar.none', lang)}
               </span>
               {radarFrame?.echoPixels !== undefined && radarFrame.echoPixels < WEB.map.radarMinEchoPixels && (
-                <span className="rounded-md bg-ok px-2 py-0.5 text-xs text-ok-strong">{t('radar.clear', lang)}</span>
+                <span className="rounded-control bg-ok px-2 py-0.5 text-caption text-ok-strong">{t('radar.clear', lang)}</span>
               )}
             </div>
           )}
@@ -297,7 +297,7 @@ export function Dashboard({ lang }: { lang: Lang }) {
           <CctvList lang={lang} cameras={view.nearCams} />
         </div>
       </main>
-      <footer className="mx-auto flex max-w-[1360px] flex-wrap items-center justify-between gap-4 px-4 pb-8 text-xs text-muted sm:px-6">
+      <footer className="mx-auto flex max-w-[1360px] flex-wrap items-center justify-between gap-4 px-4 pb-8 text-caption text-muted sm:px-6">
         <span className="flex flex-[1_1_520px] flex-col gap-1">
           <span>{t('app.coverage', lang, { regions: activeRegions().map((r) => r.name[lang]).join(', ') })}</span>
           <span>{t('footer.credits', lang)}</span>

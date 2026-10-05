@@ -15,7 +15,7 @@ interface Props {
 }
 
 const btn =
-  'inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-full border border-chip-line bg-panel px-3 text-sm font-medium text-ink-2 hover:border-ink-2';
+  'inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-full border border-chip-line bg-panel px-3 text-body font-medium text-ink-2 hover:border-ink-2';
 
 function ThemeIcon({ theme }: { theme: ThemePref }) {
   if (theme === 'light')
@@ -85,7 +85,7 @@ export function A11yControls({ lang, theme, cvd, onTheme, onCvd, speech, onListe
         <span className="hidden sm:inline">{listenLabel}</span>
       </button>
       {voiceNote && tried && (
-        <span role="status" className="basis-full text-xs text-muted">
+        <span role="status" className="basis-full text-caption text-muted">
           {voiceNote}
         </span>
       )}

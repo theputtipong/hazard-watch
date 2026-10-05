@@ -14,21 +14,21 @@ export function WeatherCard({ lang, weather }: { lang: Lang; weather: WeatherNow
     <Card title={t('card.weather', lang)} source={t('source.weather', lang)}>
       {weather ? (
         <>
-          <span className="num text-[40px] leading-none">
+          <span className="num text-figure leading-none">
             {fmt(weather.temperatureC)}
             {u.temperature}
           </span>
-          <dl className="grid grid-cols-2 gap-2 text-xs text-muted">
+          <dl className="grid grid-cols-2 gap-2 text-caption text-muted">
             <div>
               <dt>{t('weather.humidity', lang)}</dt>
-              <dd className="num text-base text-ink">
+              <dd className="num text-title text-ink">
                 {fmt(weather.humidityPct, 0)}
                 {u.humidity}
               </dd>
             </div>
             <div>
               <dt>{t('weather.rainNow', lang)}</dt>
-              <dd className="num text-base text-ink">
+              <dd className="num text-title text-ink">
                 {fmt(weather.precipitationMm)} {u.precipitation}
               </dd>
             </div>
@@ -53,15 +53,15 @@ export function Pm25Card({ lang, station, note }: { lang: Lang; station: (Observ
       {station && value !== null ? (
         <>
           <div className="flex items-baseline gap-2">
-            <span className="num text-[40px] leading-none">{fmt(value)}</span>
-            <span className="text-sm text-muted">{station.unit || u.pm25}</span>
+            <span className="num text-figure leading-none">{fmt(value)}</span>
+            <span className="text-body text-muted">{station.unit || u.pm25}</span>
           </div>
-          <p className="text-[13px] text-ink-2">
+          <p className="text-body text-ink-2">
             {t('pm25.nearest', lang, { name: placeName(station, lang) })} · <span className="num">
               {fmt(station.km)} {u.distance}
             </span>
           </p>
-          <p className="flex flex-wrap justify-between gap-2 text-xs text-muted">
+          <p className="flex flex-wrap justify-between gap-2 text-caption text-muted">
             <span>{t('pm25.who', lang, { value: cfg.pm25.bands.ok })}</span>
             <span>{t('pm25.pushAt', lang, { value: cfg.pm25.pushAt })}</span>
           </p>
@@ -103,7 +103,7 @@ export function FloodCard({
             <Stat value={counts.normal} label={t('flood.normal', lang)} className="bg-sunken text-ink" />
           </div>
           {nearestFlooded && (
-            <p className="flex justify-between gap-2 text-[13px] text-ink-2">
+            <p className="flex justify-between gap-2 text-body text-ink-2">
               <span>
                 {t('flood.nearest', lang)}: {placeName(nearestFlooded, lang)}
               </span>
@@ -122,10 +122,10 @@ export function FloodCard({
 
 function Stat({ value, label, className }: { value: number; label: string; className: string }) {
   return (
-    <div className={`rounded-[10px] px-2.5 py-2 ${className}`}>
-      <span className="num text-2xl">{value}</span>
+    <div className={`rounded-box px-2.5 py-2 ${className}`}>
+      <span className="num text-display">{value}</span>
       <br />
-      <span className="text-xs">{label}</span>
+      <span className="text-caption">{label}</span>
     </div>
   );
 }
@@ -152,7 +152,7 @@ export function QuakeCard({
       {!available ? (
         <NoData lang={lang} />
       ) : alerts.length ? (
-        <ul className="flex flex-col gap-1 text-sm">
+        <ul className="flex flex-col gap-1 text-body">
           {alerts.map(({ quake, km }) => (
             <li key={quake.id} className="flex justify-between gap-2">
               <span>{quake.place[lang]}</span>
@@ -163,12 +163,12 @@ export function QuakeCard({
           ))}
         </ul>
       ) : (
-        <p className="text-sm">
+        <p className="text-body">
           {t('quake.none', lang, { mag: floor.minMagnitude.toFixed(1), km: floor.maxDistanceKm.toLocaleString(), days: cfg.quake.lookbackHours / 24 })}
         </p>
       )}
       {latest && (
-        <p className="flex justify-between gap-2 border-t border-sunken pt-2 text-[13px] text-muted">
+        <p className="flex justify-between gap-2 border-t border-sunken pt-2 text-body text-muted">
           <span>
             {t('quake.latest', lang)}: {latest.quake.place[lang]}
           </span>
@@ -204,18 +204,18 @@ export function WaterLevelCard({
       {nearest ? (
         <>
           <div className="flex items-baseline gap-2">
-            <span className="num text-[40px] leading-none">{fmt(nearest.value, 0)}</span>
-            <span className="text-sm text-muted">
+            <span className="num text-figure leading-none">{fmt(nearest.value, 0)}</span>
+            <span className="text-body text-muted">
               {nearest.unit} {t('water.ofBank', lang)}
             </span>
           </div>
-          <p className="text-[13px] text-ink-2">
+          <p className="text-body text-ink-2">
             {t('water.nearest', lang, { name: placeName(nearest, lang) })} ·{' '}
             <span className="num">
               {fmt(nearest.km)} {u.distance}
             </span>
           </p>
-          <div className="border-t border-sunken pt-2 text-[13px]">
+          <div className="border-t border-sunken pt-2 text-body">
             <p className="mb-1 text-muted">{t('water.high', lang, { pct: cfg.waterLevel.watchPct })}</p>
             {high.length ? (
               <ul className="flex flex-col gap-1">

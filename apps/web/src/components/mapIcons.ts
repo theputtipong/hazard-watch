@@ -66,7 +66,7 @@ export function waterIcon(pct: number, severity: Severity, colors: Record<Severi
     iconAnchor: [s / 2, s / 2],
     tooltipAnchor: [s / 2, 0],
     html:
-      `<div style="position:relative;width:${s}px;height:${s}px;border-radius:7px;background:${colors[severity]};` +
+      `<div style="position:relative;width:${s}px;height:${s}px;border-radius:var(--radius-control);background:${colors[severity]};` +
       `border:2.5px solid #fff;box-shadow:0 1px 4px rgba(15,27,45,.45);display:grid;place-items:center;box-sizing:border-box;` +
       `color:#fff;font:700 ${pct >= 100 ? 9 : 10}px/1 system-ui">${Math.round(pct)}%` +
       `${severity === 'danger' ? alertBadge(colors.danger) : ''}</div>`,
