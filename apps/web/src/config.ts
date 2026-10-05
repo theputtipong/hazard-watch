@@ -1,4 +1,4 @@
-import type { Severity } from '@hw/core';
+import { DEFAULT_CONFIG, type Severity } from '@hw/core';
 import type { LayerKey } from './lib/layers';
 
 export type TileProvider = 'stadia' | 'osm';
@@ -105,8 +105,16 @@ export const WEB = {
     timeoutMs: 15_000,
   },
 
-  /** Choices offered for the personal PM2.5 alert level (µg/m³); the default is core config pm25.pushAt. */
-  push: { pm25Choices: [25, 37.5, 50, 75] },
+  push: {
+    /** Choices offered for the personal PM2.5 alert level (µg/m³); the default is core config pm25.pushAt. */
+    pm25Choices: [25, 37.5, 50, 75],
+    /**
+     * Choices offered for the personal earthquake alert level. They live in core config push.quakeChoices
+     * because the server only accepts those values; the default is the central quake tiers (quakeAlertFloor).
+     */
+    quakeMagnitudeChoices: DEFAULT_CONFIG.push.quakeChoices.minMagnitude,
+    quakeDistanceChoices: DEFAULT_CONFIG.push.quakeChoices.maxDistanceKm,
+  },
 
   /** Which area levels get a Share button (1 province, 2 เขต/อำเภอ, 3 แขวง/ตำบล). */
   share: { levels: [2, 3] as number[] },

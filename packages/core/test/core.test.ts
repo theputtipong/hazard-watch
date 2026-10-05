@@ -17,7 +17,18 @@ import {
   type Earthquake,
 } from '../src';
 import { messages, t } from '../src/i18n';
-import { districtAlerts, groupByZone, inZone, quakeAlerts, summarizeZone, type Observation, type ZoneFeature } from '../src';
+import {
+  districtAlerts,
+  groupByZone,
+  inZone,
+  loosestQuakeLimit,
+  personalQuakeLimit,
+  pickChoice,
+  quakeAlerts,
+  summarizeZone,
+  type Observation,
+  type ZoneFeature,
+} from '../src';
 
 const cfg = DEFAULT_CONFIG;
 const BANGKOK_CENTER = REGIONS['th-bangkok-metro'].center;
@@ -175,6 +186,46 @@ describe('push alerts', () => {
     const q = { id: 'usgs:x', source: 'usgs' as const, magnitude: 7.7, depthKm: 10, location: { lat: 22.01, lng: 95.92 }, place: { th: 'เมียนมา', en: 'Myanmar' }, occurredAt: new Date().toISOString() };
     const a = quakeAlerts([q], district, cfg);
     expect(a).toHaveLength(1);
-    expect(a[0]).toMatchObject({ kind: 'quake', severity: 'danger', key: 'quake:usgs:x' });
+    expect(a[0]).toMatchObject({ kind: 'quake', severity: 'danger', key: 'quake:usgs:x', value: 7.7 });
+  });
+
+  describe('personal quake limit', () => {
+    // Myanmar epicentre is ~1,040 km from this district's centre.
+    const myanmar = (id: string, magnitude: number): Earthquake => ({
+      id, source: 'usgs', magnitude, depthKm: 10, location: { lat: 22.01, lng: 95.92 },
+      place: { th: 'เมียนมา', en: 'Myanmar' }, occurredAt: new Date().toISOString(),
+    });
+    const quakes = [myanmar('a', 5.4), myanmar('b', 6.2), myanmar('c', 7.7)];
+    const keys = (limit?: Parameters<typeof quakeAlerts>[4]) => quakeAlerts(quakes, district, cfg, new Date(), limit).map((a) => a.key);
+
+    it('defaults to the central quake tiers', () => {
+      expect(personalQuakeLimit(cfg)).toEqual(quakeAlertFloor(cfg));
+      expect(personalQuakeLimit(cfg, { minMagnitude: null, maxDistanceKm: null })).toEqual({ minMagnitude: 6, maxDistanceKm: 1500 });
+      expect(keys(personalQuakeLimit(cfg))).toEqual(keys());
+      expect(keys()).toEqual(['quake:b', 'quake:c']);
+    });
+    it('the central default is one of the offered choices', () => {
+      const floor = quakeAlertFloor(cfg);
+      expect(cfg.push.quakeChoices.minMagnitude).toContain(floor.minMagnitude);
+      expect(cfg.push.quakeChoices.maxDistanceKm).toContain(floor.maxDistanceKm);
+    });
+    it('filters by the person’s magnitude and distance', () => {
+      const m5 = quakeAlerts(quakes, district, cfg, new Date(), { minMagnitude: 5, maxDistanceKm: 1500 });
+      expect(m5.map((a) => a.key)).toEqual(['quake:a', 'quake:b', 'quake:c']);
+      expect(m5[0]!.severity).toBe('watch');
+      expect(keys({ minMagnitude: 7, maxDistanceKm: 1500 })).toEqual(['quake:c']);
+      expect(keys({ minMagnitude: 5, maxDistanceKm: 1000 })).toEqual([]);
+      expect(keys({ minMagnitude: 5, maxDistanceKm: 500 })).toEqual([]);
+    });
+    it('only accepts the offered choices', () => {
+      expect(pickChoice(5, [5, 6, 7])).toBe(5);
+      expect(pickChoice('7', [5, 6, 7])).toBe(7);
+      for (const bad of [5.5, 0, -1, 2000, '', 'x', null, undefined, NaN, {}]) expect(pickChoice(bad, [5, 6, 7])).toBeNull();
+      expect(personalQuakeLimit(cfg, { minMagnitude: 4, maxDistanceKm: 9999 })).toEqual({ minMagnitude: 6, maxDistanceKm: 1500 });
+      expect(personalQuakeLimit(cfg, { minMagnitude: 5, maxDistanceKm: 500 })).toEqual({ minMagnitude: 5, maxDistanceKm: 500 });
+    });
+    it('knows the widest limit anyone can pick', () => {
+      expect(loosestQuakeLimit(cfg)).toEqual({ minMagnitude: 5, maxDistanceKm: 1500 });
+    });
   });
 });

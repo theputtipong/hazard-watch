@@ -1,6 +1,7 @@
 import {
   DEFAULT_CONFIG,
   districtAlerts,
+  loosestQuakeLimit,
   mergeQuakes,
   quakeAlerts,
   type Alert,
@@ -12,6 +13,7 @@ import {
 // District polygons built by tools/boundaries/build.py (shared with the web app).
 import districtsFile from '../../../web/public/geo/districts.json';
 import { webPushNotifier, type OutgoingMessage } from './notifier';
+import { quakeLimitFor } from './prefs';
 import { deleteSubscription, forgetOldSends, markSent, recentlySent, subscriptionsIn, type SubscriptionPrefs, type SubscriptionRow } from './store';
 
 export const DISTRICTS = (districtsFile as unknown as { features: ZoneFeature[] }).features;
@@ -53,7 +55,9 @@ export async function sendAlerts(env: PushEnv, snapshot: DashboardSnapshot, now 
   ];
   const byDistrict = districtAlerts(readings, DISTRICTS, cfg, now);
   const quakes: Earthquake[] = mergeQuakes(snapshot.edge?.feeds.quakesTmd?.items ?? [], snapshot.edge?.feeds.quakesUsgs?.items ?? [], cfg);
-  const quakeCandidates = quakes.length ? DISTRICTS.flatMap((d) => quakeAlerts(quakes, d, cfg, now)) : [];
+  // Widest limit anyone can pick, so a quake only some people asked for still reaches them.
+  const loosest = loosestQuakeLimit(cfg);
+  const quakeCandidates = quakes.length ? DISTRICTS.flatMap((d) => quakeAlerts(quakes, d, cfg, now, loosest)) : [];
 
   const withAlerts = [...byDistrict].filter(([, list]) => list.length).map(([id]) => id);
   const subs = await subscriptionsIn(env.PUSH_DB, quakeCandidates.length ? 'all' : withAlerts);
@@ -65,7 +69,7 @@ export async function sendAlerts(env: PushEnv, snapshot: DashboardSnapshot, now 
     if (stats.sent >= cfg.push.maxPerRun) break;
     const district = DISTRICTS.find((d) => d.properties.id === sub.district);
     const prefs = JSON.parse(sub.prefs || '{}') as SubscriptionPrefs;
-    const candidates = wanted([...(byDistrict.get(sub.district) ?? []), ...(district ? quakeAlerts(quakes, district, cfg, now) : [])], prefs);
+    const candidates = wanted([...(byDistrict.get(sub.district) ?? []), ...(district ? quakeAlerts(quakes, district, cfg, now, quakeLimitFor(sub, cfg)) : [])], prefs);
     if (!candidates.length) continue;
     const already = await recentlySent(env.PUSH_DB, sub.id, since);
     const fresh = candidates.filter((a) => !already.has(a.key));

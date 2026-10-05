@@ -1,12 +1,26 @@
 'use client';
 
-import type { PushKind } from '@hw/core';
+import { DEFAULT_CONFIG, quakeAlertFloor, type PushKind } from '@hw/core';
 import type { Lang } from '@hw/core/i18n';
 import { API_BASE } from './api';
 
 export interface PushPrefs {
   kinds: PushKind[];
   pm25At: number;
+  /** Personal earthquake level; one of WEB.push.quakeMagnitudeChoices / quakeDistanceChoices. */
+  quakeMinMag: number;
+  quakeMaxKm: number;
+}
+
+/** Settings shown before the person changes anything: the central defaults from core config. */
+export function defaultPrefs(): PushPrefs {
+  const floor = quakeAlertFloor(DEFAULT_CONFIG);
+  return {
+    kinds: [...DEFAULT_CONFIG.push.kinds],
+    pm25At: DEFAULT_CONFIG.pm25.pushAt,
+    quakeMinMag: floor.minMagnitude,
+    quakeMaxKm: floor.maxDistanceKm,
+  };
 }
 
 export type PushSupport = 'ok' | 'unsupported' | 'ios-needs-install';
@@ -32,7 +46,9 @@ export async function currentSubscription(): Promise<PushSubscription | null> {
 
 export function savedPrefs(): { prefs: PushPrefs; district: string; subdistrict: string | null } | null {
   try {
-    return JSON.parse(localStorage.getItem(PREFS_KEY) ?? 'null');
+    const saved = JSON.parse(localStorage.getItem(PREFS_KEY) ?? 'null') as { prefs?: Partial<PushPrefs>; district: string; subdistrict: string | null } | null;
+    // Settings saved before a field existed (e.g. the quake level) fall back to the default for that field.
+    return saved ? { ...saved, prefs: { ...defaultPrefs(), ...saved.prefs } } : null;
   } catch {
     return null;
   }

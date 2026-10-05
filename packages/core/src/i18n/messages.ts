@@ -212,6 +212,9 @@ export const messages = {
   'push.kind.pm25': { th: 'ฝุ่น PM2.5 สูง', en: 'High PM2.5' },
   'push.kind.quake': { th: 'แผ่นดินไหว', en: 'Earthquakes' },
   'push.pmAt': { th: 'แจ้งฝุ่นเมื่อถึง', en: 'PM2.5 alert at' },
+  'push.quakeMag': { th: 'แจ้งแผ่นดินไหวตั้งแต่ขนาด', en: 'Earthquakes from magnitude' },
+  'push.quakeKm': { th: 'ในระยะไม่เกิน', en: 'Within' },
+  'push.quakeKmOption': { th: '{km} กม.', en: '{km} km' },
   'push.privacy': { th: 'ข้อมูลที่เราเก็บและวิธีลบ', en: 'What we store and how to delete it' },
 
   'alert.flood.title': { th: 'น้ำท่วมขังใน{area}', en: 'Street flooding in {area}' },
