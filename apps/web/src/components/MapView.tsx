@@ -14,6 +14,7 @@ import type { MapPalette } from '@/lib/prefs';
 import type { ZoneView } from '@/lib/useZones';
 import { cctvIcon, floodIcon, LEGEND_GLYPH, pm25Icon, waterIcon, youIcon } from './mapIcons';
 import { zoneLabel } from '@/lib/zoneText';
+import type { VectorBaseMap } from '@/lib/vectorBaseMap';
 
 interface Props {
   lang: Lang;
@@ -56,8 +57,8 @@ export default function MapView({ lang, center, located, onLocate, layers, radar
 
   return (
     <div className="relative">
-      <MapContainer ref={setMap} center={[center.lat, center.lng]} zoom={startZoom} scrollWheelZoom className="h-[420px] w-full sm:h-[520px]">
-        <BaseTiles dark={dark} />
+      <MapContainer ref={setMap} center={[center.lat, center.lng]} zoom={startZoom} maxZoom={WEB.map[WEB.map.tileProvider].maxZoom} scrollWheelZoom className="h-[420px] w-full sm:h-[520px]">
+        <BaseTiles dark={dark} lang={lang} />
         <ZoomWatcher onZoom={setZoom} />
         <FollowFirstFix center={center} located={located} />
         <FlyToRadar radarId={radarId} focus={radarFocus} />
@@ -179,20 +180,45 @@ export default function MapView({ lang, center, located, onLocate, layers, radar
   );
 }
 
-/** Base map from the provider chosen in config; switches style with the theme. */
-function BaseTiles({ dark }: { dark: boolean }) {
-  const src = WEB.map.tiles[WEB.map.tileProvider];
-  const url = dark ? src.dark : src.light;
+/** Base map from the provider chosen in config; switches style with the theme and labels with the page language. */
+function BaseTiles({ dark, lang }: { dark: boolean; lang: Lang }) {
+  if (WEB.map.tileProvider === 'openfreemap') return <VectorTiles dark={dark} lang={lang} />;
+  const src = WEB.map.osm;
   return (
     <TileLayer
-      // Re-mount on a style/provider change so the attribution is replaced too.
-      key={`${WEB.map.tileProvider}:${url}`}
-      url={url}
+      url={src.url}
       attribution={src.attribution}
       maxZoom={src.maxZoom}
       className={src.invertInDark ? 'hw-tiles-invert' : undefined}
     />
   );
+}
+
+/**
+ * OpenFreeMap vector base map. MapLibre is loaded on demand (large, browser-only); the layer is made
+ * once and then restyled on a theme change and relabelled on a language change.
+ */
+function VectorTiles({ dark, lang }: { dark: boolean; lang: Lang }) {
+  const map = useMap();
+  const [base, setBase] = useState<VectorBaseMap | null>(null);
+  const initial = useRef({ dark, lang });
+  useEffect(() => {
+    let cancelled = false;
+    let made: VectorBaseMap | null = null;
+    import('@/lib/vectorBaseMap').then(({ createVectorBaseMap }) => {
+      if (cancelled) return;
+      made = createVectorBaseMap(initial.current.dark, initial.current.lang);
+      made.layer.addTo(map);
+      setBase(made);
+    }).catch((e) => console.error('Base map failed to load', e));
+    return () => {
+      cancelled = true;
+      made?.layer.remove();
+    };
+  }, [map]);
+  useEffect(() => base?.setTheme(dark), [base, dark]);
+  useEffect(() => base?.setLang(lang), [base, lang]);
+  return null;
 }
 
 /** Zone polygons coloured by the worst reading inside; tap to drill down. */
