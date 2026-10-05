@@ -19,7 +19,7 @@ packages/
 .github/workflows/
   ingest-runner.yml  Fetches feeds that block Cloudflare IPs (BMA, ThaiWater) and pushes them to ingest.
   ci.yml             Typecheck + tests.
-  monitor.yml        Hourly source-outage check; opens/closes `outage` issues (tools/monitor).
+  monitor.yml        Source-outage check every 2 h; opens/closes `outage` issues (tools/monitor).
 ```
 
 ## Data flow
@@ -29,9 +29,16 @@ packages/
 | PM2.5 | Air4Thai (PCD) | ingest cron, every 10 min | |
 | Earthquakes | TMD RSS + USGS | ingest cron, every 10 min | |
 | Weather | Open-Meteo | ingest, on request per location (cached 10 min) | |
-| Street flooding, rain gauges | BMA Drainage Dept. (unofficial endpoints) | GitHub Actions, every 30 min | 403 bot challenge from Cloudflare IPs |
-| Canal/river levels, radar images | ThaiWater (HII) | GitHub Actions, every 30 min | 429 rate limit from Cloudflare IPs; radar frames are cut to rain echoes only (`apps/ingest/scripts/radarImage.ts`) and placed with `packages/core/src/radars.ts` |
-| CCTV list | BMA Traffic | GitHub Actions | pins + link to source only |
+| Street flooding, rain gauges | BMA Drainage Dept. (unofficial endpoints) | GitHub Actions, every 40 min (see below) | 403 bot challenge from Cloudflare IPs |
+| Canal/river levels, radar images | ThaiWater (HII) | GitHub Actions, every 40 min | 429 rate limit from Cloudflare IPs; radar frames are cut to rain echoes only (`apps/ingest/scripts/radarImage.ts`) and placed with `packages/core/src/radars.ts` |
+| CCTV list | BMA Traffic | GitHub Actions, once a day (`INGEST.runnerFeedEveryHours`) | pins + link to source only |
+| Base map | Stadia Maps (`alidade_smooth` / `_dark`, follows the theme) | browser | config in `WEB.map.tiles`; domains must be registered in the Stadia dashboard |
+
+GitHub's own schedule for `ingest-runner.yml` runs hours late, so the ingest cron starts it with `workflow_dispatch`
+every `INGEST.runnerDispatchEveryMinutes` (40, to stay inside the 2,000 free Actions minutes of a private repo).
+That needs the Worker secret `GITHUB_DISPATCH_TOKEN`: a fine-grained token for this repo only, with
+*Actions: Read and write* (GitHub answers 403 if the permission or repo is missing, 401 if the token is wrong).
+The GitHub schedule stays as a fallback. The ingest keeps feeds left out of a runner upload (e.g. the daily CCTV list).
 
 ## Develop
 
@@ -45,7 +52,10 @@ cp apps/web/.env.example apps/web/.env.local
 pnpm --filter @hw/ingest dev        # http://localhost:8787 (curl /__scheduled to run the cron)
 INGEST_URL=http://localhost:8787 INGEST_TOKEN=dev-token-change-me pnpm --filter @hw/ingest runner
 pnpm --filter @hw/web dev           # http://localhost:3000
-# deploy: NEXT_PUBLIC_API_BASE=https://api.hazard.pdouvch.com pnpm --filter @hw/web run deploy
+# deploy order: D1 migrations (--remote) → git push → ingest deploy → web deploy
+# web: NEXT_PUBLIC_API_BASE=https://api.hazard.pdouvch.com pnpm --filter @hw/web run deploy
+#      add NEXT_PUBLIC_TILE_PROVIDER=osm to use OSM tiles instead of Stadia (dev, or before domains are registered)
+# a fresh checkout needs `pnpm --filter @hw/web exec next typegen` before typecheck
 pnpm test && pnpm typecheck
 ```
 
@@ -60,7 +70,11 @@ needs its own adapters in `packages/sources`.
 - Subscriptions live in D1 `hw-push` (schema in `apps/ingest/migrations`); only district/subdistrict codes are stored.
 - VAPID: public key in `apps/ingest/wrangler.jsonc`, private key as the Worker secret `VAPID_PRIVATE_KEY`.
   Changing the key pair invalidates every existing subscription.
-- New migration: add `apps/ingest/migrations/000N_*.sql`, then `wrangler d1 migrations apply hw-push --remote`.
+- New migration: add `apps/ingest/migrations/000N_*.sql`, then `wrangler d1 migrations apply hw-push --remote`
+  **before** deploying code that uses it.
+- People choose their own PM2.5 level and earthquake limit (magnitude / distance) from presets only:
+  `push.quakeChoices` in `packages/core/src/config.ts`, `WEB.push.*` in `apps/web/src/config.ts`. Unknown values fall
+  back to the central default (stored as NULL).
 - Another channel (Telegram, LINE): implement `Notifier` in `apps/ingest/src/push/notifier.ts`.
 - App icons: `node tools/icons/make-icons.mjs`.
 
@@ -83,7 +97,9 @@ once in `apps/web/src/app/globals.css`; components use only these names.
 
 ## Tuning alerts
 
-All thresholds are in `packages/core/src/config.ts` (`DEFAULT_CONFIG`). UI text for both languages is in
+All thresholds are in `packages/core/src/config.ts` (`DEFAULT_CONFIG`). Rain: per hour 10/30/60 mm (WMO/JMA, BMA
+drainage capacity) and, where a gauge reports it, 24 h totals 35.1/60/90.1 mm (TMD classes) — a gauge takes the worse
+of the two. River/canal level: 70/100/120 % of bank-full (70/100 from ThaiWater). UI text for both languages is in
 `packages/core/src/i18n/messages.ts`.
 
 ## Monitoring
