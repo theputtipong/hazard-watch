@@ -1,7 +1,7 @@
 import type { AlertConfig, PushKind } from './config';
 import { distanceKm } from './geo';
 import { t, type Lang } from './i18n';
-import { isStale, quakeSeverity, rank } from './severity';
+import { isStale, quakeAlertFloor, quakeSeverity, rank } from './severity';
 import type { Earthquake, Observation, Severity } from './types';
 import { groupByZone, type ZoneFeature } from './zones';
 
@@ -114,21 +114,67 @@ export function mergeQuakes(tmd: Earthquake[], usgs: Earthquake[], cfg: AlertCon
   return out.sort((a, b) => b.occurredAt.localeCompare(a.occurredAt));
 }
 
-/** Earthquake alerts for a district, measured from the district's centre. */
-export function quakeAlerts(quakes: Earthquake[], district: ZoneFeature, cfg: AlertConfig, now: Date = new Date()): Alert[] {
+/** Smallest magnitude and widest distance (from the person's district) that raise a quake alert. */
+export interface QuakeLimit {
+  minMagnitude: number;
+  maxDistanceKm: number;
+}
+
+/** A person's own quake choice; null/undefined (or a value not in the allowed choices) = the central quake tiers. */
+export interface QuakePref {
+  minMagnitude?: number | null;
+  maxDistanceKm?: number | null;
+}
+
+/** Returns `value` when it is one of `choices`, otherwise null (= use the central default). */
+export function pickChoice(value: unknown, choices: readonly number[]): number | null {
+  const n = typeof value === 'number' ? value : typeof value === 'string' && value.trim() !== '' ? Number(value) : NaN;
+  return Number.isFinite(n) && choices.includes(n) ? n : null;
+}
+
+/** The limit a person's quake alerts use: their own choice where valid, otherwise the central quake tiers. */
+export function personalQuakeLimit(cfg: AlertConfig, pref: QuakePref = {}): QuakeLimit {
+  const floor = quakeAlertFloor(cfg);
+  return {
+    minMagnitude: pickChoice(pref.minMagnitude, cfg.push.quakeChoices.minMagnitude) ?? floor.minMagnitude,
+    maxDistanceKm: pickChoice(pref.maxDistanceKm, cfg.push.quakeChoices.maxDistanceKm) ?? floor.maxDistanceKm,
+  };
+}
+
+/** The widest limit anyone can have (central default included): a quake inside it may concern someone. */
+export function loosestQuakeLimit(cfg: AlertConfig): QuakeLimit {
+  const floor = quakeAlertFloor(cfg);
+  const { minMagnitude, maxDistanceKm } = cfg.push.quakeChoices;
+  return {
+    minMagnitude: Math.min(floor.minMagnitude, ...minMagnitude),
+    maxDistanceKm: Math.max(floor.maxDistanceKm, ...maxDistanceKm),
+  };
+}
+
+/**
+ * Earthquake alerts for a district, measured from the district's centre.
+ * Without `limit` an event alerts when it matches a quake tier. With `limit` (a person's own choice) it alerts
+ * when magnitude >= limit.minMagnitude and distance <= limit.maxDistanceKm; an event below every tier but
+ * inside the personal limit gets severity 'watch'.
+ */
+export function quakeAlerts(quakes: Earthquake[], district: ZoneFeature, cfg: AlertConfig, now: Date = new Date(), limit?: QuakeLimit): Alert[] {
   const [minLng, minLat, maxLng, maxLat] = district.properties.bbox;
   const centre = { lat: (minLat + maxLat) / 2, lng: (minLng + maxLng) / 2 };
   const since = now.getTime() - cfg.quake.lookbackHours * 3_600_000;
   return quakes
     .filter((q) => new Date(q.occurredAt).getTime() >= since)
-    .map((q) => ({ q, severity: quakeSeverity(q, centre, cfg), km: Math.round(distanceKm(centre, q.location)) }))
-    .filter((x) => x.severity !== 'ok')
-    .map(({ q, severity, km }) => ({
-      key: `quake:${q.id}`,
-      kind: 'quake' as const,
-      severity,
-      zoneId: null,
-      title: both('alert.quake.title', { mag: q.magnitude.toFixed(1) }),
-      body: { th: t('alert.quake.body', 'th', { place: q.place.th, km }), en: t('alert.quake.body', 'en', { place: q.place.en, km }) },
-    }));
+    .map((q) => ({ q, severity: quakeSeverity(q, centre, cfg), dist: distanceKm(centre, q.location) }))
+    .filter((x) => (limit ? x.q.magnitude >= limit.minMagnitude && x.dist <= limit.maxDistanceKm : x.severity !== 'ok'))
+    .map(({ q, severity, dist }) => {
+      const km = Math.round(dist);
+      return {
+        key: `quake:${q.id}`,
+        kind: 'quake' as const,
+        severity: severity === 'ok' ? ('watch' as const) : severity,
+        zoneId: null,
+        title: both('alert.quake.title', { mag: q.magnitude.toFixed(1) }),
+        body: { th: t('alert.quake.body', 'th', { place: q.place.th, km }), en: t('alert.quake.body', 'en', { place: q.place.en, km }) },
+        value: q.magnitude,
+      };
+    });
 }

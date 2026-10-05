@@ -21,7 +21,7 @@ export const privacy: Record<Lang, { updated: string; sections: { heading: strin
         body: [
           'ที่อยู่สำหรับส่งการแจ้งเตือน (push endpoint) และกุญแจเข้ารหัสที่เบราว์เซอร์ของคุณสร้างให้ ใช้เพื่อส่งข้อความถึงเครื่องนี้เท่านั้น',
           'รหัสเขต/อำเภอ และแขวง/ตำบล (ถ้ามี) เช่น TH1028 — ไม่ใช่พิกัด',
-          'ภาษา และเรื่องที่คุณเลือกรับแจ้งเตือน (เช่น น้ำท่วม ฝุ่น) รวมถึงระดับฝุ่นที่ต้องการให้แจ้ง',
+          'ภาษา และเรื่องที่คุณเลือกรับแจ้งเตือน (เช่น น้ำท่วม ฝุ่น) รวมถึงระดับฝุ่นที่ต้องการให้แจ้ง และขนาด/ระยะของแผ่นดินไหวที่ต้องการให้แจ้ง',
           'บันทึกว่าส่งการแจ้งเตือนเรื่องใดไปแล้ว เพื่อไม่ให้ส่งซ้ำ (ลบอัตโนมัติภายในไม่กี่ชั่วโมง)',
         ],
       },
@@ -65,7 +65,7 @@ export const privacy: Record<Lang, { updated: string; sections: { heading: strin
         body: [
           'The push address (endpoint) and encryption keys your browser creates, used only to deliver messages to this device.',
           'District and subdistrict codes (e.g. TH1028) — not coordinates.',
-          'Your language, the alert topics you chose (e.g. flooding, PM2.5) and your PM2.5 alert level.',
+          'Your language, the alert topics you chose (e.g. flooding, PM2.5), your PM2.5 alert level and your earthquake alert level (magnitude and distance).',
           'A record of which alerts were sent, so they are not repeated (deleted automatically within hours).',
         ],
       },

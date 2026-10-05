@@ -68,6 +68,11 @@ export interface AlertConfig {
     maxPerRun: number;
     /** How long a push service should keep trying to deliver (seconds). */
     ttlSeconds: number;
+    /**
+     * Earthquake alert levels a person may pick for themselves (the server rejects anything else).
+     * Not picked = the quake tiers above (smallest tier magnitude, widest tier radius).
+     */
+    quakeChoices: { minMagnitude: number[]; maxDistanceKm: number[] };
   };
   /** Readings older than this are shown as stale and ignored for alerts. */
   staleAfterMinutes: number;
@@ -122,6 +127,7 @@ export const DEFAULT_CONFIG: AlertConfig = {
     cooldownHours: 3,
     maxPerRun: 500,
     ttlSeconds: 3600,
+    quakeChoices: { minMagnitude: [5, 6, 7], maxDistanceKm: [500, 1000, 1500] },
   },
   staleAfterMinutes: 90,
 };

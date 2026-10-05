@@ -1,10 +1,11 @@
-import { DEFAULT_CONFIG, RADARS, type DashboardSnapshot, type PushKind } from '@hw/core';
+import { RADARS, type DashboardSnapshot } from '@hw/core';
 import { t } from '@hw/core/i18n';
 import { defaultContext, fetchWeather, FEEDS, type EdgeFeed, type RunnerFeed } from '@hw/sources';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { INGEST } from './config';
 import { isPushEndpoint } from './push/notifier';
+import { cleanPrefs, type IncomingPrefs } from './push/prefs';
 import { DISTRICT_IDS, messageFor, notifierFor, sendAlerts, type PushEnv } from './push/run';
 import { deleteSubscription, getSubscription, recentlySent, markSent, subscriptionId, upsertSubscription } from './push/store';
 import { KEYS, readGroup, unpackRadar, writeGroup, type FeedMap } from './store';
@@ -105,8 +106,6 @@ app.get('/v1/radar/:id', async (c) => {
 
 // ---- Web Push subscriptions (only the area is stored, never coordinates) ----
 
-const PUSH_KINDS = new Set<PushKind>(DEFAULT_CONFIG.push.kinds);
-
 app.get('/v1/push/key', (c) => c.json({ publicKey: c.env.VAPID_PUBLIC_KEY }));
 
 app.post('/v1/push/subscribe', async (c) => {
@@ -116,7 +115,7 @@ app.post('/v1/push/subscribe', async (c) => {
       lang?: string;
       district?: string;
       subdistrict?: string | null;
-      prefs?: { kinds?: string[]; pm25At?: number };
+      prefs?: IncomingPrefs;
     }>()
     .catch(() => null);
   const endpoint = body?.subscription?.endpoint ?? '';
@@ -125,8 +124,7 @@ app.post('/v1/push/subscribe', async (c) => {
     return c.json({ error: 'invalid subscription' }, 400);
   }
   if (!body?.district || !DISTRICT_IDS.has(body.district)) return c.json({ error: 'unknown district' }, 400);
-  const kinds = (body.prefs?.kinds ?? []).filter((k): k is PushKind => PUSH_KINDS.has(k as PushKind));
-  const pm25At = Number(body.prefs?.pm25At);
+  const { prefs, quakeMinMag, quakeMaxKm } = cleanPrefs(body.prefs);
   const id = await upsertSubscription(
     c.env.PUSH_DB,
     {
@@ -136,7 +134,9 @@ app.post('/v1/push/subscribe', async (c) => {
       lang: body.lang === 'en' ? 'en' : 'th',
       district: body.district,
       subdistrict: body.subdistrict?.startsWith(body.district) ? body.subdistrict : null,
-      prefs: { kinds, ...(Number.isFinite(pm25At) && pm25At > 0 && pm25At < 1000 ? { pm25At } : {}) },
+      prefs,
+      quake_min_mag: quakeMinMag,
+      quake_max_km: quakeMaxKm,
     },
     new Date(),
   );

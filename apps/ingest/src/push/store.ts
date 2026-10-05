@@ -15,6 +15,9 @@ export interface SubscriptionRow {
   district: string;
   subdistrict: string | null;
   prefs: string;
+  /** Personal earthquake level (migration 0002); null = central quake tiers. */
+  quake_min_mag: number | null;
+  quake_max_km: number | null;
 }
 
 export async function subscriptionId(endpoint: string): Promise<string> {
@@ -30,11 +33,24 @@ export async function upsertSubscription(
   const id = await subscriptionId(sub.endpoint);
   await db
     .prepare(
-      `INSERT INTO subscriptions (id, endpoint, p256dh, auth, lang, district, subdistrict, prefs, created_at, updated_at)
-       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?9)
-       ON CONFLICT(id) DO UPDATE SET p256dh = ?3, auth = ?4, lang = ?5, district = ?6, subdistrict = ?7, prefs = ?8, updated_at = ?9`,
+      `INSERT INTO subscriptions (id, endpoint, p256dh, auth, lang, district, subdistrict, prefs, quake_min_mag, quake_max_km, created_at, updated_at)
+       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?10, ?11, ?9, ?9)
+       ON CONFLICT(id) DO UPDATE SET p256dh = ?3, auth = ?4, lang = ?5, district = ?6, subdistrict = ?7, prefs = ?8,
+         quake_min_mag = ?10, quake_max_km = ?11, updated_at = ?9`,
     )
-    .bind(id, sub.endpoint, sub.p256dh, sub.auth, sub.lang, sub.district, sub.subdistrict, JSON.stringify(sub.prefs), now.toISOString())
+    .bind(
+      id,
+      sub.endpoint,
+      sub.p256dh,
+      sub.auth,
+      sub.lang,
+      sub.district,
+      sub.subdistrict,
+      JSON.stringify(sub.prefs),
+      now.toISOString(),
+      sub.quake_min_mag,
+      sub.quake_max_km,
+    )
     .run();
   return id;
 }

@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { DEFAULT_CONFIG, type PushKind, type ZoneFeature } from '@hw/core';
 import { t, type Lang } from '@hw/core/i18n';
 import { WEB } from '@/config';
-import { currentSubscription, pushSupport, savedPrefs, sendTest, subscribe, unsubscribe, type PushPrefs, type PushSupport } from '@/lib/push';
+import { currentSubscription, defaultPrefs, pushSupport, savedPrefs, sendTest, subscribe, unsubscribe, type PushPrefs, type PushSupport } from '@/lib/push';
 import { Card } from './Card';
 import { zoneLabel } from '@/lib/zoneText';
 
@@ -19,7 +19,7 @@ export function AlertsCard({ lang, district, subdistrict }: { lang: Lang; distri
   const [support, setSupport] = useState<PushSupport>('ok');
   const [status, setStatus] = useState<Status>('loading');
   const [message, setMessage] = useState<string | null>(null);
-  const [prefs, setPrefs] = useState<PushPrefs>({ kinds: [...DEFAULT_CONFIG.push.kinds], pm25At: DEFAULT_CONFIG.pm25.pushAt });
+  const [prefs, setPrefs] = useState<PushPrefs>(defaultPrefs);
   const [savedArea, setSavedArea] = useState<string | null>(null);
 
   useEffect(() => {
@@ -99,6 +99,38 @@ export function AlertsCard({ lang, district, subdistrict }: { lang: Lang; distri
                 ))}
               </select>
             </label>
+          )}
+          {prefs.kinds.includes('quake') && (
+            <>
+              <label className="flex flex-wrap items-center gap-2 text-body">
+                {t('push.quakeMag', lang)}
+                <select
+                  value={prefs.quakeMinMag}
+                  onChange={(e) => setPrefs((p) => ({ ...p, quakeMinMag: Number(e.target.value) }))}
+                  className="min-h-11 rounded-control border border-chip-line bg-panel px-2 text-ink"
+                >
+                  {WEB.push.quakeMagnitudeChoices.map((v) => (
+                    <option key={v} value={v}>
+                      {v.toFixed(1)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="flex flex-wrap items-center gap-2 text-body">
+                {t('push.quakeKm', lang)}
+                <select
+                  value={prefs.quakeMaxKm}
+                  onChange={(e) => setPrefs((p) => ({ ...p, quakeMaxKm: Number(e.target.value) }))}
+                  className="min-h-11 rounded-control border border-chip-line bg-panel px-2 text-ink"
+                >
+                  {WEB.push.quakeDistanceChoices.map((v) => (
+                    <option key={v} value={v}>
+                      {t('push.quakeKmOption', lang, { km: v.toLocaleString('en-US') })}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </>
           )}
           <div className="flex flex-wrap gap-2">
             {status !== 'on' ? (
