@@ -18,7 +18,9 @@ export const WEB = {
     defaultRadar: 'nkm',
     radarOpacity: 0.75,
     /** A radar frame older than this is labelled as not current. */
-    radarStaleMinutes: 30,
+    radarStaleMinutes: 60, // ThaiWater frames normally arrive 35–50 min after the scan
+    /** Fewer rain pixels than this in a frame = "no rain in radar range" (a few stray pixels are noise). */
+    radarMinEchoPixels: 150,
     /** Opacity of markers whose reading is older than core config `staleAfterMinutes`. */
     staleOpacity: 0.4,
     /** Marker sizes in pixels (icons are square). Normal flood points stay small dots so problems stand out. */
@@ -51,6 +53,11 @@ export const WEB = {
     selectedWeight: 4,
     /** Padding (px) around an area when the map zooms to it. */
     fitPadding: 24,
+  },
+
+  cctv: {
+    /** Wait after opening the source's main page before moving the tab to the camera (session must exist first). */
+    sessionDelayMs: 2500,
   },
 
   /** How many nearby CCTV junctions to list. */

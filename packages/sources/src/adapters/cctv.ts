@@ -19,6 +19,7 @@ export function parseBmaTraffic(html: string): CctvCamera[] {
       name: { th: nameTh, en: en && en !== '-' ? en.trim() : nameTh },
       location: { lat: Number(lat), lng: Number(lng) },
       viewUrl: ENDPOINTS.bmaTrafficView(id!),
+      sessionUrl: ENDPOINTS.bmaTrafficSession,
     });
   }
   return out;

@@ -9,6 +9,7 @@ import { t, type Lang } from '@hw/core/i18n';
 import { WEB } from '@/config';
 import { radarImageUrl } from '@/lib/api';
 import type { Layers } from '@/lib/layers';
+import { openCamera } from '@/lib/openCamera';
 import type { MapPalette } from '@/lib/prefs';
 import type { ZoneView } from '@/lib/useZones';
 import { cctvIcon, floodIcon, LEGEND_GLYPH, pm25Icon, waterIcon, youIcon } from './mapIcons';
@@ -64,9 +65,19 @@ export default function MapView({ lang, center, located, onLocate, layers, radar
             <Marker key={c.id} position={[c.location.lat, c.location.lng]} icon={cctvIcon()} zIndexOffset={Z.cctv}>
               <Popup>
                 <PopupBody title={c.name[lang]}>
-                  <a href={c.viewUrl} target="_blank" rel="noopener noreferrer" className="font-semibold">
-                    {t('common.viewAtSource', lang)} ↗
+                  <a
+                    href={c.viewUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-semibold"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      openCamera(c);
+                    }}
+                  >
+                    {t('cctv.viewLive', lang)} ↗
                   </a>
+                  <span className="text-xs text-muted">{t('cctv.opening', lang)}</span>
                 </PopupBody>
               </Popup>
             </Marker>

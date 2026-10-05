@@ -11,6 +11,10 @@ import { KEYS, readGroup, writeGroup, type FeedMap } from './store';
 
 export interface Env extends PushEnv {
   SNAPSHOTS: KVNamespace;
+  /** owner/repo of this project, for starting the runner workflow. */
+  GITHUB_REPO: string;
+  /** Optional secret: fine-grained token with Actions read/write on GITHUB_REPO only. */
+  GITHUB_DISPATCH_TOKEN?: string;
   INGEST_TOKEN: string;
   ALLOWED_ORIGINS: string;
 }
@@ -24,6 +28,23 @@ export async function runEdgeFeeds(env: Env, now = new Date()) {
     (Object.entries(FEEDS.edge) as [EdgeFeed, (typeof FEEDS.edge)[EdgeFeed]][]).map(async ([name, run]) => [name, await run(ctx)] as const),
   );
   return writeGroup(env.SNAPSHOTS, KEYS.edge, Object.fromEntries(entries) as FeedMap, now);
+}
+
+/** Starts the GitHub Actions runner on time (GitHub's own cron is unreliable). No-op without a token. */
+async function dispatchRunner(env: Env, now = new Date()) {
+  if (!env.GITHUB_DISPATCH_TOKEN) return;
+  if (Math.floor(now.getTime() / 60_000) % INGEST.runnerDispatchEveryMinutes >= 10) return; // cron fires every 10 min
+  const res = await fetch(`https://api.github.com/repos/${env.GITHUB_REPO}/actions/workflows/${INGEST.runnerWorkflow}/dispatches`, {
+    method: 'POST',
+    headers: {
+      authorization: `Bearer ${env.GITHUB_DISPATCH_TOKEN}`,
+      accept: 'application/vnd.github+json',
+      'x-github-api-version': '2022-11-28',
+      'user-agent': 'hw-ingest',
+    },
+    body: JSON.stringify({ ref: 'main' }),
+  });
+  console.log('dispatch runner', res.status);
 }
 
 /** Reads both snapshot groups and pushes whatever is new to subscribers. */
@@ -183,6 +204,7 @@ app.put('/ingest/radar/:id', async (c) => {
 export default {
   fetch: app.fetch,
   async scheduled(_event, env, ctx) {
+    ctx.waitUntil(dispatchRunner(env));
     ctx.waitUntil(runEdgeFeeds(env).then(() => pushAfterUpdate(env)));
   },
 } satisfies ExportedHandler<Env>;

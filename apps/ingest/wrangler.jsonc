@@ -21,7 +21,9 @@
     "VAPID_PUBLIC_KEY": "BGx4EhUOVhaclyTgFL44N865zJfC1EOgnfJyErvG5q7WXOkhFiTB9QRCIkc3AQmfO_9apt7ON0xi4Q4KxhdJLjQ",
     "VAPID_SUBJECT": "https://hw-web.pdouvch.workers.dev",
     // Where a tapped notification opens.
-    "SITE_URL": "https://hw-web.pdouvch.workers.dev"
+    "SITE_URL": "https://hw-web.pdouvch.workers.dev",
+    // Repo whose ingest-runner workflow the cron starts (needs secret GITHUB_DISPATCH_TOKEN; off without it).
+    "GITHUB_REPO": "theputtipong/hazard-watch"
   }
-  // Secrets: INGEST_TOKEN (shared with the GitHub Actions runner), VAPID_PRIVATE_KEY.
+  // Secrets: INGEST_TOKEN (shared with the GitHub Actions runner), VAPID_PRIVATE_KEY, optional GITHUB_DISPATCH_TOKEN.
 }

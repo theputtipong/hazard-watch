@@ -231,6 +231,9 @@ export function Dashboard({ lang }: { lang: Lang }) {
                   ? t(radarOld ? 'radar.old' : 'radar.frame', lang, { time: clock(radarFrame.time) })
                   : t('radar.none', lang)}
               </span>
+              {radarFrame?.echoPixels !== undefined && radarFrame.echoPixels < WEB.map.radarMinEchoPixels && (
+                <span className="rounded-md bg-ok px-2 py-0.5 text-xs text-ok-strong">{t('radar.clear', lang)}</span>
+              )}
             </div>
           )}
           <ZonePanel lang={lang} zones={zones} />

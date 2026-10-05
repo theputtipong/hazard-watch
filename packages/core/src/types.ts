@@ -59,6 +59,11 @@ export interface CctvCamera {
   location: LatLng;
   /** Page at the source where the live view can be watched. */
   viewUrl: string;
+  /**
+   * Page that must be opened first so the source creates a session (BMA Traffic shows a blank camera page
+   * otherwise). The app opens this, then moves the same tab to `viewUrl`.
+   */
+  sessionUrl?: string;
 }
 
 export interface RadarFrame {
@@ -66,6 +71,8 @@ export interface RadarFrame {
   source: SourceId;
   time: string;
   imageUrl: string;
+  /** Number of rain-echo pixels found when the frame was processed (0 = no rain in range). */
+  echoPixels?: number;
 }
 
 export type SourceId =

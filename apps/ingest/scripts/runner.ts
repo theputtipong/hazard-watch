@@ -22,17 +22,10 @@ const entries = await Promise.all(
 const feeds = Object.fromEntries(entries);
 for (const [name, r] of entries) console.log(`${name.padEnd(10)} ${r.ok ? 'ok ' : 'ERR'} ${r.items.length} items ${r.error ?? ''}`);
 
-const res = await fetch(`${base}/ingest/runner`, {
-  method: 'POST',
-  headers: { ...auth, 'content-type': 'application/json' },
-  body: JSON.stringify({ feeds }),
-});
-console.log('upload snapshot:', res.status, await res.text());
-
 // Radar images: download the latest frame of each radar in the active regions and store it at the edge.
 const radar = feeds.radar;
 if (radar?.ok) {
-  for (const frame of radar.items as { radarId: string; time: string; imageUrl: string }[]) {
+  for (const frame of radar.items as { radarId: string; time: string; imageUrl: string; echoPixels?: number }[]) {
     if (!radarIds.includes(frame.radarId)) continue;
     const img = await fetch(frame.imageUrl, { signal: AbortSignal.timeout(INGEST.radarDownloadTimeoutMs) });
     if (!img.ok) {
@@ -46,7 +39,10 @@ if (radar?.ok) {
     }
     let png: Buffer;
     try {
-      png = echoesOnly(new Uint8Array(await img.arrayBuffer()), spec);
+      const out = echoesOnly(new Uint8Array(await img.arrayBuffer()), spec);
+      png = out.png;
+      // Lets the app say "no rain in range" instead of showing an empty layer without explanation.
+      frame.echoPixels = out.echoPixels;
     } catch (err) {
       console.log(`radar ${frame.radarId}: ${err instanceof Error ? err.message : err}`);
       continue;
@@ -56,9 +52,16 @@ if (radar?.ok) {
       headers: { ...auth, 'content-type': 'image/png' },
       body: png,
     });
-    console.log(`radar ${frame.radarId}: ${put.status}`);
+    console.log(`radar ${frame.radarId}: ${put.status} (${frame.echoPixels} echo px)`);
   }
 }
+
+const res = await fetch(`${base}/ingest/runner`, {
+  method: 'POST',
+  headers: { ...auth, 'content-type': 'application/json' },
+  body: JSON.stringify({ feeds }),
+});
+console.log('upload snapshot:', res.status, await res.text());
 
 const failed = entries.filter(([, r]) => !r.ok).length;
 if (failed === entries.length) process.exit(1);

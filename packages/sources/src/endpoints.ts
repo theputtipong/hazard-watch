@@ -9,6 +9,8 @@ export const ENDPOINTS = {
   bmaRain: 'https://weather.bangkok.go.th/rain/PageMap/GetDataForUpdate',
   bmaTraffic: 'http://www.bmatraffic.com/',
   bmaTrafficView: (id: string) => `http://www.bmatraffic.com/PlayVideo.aspx?ID=${id}`,
+  /** Opening this first creates the ASP.NET session the camera page needs. */
+  bmaTrafficSession: 'http://www.bmatraffic.com/index.aspx',
   /** Feed size: 4.5_day, 4.5_week, 2.5_week, significant_month ... see USGS docs. */
   usgs: 'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_week.geojson',
   tmdQuakeRss: 'https://earthquake.tmd.go.th/feed/rss_tmd.xml',

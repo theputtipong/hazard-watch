@@ -16,6 +16,8 @@ export const messages = {
   'common.stale': { th: 'ข้อมูลไม่อัปเดต', en: 'Data is stale' },
   'common.noData': { th: 'ไม่มีข้อมูล', en: 'No data' },
   'common.viewAtSource': { th: 'ดูที่ต้นทาง', en: 'View at source' },
+  'cctv.viewLive': { th: 'ดูภาพสด', en: 'Watch live' },
+  'cctv.opening': { th: 'เปิดผ่านเว็บไซต์ กทม. ใช้เวลาประมาณ 3 วินาที', en: 'Opens via the BMA website, takes about 3 seconds' },
 
   'severity.ok': { th: 'ปกติ', en: 'Normal' },
   'severity.watch': { th: 'เฝ้าระวัง', en: 'Watch' },
@@ -127,6 +129,7 @@ export const messages = {
   'radar.frame': { th: 'ภาพเรดาร์เวลา {time}', en: 'Radar frame {time}' },
   'radar.old': { th: 'ภาพเรดาร์ไม่อัปเดต (ล่าสุด {time})', en: 'Radar not updated (last {time})' },
   'radar.none': { th: 'ยังไม่มีภาพเรดาร์', en: 'No radar image yet' },
+  'radar.clear': { th: 'ไม่พบกลุ่มฝนในรัศมีเรดาร์', en: 'No rain within radar range' },
 
   'a11y.display': { th: 'การแสดงผลและการเข้าถึง', en: 'Display & accessibility' },
   'a11y.theme': { th: 'ธีม: {mode}', en: 'Theme: {mode}' },

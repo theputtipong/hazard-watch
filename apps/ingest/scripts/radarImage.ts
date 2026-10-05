@@ -7,12 +7,13 @@ import type { RadarSpec } from '@hw/core';
  * so it can sit on top of our own map. Echo colours on these images are strongly saturated greens,
  * yellows, reds and purples; the base map is grey, the sea and rivers are blue, labels are black/white.
  */
-export function echoesOnly(jpg: Uint8Array, spec: RadarSpec): Buffer {
+export function echoesOnly(jpg: Uint8Array, spec: RadarSpec): { png: Buffer; echoPixels: number } {
   const img = jpeg.decode(jpg, { useTArray: true });
   if (img.width !== spec.size[0] || img.height !== spec.size[1]) {
     throw new Error(`${spec.id}: image is ${img.width}x${img.height}, expected ${spec.size.join('x')} — re-fit bounds`);
   }
   const png = new PNG({ width: img.width, height: img.height });
+  let echoPixels = 0;
   const inIgnored = (x: number, y: number) => spec.ignore.some(([rx, ry, rw, rh]) => x >= rx && x < rx + rw && y >= ry && y < ry + rh);
   for (let y = 0; y < img.height; y++) {
     for (let x = 0; x < img.width; x++) {
@@ -22,6 +23,7 @@ export function echoesOnly(jpg: Uint8Array, spec: RadarSpec): Buffer {
       const saturated = max - min > 70 && max > 90;
       const blue = b >= r && b >= g; // sea, rivers and the weakest (<10 dBZ) echoes
       const keep = saturated && !blue && !inIgnored(x, y);
+      if (keep) echoPixels++;
       // Zero hidden pixels so the PNG compresses to a few KB instead of ~1 MB.
       png.data[i] = keep ? r : 0;
       png.data[i + 1] = keep ? g : 0;
@@ -29,5 +31,5 @@ export function echoesOnly(jpg: Uint8Array, spec: RadarSpec): Buffer {
       png.data[i + 3] = keep ? 255 : 0;
     }
   }
-  return PNG.sync.write(png);
+  return { png: PNG.sync.write(png), echoPixels };
 }
