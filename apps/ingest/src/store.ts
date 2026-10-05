@@ -3,12 +3,13 @@ import type { FeedName } from '@hw/sources';
 
 /**
  * KV layout. Free plan allows 1,000 writes/day, so each run writes one key per group
- * (edge every 10 min = 144/day) plus runner groups and radar images (~200/day at 30 min).
+ * (edge every 10 min = 144/day) plus the runner group and one radar bundle per runner run (~100/day at 30 min).
  */
 export const KEYS = {
   edge: 'snapshot:edge',
   runner: 'snapshot:runner',
-  radar: (id: string) => `radar:${id}`,
+  /** All radar PNGs in one value (see scripts/radarImage.ts packBundle). */
+  radarBundle: 'radar:bundle',
 } as const;
 
 export type FeedMap = Partial<Record<FeedName, SourceResult<unknown>>>;
@@ -42,4 +43,22 @@ export async function writeGroup(kv: KVNamespace, key: string, feeds: FeedMap, n
   const snapshot: GroupSnapshot = { updatedAt: now.toISOString(), feeds: mergeWithPrevious(feeds, prev) };
   await kv.put(key, JSON.stringify(snapshot));
   return snapshot;
+}
+
+export interface BundledRadar {
+  id: string;
+  time: string;
+  echoPixels: number;
+  offset: number;
+  length: number;
+}
+
+/** Reads one radar's PNG out of the bundle without copying the others. */
+export function unpackRadar(bundle: ArrayBuffer, id: string): { png: Uint8Array; entry: BundledRadar } | null {
+  const view = new DataView(bundle);
+  const headerLength = view.getUint32(0);
+  const header = JSON.parse(new TextDecoder().decode(new Uint8Array(bundle, 4, headerLength))) as { radars: BundledRadar[] };
+  const entry = header.radars.find((r) => r.id === id);
+  if (!entry) return null;
+  return { png: new Uint8Array(bundle, 4 + headerLength + entry.offset, entry.length), entry };
 }

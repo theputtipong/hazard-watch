@@ -1,4 +1,4 @@
-import { regionProvinces, regionRadars, waterLevelSeverity, type Observation, type RadarFrame } from '@hw/core';
+import { RADARS, regionProvinces, waterLevelSeverity, type Observation, type RadarFrame } from '@hw/core';
 import { ENDPOINTS, REQUEST } from '../endpoints';
 import { getJson, settle, type AdapterContext } from '../http';
 
@@ -48,11 +48,13 @@ interface RadarRow {
   media_path: string;
 }
 
-/** ThaiWater labels times "UTC"/"TST" inconsistently; in practice every value is UTC. */
-export function parseRadars(body: { radar: { data: { data: RadarRow[] } } }, ctx: AdapterContext): RadarFrame[] {
-  const radars = regionRadars(ctx.regions);
+/**
+ * Every radar that has a calibration in core RADARS, regardless of the coverage regions (the overlay is drawn on
+ * top of the map wherever it is). ThaiWater labels times "UTC"/"TST" inconsistently; in practice they are UTC.
+ */
+export function parseRadars(body: { radar: { data: { data: RadarRow[] } } }): RadarFrame[] {
   return body.radar.data.data
-    .filter((r) => radars.includes(r.radar_type) && r.media_path && r.media_datetime)
+    .filter((r) => r.radar_type in RADARS && r.media_path && r.media_datetime)
     .map((r) => ({
       radarId: r.radar_type,
       source: 'thaiwater',
@@ -65,4 +67,4 @@ export const thaiwaterLevels = (ctx: AdapterContext) =>
   settle('thaiwater', ctx, async () => parseWaterLevel(await getJson(ctx, WATERLEVEL_URL), ctx));
 
 export const thaiwaterRadars = (ctx: AdapterContext) =>
-  settle('thaiwater', ctx, async () => parseRadars(await getJson(ctx, MAIN_URL), ctx));
+  settle('thaiwater', ctx, async () => parseRadars(await getJson(ctx, MAIN_URL)));

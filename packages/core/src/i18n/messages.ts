@@ -142,6 +142,9 @@ export const messages = {
   'radar.frame': { th: 'ภาพเรดาร์เวลา {time}', en: 'Radar frame {time}' },
   'radar.old': { th: 'ภาพเรดาร์ไม่อัปเดต (ล่าสุด {time})', en: 'Radar not updated (last {time})' },
   'radar.none': { th: 'ยังไม่มีภาพเรดาร์', en: 'No radar image yet' },
+  'radar.agency.bma': { th: 'กรุงเทพมหานคร', en: 'Bangkok (BMA)' },
+  'radar.agency.tmd': { th: 'กรมอุตุนิยมวิทยา', en: 'Thai Meteorological Dept.' },
+  'radar.agency.drraa': { th: 'กรมฝนหลวงและการบินเกษตร', en: 'Royal Rainmaking Dept.' },
   'radar.clear': { th: 'ไม่พบกลุ่มฝนในรัศมีเรดาร์', en: 'No rain within radar range' },
 
   'a11y.display': { th: 'การแสดงผลและการเข้าถึง', en: 'Display & accessibility' },

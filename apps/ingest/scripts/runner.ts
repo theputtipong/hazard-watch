@@ -4,8 +4,8 @@
  *   INGEST_URL=http://localhost:8787 INGEST_TOKEN=dev-token-change-me pnpm --filter @hw/ingest runner
  */
 import { defaultContext, FEEDS, type RunnerFeed } from '@hw/sources';
-import { RADARS, regionRadars } from '@hw/core';
-import { echoesOnly } from './radarImage';
+import { RADARS, type RadarFrame } from '@hw/core';
+import { echoesOnly, packBundle } from './radarImage';
 import { INGEST } from '../src/config';
 
 const base = process.env.INGEST_URL;
@@ -13,7 +13,6 @@ const token = process.env.INGEST_TOKEN;
 if (!base || !token) throw new Error('INGEST_URL and INGEST_TOKEN are required');
 
 const ctx = defaultContext();
-const radarIds = regionRadars(ctx.regions);
 const auth = { authorization: `Bearer ${token}` };
 
 const entries = await Promise.all(
@@ -22,37 +21,34 @@ const entries = await Promise.all(
 const feeds = Object.fromEntries(entries);
 for (const [name, r] of entries) console.log(`${name.padEnd(10)} ${r.ok ? 'ok ' : 'ERR'} ${r.items.length} items ${r.error ?? ''}`);
 
-// Radar images: download the latest frame of each radar in the active regions and store it at the edge.
+// Radar images: every calibrated radar, cut to rain echoes, packed into one bundle (one KV write per run).
 const radar = feeds.radar;
 if (radar?.ok) {
-  for (const frame of radar.items as { radarId: string; time: string; imageUrl: string; echoPixels?: number }[]) {
-    if (!radarIds.includes(frame.radarId)) continue;
-    const img = await fetch(frame.imageUrl, { signal: AbortSignal.timeout(INGEST.radarDownloadTimeoutMs) });
-    if (!img.ok) {
-      console.log(`radar ${frame.radarId}: download failed ${img.status}`);
-      continue;
-    }
+  const items: { id: string; time: string; echoPixels: number; png: Buffer }[] = [];
+  for (const frame of radar.items as RadarFrame[]) {
     const spec = RADARS[frame.radarId];
-    if (!spec) {
-      console.log(`radar ${frame.radarId}: no calibration in core/radars.ts, skipped`);
-      continue;
-    }
-    let png: Buffer;
+    if (!spec) continue;
     try {
+      const img = await fetch(frame.imageUrl, { signal: AbortSignal.timeout(INGEST.radarDownloadTimeoutMs) });
+      if (!img.ok) throw new Error(`download failed ${img.status}`);
       const out = echoesOnly(new Uint8Array(await img.arrayBuffer()), spec);
-      png = out.png;
       // Lets the app say "no rain in range" instead of showing an empty layer without explanation.
       frame.echoPixels = out.echoPixels;
+      items.push({ id: frame.radarId, time: frame.time, echoPixels: out.echoPixels, png: out.png });
+      console.log(`radar ${frame.radarId.padEnd(10)} ${out.echoPixels} echo px`);
     } catch (err) {
       console.log(`radar ${frame.radarId}: ${err instanceof Error ? err.message : err}`);
-      continue;
     }
-    const put = await fetch(`${base}/ingest/radar/${frame.radarId}?time=${encodeURIComponent(frame.time)}`, {
+  }
+  // Frames that could not be processed are not offered to the app.
+  radar.items = (radar.items as RadarFrame[]).filter((f) => items.some((it) => it.id === f.radarId));
+  if (items.length) {
+    const put = await fetch(`${base}/ingest/radar-bundle`, {
       method: 'PUT',
-      headers: { ...auth, 'content-type': 'image/png' },
-      body: png,
+      headers: { ...auth, 'content-type': 'application/octet-stream' },
+      body: packBundle(items),
     });
-    console.log(`radar ${frame.radarId}: ${put.status} (${frame.echoPixels} echo px)`);
+    console.log(`radar bundle: ${put.status} (${items.length} radars)`);
   }
 }
 

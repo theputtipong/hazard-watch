@@ -19,8 +19,10 @@
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20261003.1",
+    "@types/omggif": "^1.0.5",
     "@types/pngjs": "^6.0.5",
     "jpeg-js": "^0.4.4",
+    "omggif": "^1.0.10",
     "pngjs": "^7.0.0",
     "tsx": "^4.20.0",
     "vitest": "^4.0.0",

@@ -33,12 +33,18 @@ importers:
       '@cloudflare/workers-types':
         specifier: ^5.20261003.1
         version: 5.20261003.1
+      '@types/omggif':
+        specifier: ^1.0.5
+        version: 1.0.5
       '@types/pngjs':
         specifier: ^6.0.5
         version: 6.0.5
       jpeg-js:
         specifier: ^0.4.4
         version: 0.4.4
+      omggif:
+        specifier: ^1.0.10
+        version: 1.0.10
       pngjs:
         specifier: ^7.0.0
         version: 7.0.0
@@ -1645,6 +1651,9 @@ packages:
 
   '@types/node@22.20.5':
     resolution: {integrity: sha512-U2+DNr+wSjpsTS/wZGYHq7GcwfuSmKiKvoPvK22zwTlRhU91yOniN4qRR5KhIjvif7ysw/dz/hKmfDH0Ris4aA==}
+
+  '@types/omggif@1.0.5':
+    resolution: {integrity: sha512-gDQJflz1rOgEcUXkMAl80bDGN46f5mp8GbcM5dyvq+zsFV6YRBRtmNxlJJ5mjY77T7BRkRFzdIBVmK90QYhCxA==}
 
   '@types/pngjs@6.0.5':
     resolution: {integrity: sha512-0k5eKfrA83JOZPppLtS2C7OUtyNAl2wKNxfyYl9Q5g9lPkgBl/9hNyAu6HuEH2J4XmIv2znEpkDd0SaZVxW6iQ==}
@@ -3256,6 +3265,9 @@ packages:
   obug@2.2.1:
     resolution: {integrity: sha512-XrsrhT5sybtKI6wakr2SPOlGZWWYbUXZ7a0jT8/QOeAPau+1X/bSegNe5YR75oJmEZQbKningirmGOEJCIk61Q==}
     engines: {node: '>=12.20.0'}
+
+  omggif@1.0.10:
+    resolution: {integrity: sha512-LMJTtvgc/nugXj0Vcrrs68Mn2D1r0zf630VNtqtpI1FEO7e+O9FP4gqs9AcnBaSEeoHIPm28u6qgPR0oyEpGSw==}
 
   on-finished@2.4.1:
     resolution: {integrity: sha512-oVlzkg3ENAhCk2zdv7IJwd/QUD4z2RxRwpkcGY8psCVcCYZNq4wYnVWALHM+brtuJjePWiYF/ClmuDr8Ch5+kg==}
@@ -5607,6 +5619,8 @@ snapshots:
     dependencies:
       undici-types: 6.21.0
 
+  '@types/omggif@1.0.5': {}
+
   '@types/pngjs@6.0.5':
     dependencies:
       '@types/node': 22.20.5
@@ -7373,6 +7387,8 @@ snapshots:
   obliterator@1.6.1: {}
 
   obug@2.2.1: {}
+
+  omggif@1.0.10: {}
 
   on-finished@2.4.1:
     dependencies:

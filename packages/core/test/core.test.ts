@@ -4,7 +4,6 @@ import {
   activeRegions,
   inRegions,
   regionFor,
-  regionRadars,
   DEFAULT_CONFIG,
   bmaFloodSeverity,
   distanceKm,
@@ -112,9 +111,6 @@ describe('regions', () => {
   it('falls back to the first region for the map view', () => {
     expect(regionFor({ lat: 18.79, lng: 98.98 }).id).toBe('th-bangkok-metro');
     expect(regionFor(null).id).toBe('th-bangkok-metro');
-  });
-  it('lists radars without duplicates', () => {
-    expect(regionRadars([...regions, ...regions])).toEqual(['nkm', 'njk', 'svp120']);
   });
 });
 

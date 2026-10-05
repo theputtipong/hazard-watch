@@ -1,4 +1,4 @@
-import { activeRegions, DEFAULT_CONFIG, regionRadars, type DashboardSnapshot, type PushKind } from '@hw/core';
+import { DEFAULT_CONFIG, RADARS, type DashboardSnapshot, type PushKind } from '@hw/core';
 import { t } from '@hw/core/i18n';
 import { defaultContext, fetchWeather, FEEDS, type EdgeFeed, type RunnerFeed } from '@hw/sources';
 import { Hono } from 'hono';
@@ -7,7 +7,7 @@ import { INGEST } from './config';
 import { isPushEndpoint } from './push/notifier';
 import { DISTRICT_IDS, messageFor, notifierFor, sendAlerts, type PushEnv } from './push/run';
 import { deleteSubscription, getSubscription, recentlySent, markSent, subscriptionId, upsertSubscription } from './push/store';
-import { KEYS, readGroup, writeGroup, type FeedMap } from './store';
+import { KEYS, readGroup, unpackRadar, writeGroup, type FeedMap } from './store';
 
 export interface Env extends PushEnv {
   SNAPSHOTS: KVNamespace;
@@ -20,7 +20,6 @@ export interface Env extends PushEnv {
 }
 
 const RUNNER_FEEDS = Object.keys(FEEDS.runner) as RunnerFeed[];
-const RADAR_IDS = new Set(regionRadars(activeRegions()));
 
 export async function runEdgeFeeds(env: Env, now = new Date()) {
   const ctx = defaultContext({ now });
@@ -83,16 +82,25 @@ app.get('/v1/weather', async (c) => {
 
 app.get('/v1/radar/:id', async (c) => {
   const id = c.req.param('id');
-  if (!RADAR_IDS.has(id)) return c.json({ error: 'unknown radar' }, 404);
-  const { value, metadata } = await c.env.SNAPSHOTS.getWithMetadata<{ time: string; contentType: string }>(KEYS.radar(id), 'arrayBuffer');
-  if (!value || !metadata) return c.json({ error: 'no image yet' }, 404);
-  return c.body(value, 200, {
-    'content-type': metadata.contentType,
-    'cache-control': `public, max-age=${INGEST.cacheSeconds.radar}`,
-    'x-radar-time': metadata.time,
-    'access-control-allow-origin': '*',
-    'access-control-expose-headers': 'x-radar-time',
+  if (!(id in RADARS)) return c.json({ error: 'unknown radar' }, 404);
+  // Edge cache per URL (the app adds ?t=<frame time>), so the bundle is read from KV once per frame.
+  const cache = caches.default;
+  const hit = await cache.match(c.req.raw);
+  if (hit) return hit;
+  const bundle = await c.env.SNAPSHOTS.get(KEYS.radarBundle, 'arrayBuffer');
+  const found = bundle ? unpackRadar(bundle, id) : null;
+  if (!found) return c.json({ error: 'no image yet' }, 404);
+  const res = new Response(found.png, {
+    headers: {
+      'content-type': 'image/png',
+      'cache-control': `public, max-age=${INGEST.cacheSeconds.radar}`,
+      'x-radar-time': found.entry.time,
+      'access-control-allow-origin': '*',
+      'access-control-expose-headers': 'x-radar-time',
+    },
   });
+  c.executionCtx.waitUntil(cache.put(c.req.raw, res.clone()));
+  return res;
 });
 
 // ---- Web Push subscriptions (only the area is stored, never coordinates) ----
@@ -192,12 +200,20 @@ app.post('/ingest/runner', async (c) => {
   return c.json({ ok: true, feeds: Object.keys(snapshot.feeds) });
 });
 
-app.put('/ingest/radar/:id', async (c) => {
-  const id = c.req.param('id');
-  const time = c.req.query('time');
-  const contentType = c.req.header('content-type') ?? '';
-  if (!RADAR_IDS.has(id) || !time || !contentType.startsWith('image/')) return c.json({ error: 'bad radar upload' }, 400);
-  await c.env.SNAPSHOTS.put(KEYS.radar(id), await c.req.arrayBuffer(), { metadata: { time, contentType } });
+app.put('/ingest/radar-bundle', async (c) => {
+  const body = await c.req.arrayBuffer();
+  // Must start with a readable header (see packBundle) before it replaces the stored bundle.
+  const headerLength = body.byteLength >= 4 ? new DataView(body).getUint32(0) : 0;
+  let valid = headerLength > 0 && 4 + headerLength <= body.byteLength;
+  if (valid) {
+    try {
+      valid = Array.isArray(JSON.parse(new TextDecoder().decode(new Uint8Array(body, 4, headerLength))).radars);
+    } catch {
+      valid = false;
+    }
+  }
+  if (!valid) return c.json({ error: 'bad radar bundle' }, 400);
+  await c.env.SNAPSHOTS.put(KEYS.radarBundle, body);
   return c.json({ ok: true });
 });
 

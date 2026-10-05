@@ -23,8 +23,6 @@ export interface Region {
   provincePcodes: string[];
   /** Province names exactly as Thai government feeds spell them (used to filter ThaiWater etc.). */
   provincesTh: string[];
-  /** ThaiWater radar ids that cover this region. */
-  radars: string[];
 }
 
 export const REGIONS = {
@@ -37,7 +35,6 @@ export const REGIONS = {
     zoom: 11,
     provincePcodes: ['TH10', 'TH11', 'TH12', 'TH13', 'TH73', 'TH74'],
     provincesTh: ['กรุงเทพมหานคร', 'นนทบุรี', 'ปทุมธานี', 'สมุทรปราการ', 'สมุทรสาคร', 'นครปฐม'],
-    radars: ['nkm', 'njk', 'svp120'],
   },
 } as const satisfies Record<string, Region>;
 
@@ -56,9 +53,9 @@ export const inRegions = (p: LatLng, regions: readonly Region[]) => regions.some
 
 export const regionProvinces = (regions: readonly Region[]) => new Set(regions.flatMap((r) => r.provincesTh));
 
-export const regionRadars = (regions: readonly Region[]) => [...new Set(regions.flatMap((r) => r.radars))];
 
 /** Region containing the point, else the first active one (used as the map's default view). */
+
 export function regionFor(p: LatLng | null, regions: readonly Region[] = activeRegions()): Region {
   return (p && regions.find((r) => inBBox(p, r.bbox))) || regions[0]!;
 }

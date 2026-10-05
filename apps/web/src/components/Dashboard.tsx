@@ -2,10 +2,11 @@
 
 import dynamic from 'next/dynamic';
 import { useEffect, useMemo, useState } from 'react';
-import { activeRegions, DEFAULT_CONFIG, groupByZone, isStale, summarizeZone, RADARS, regionRadars, type DashboardSnapshot, type WeatherNow } from '@hw/core';
+import { activeRegions, DEFAULT_CONFIG, groupByZone, isStale, summarizeZone, type DashboardSnapshot, type WeatherNow } from '@hw/core';
 import { t, type Lang, type MessageKey } from '@hw/core/i18n';
 import { WEB } from '@/config';
 import { fetchSnapshot, fetchWeather } from '@/lib/api';
+import { radarFor, radarGroups } from '@/lib/radar';
 import { floodCounts, nearest, quakeSummary, uniqueBy } from '@/lib/derive';
 import { feedFreshness, freshnessNote } from '@/lib/freshness';
 import { useLocation } from '@/lib/useLocation';
@@ -41,7 +42,10 @@ export function Dashboard({ lang }: { lang: Lang }) {
   const [loadedAt, setLoadedAt] = useState(0);
   const [weather, setWeather] = useState<WeatherNow | null>(null);
   const [layers, setLayers] = useState<Layers>({ ...WEB.map.defaultLayers });
-  const [radarId, setRadarId] = useState<string>(WEB.map.defaultRadar);
+  /** Radar the user picked; until then the radar covering their location is used. */
+  const [radarChoice, setRadarChoice] = useState<string | null>(null);
+  /** Bumped when the user picks a radar, so the map flies to it. */
+  const [radarFocus, setRadarFocus] = useState(0);
 
   useEffect(() => {
     let alive = true;
@@ -148,6 +152,8 @@ export function Dashboard({ lang }: { lang: Lang }) {
       }),
     [lang, updatedAt, weather, view, focusZone, zones.focusSummary],
   );
+  const radarIds = (snapshot?.runner?.feeds.radar?.items ?? []).map((f) => f.radarId);
+  const radarId = radarChoice ?? radarFor(location, radarIds, WEB.map.defaultRadar);
   const radarFrame = snapshot?.runner?.feeds.radar?.items.find((f) => f.radarId === radarId) ?? null;
   const radarOld = !!radarFrame && loadedAt - new Date(radarFrame.time).getTime() > WEB.map.radarStaleMinutes * 60_000;
   const clock = (iso: string) =>
@@ -242,6 +248,7 @@ export function Dashboard({ lang }: { lang: Lang }) {
             onLocate={locate}
             layers={layers}
             radarId={radarId}
+            radarFocus={radarFocus}
             radarTime={radarFrame?.time ?? null}
             floodPoints={view.floodPoints}
             pmStations={view.pmStations}
@@ -258,16 +265,21 @@ export function Dashboard({ lang }: { lang: Lang }) {
               <select
                 id="radar-src"
                 value={radarId}
-                onChange={(e) => setRadarId(e.target.value)}
+                onChange={(e) => {
+                  setRadarChoice(e.target.value);
+                  setRadarFocus((n) => n + 1);
+                }}
                 className="min-h-11 rounded-control border border-chip-line bg-panel px-2.5 text-ink"
               >
-                {regionRadars(activeRegions())
-                  .filter((id) => RADARS[id])
-                  .map((id) => (
-                    <option key={id} value={id}>
-                      {RADARS[id]!.name[lang]}
-                    </option>
-                  ))}
+                {radarGroups(radarIds, lang).map((g) => (
+                  <optgroup key={g.agency} label={t(`radar.agency.${g.agency}`, lang)}>
+                    {g.radars.map((r) => (
+                      <option key={r.id} value={r.id}>
+                        {r.name[lang]}
+                      </option>
+                    ))}
+                  </optgroup>
+                ))}
               </select>
               <span className={radarOld ? 'rounded-control bg-watch px-2 py-0.5 text-caption text-watch-strong' : 'text-caption text-muted'}>
                 {radarFrame

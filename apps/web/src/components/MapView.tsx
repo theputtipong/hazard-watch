@@ -25,6 +25,8 @@ interface Props {
   radarId: string;
   /** Time of the radar frame (cache key for the image). */
   radarTime: string | null;
+  /** Changes when the user picks a radar: the map then flies to that radar's area. */
+  radarFocus: number;
   floodPoints: Observation[];
   pmStations: Observation[];
   cameras: CctvCamera[];
@@ -40,7 +42,7 @@ const FLOOD_RANK: Record<Severity, number> = { ok: 0, watch: 1, warn: 2, danger:
 /** Readings older than `staleAfterMinutes` are drawn faded so they don't read as current. */
 const fade = (o: Observation) => (isStale(o.observedAt, DEFAULT_CONFIG) ? WEB.map.staleOpacity : 1);
 
-export default function MapView({ lang, center, located, onLocate, layers, radarId, radarTime, floodPoints, pmStations, cameras, waterStations, zones, palette }: Props) {
+export default function MapView({ lang, center, located, onLocate, layers, radarId, radarTime, radarFocus, floodPoints, pmStations, cameras, waterStations, zones, palette }: Props) {
   const bounds = RADARS[radarId]?.bounds;
   const startZoom = regionFor(center).zoom;
   const [zoom, setZoom] = useState(startZoom);
@@ -56,6 +58,7 @@ export default function MapView({ lang, center, located, onLocate, layers, radar
         <TileLayer attribution={WEB.map.attribution} url={WEB.map.tileUrl} />
         <ZoomWatcher onZoom={setZoom} />
         <FollowFirstFix center={center} located={located} />
+        <FlyToRadar radarId={radarId} focus={radarFocus} />
         <FitToFocus focus={zones.selected ?? zones.path.at(-1) ?? null} depth={zones.path.length} center={center} />
         {layers.zones && <ZoneLayer lang={lang} zones={zones} palette={palette} />}
         {layers.radar && bounds && <ImageOverlay key={`${radarId}:${radarTime}`} url={radarImageUrl(radarId, radarTime ?? undefined)} bounds={bounds} opacity={WEB.map.radarOpacity} />}
@@ -199,6 +202,22 @@ function ZoneLayer({ lang, zones, palette }: { lang: Lang; zones: ZoneView; pale
       })}
     </>
   );
+}
+
+function FlyToRadar({ radarId, focus }: { radarId: string; focus: number }) {
+  const map = useMap();
+  const first = useRef(true);
+  useEffect(() => {
+    if (first.current) {
+      first.current = false;
+      return;
+    }
+    const r = RADARS[radarId];
+    if (r) map.flyToBounds(r.bounds, { padding: [WEB.zones.fitPadding, WEB.zones.fitPadding] });
+    // Only a new pick (focus) should move the map, not the radar id changing on its own.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focus]);
+  return null;
 }
 
 /** Zooms to the area the user drilled into; back at the top level, returns to the region. */
