@@ -3,6 +3,8 @@
 Public, free dashboard for weather, flooding, PM2.5 and earthquake alerts based on the viewer's location.
 Currently covers Bangkok and the five metropolitan provinces; built to expand to all of Thailand and beyond.
 
+Live: https://hazard.pdouvch.com · API: https://api.hazard.pdouvch.com
+
 ## Layout
 
 ```
@@ -42,6 +44,7 @@ cp apps/web/.env.example apps/web/.env.local
 pnpm --filter @hw/ingest dev        # http://localhost:8787 (curl /__scheduled to run the cron)
 INGEST_URL=http://localhost:8787 INGEST_TOKEN=dev-token-change-me pnpm --filter @hw/ingest runner
 pnpm --filter @hw/web dev           # http://localhost:3000
+# deploy: NEXT_PUBLIC_API_BASE=https://api.hazard.pdouvch.com pnpm --filter @hw/web run deploy
 pnpm test && pnpm typecheck
 ```
 

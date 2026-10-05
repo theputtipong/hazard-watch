@@ -37,11 +37,13 @@ export async function generateMetadata({ params, searchParams }: PageProps<'/[la
   if (!area) return {};
   const title = t('share.metaTitle', lang, { area, app: t('app.name', lang) });
   const description = t('share.metaDescription', lang, { area });
+  // openGraph/twitter here replace the layout's objects entirely, so the image is repeated.
+  const images = [{ url: '/icons/icon-512.png', width: 512, height: 512, alt: title }];
   return {
     title,
     description,
-    openGraph: { title, description, url: `/${lang}?area=${id}` },
-    twitter: { title, description },
+    openGraph: { type: 'website', title, description, url: `/${lang}?area=${id}`, images },
+    twitter: { card: 'summary', title, description, images: ['/icons/icon-512.png'] },
   };
 }
 

@@ -2,6 +2,9 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "hw-web",
   "main": ".open-next/worker.js",
+  // Public address of the site; the workers.dev address keeps working for old links.
+  "routes": [{ "pattern": "hazard.pdouvch.com", "custom_domain": true }],
+  "workers_dev": true,
   "compatibility_date": "2026-09-01",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
