@@ -60,6 +60,16 @@ needs its own adapters in `packages/sources`.
 - Another channel (Telegram, LINE): implement `Notifier` in `apps/ingest/src/push/notifier.ts`.
 - App icons: `node tools/icons/make-icons.mjs`.
 
+## Radar
+
+- Radars and where their images sit on the map: `packages/core/src/radars.ts` (11 calibrated, nationwide).
+- Adding or re-fitting a radar: `tools/radar-calibrate/README.md`.
+
+## Design tokens
+
+Colours, the type scale (`text-caption … text-figure`) and corner radii (`rounded-tiny … rounded-card`) are defined
+once in `apps/web/src/app/globals.css`; components use only these names.
+
 ## Tuning alerts
 
 All thresholds are in `packages/core/src/config.ts` (`DEFAULT_CONFIG`). UI text for both languages is in
