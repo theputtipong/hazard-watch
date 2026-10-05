@@ -71,7 +71,7 @@ describe('thaiwater', () => {
   });
   it('keeps calibrated radars, with UTC times', () => {
     const frames = parseRadars(json('thaiwater-main.json'));
-    expect(frames.map((f) => f.radarId).sort()).toEqual(['njk', 'nkm', 'svp120']);
+    expect(frames.map((f) => f.radarId).sort()).toEqual(['cri240', 'njk', 'nkm', 'svp120']);
     expect(frames.find((f) => f.radarId === 'nkm')!.time).toBe('2026-10-03T14:25:00.000Z');
     expect(frames[0]!.imageUrl).toContain('/shared/image?image=');
   });

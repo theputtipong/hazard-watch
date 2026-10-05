@@ -31,8 +31,11 @@ export interface RadarSpec {
 /** Legend colours used by DRRAA (ฝนหลวง) radar images. */
 const DRRAA_PALETTE: [number, number, number][] = [
   [0, 0, 255],
+  [0, 1, 255],
+  [0, 3, 255],
   [0, 25, 255],
   [0, 51, 255],
+  [0, 87, 33],
   [0, 102, 79],
   [0, 102, 255],
   [0, 125, 79],
@@ -44,10 +47,15 @@ const DRRAA_PALETTE: [number, number, number][] = [
   [0, 204, 255],
   [0, 224, 20],
   [0, 235, 0],
+  [51, 222, 18],
   [51, 255, 0],
+  [68, 255, 0],
   [71, 255, 0],
+  [102, 255, 0],
   [232, 247, 59],
+  [232, 255, 0],
   [247, 245, 0],
+  [247, 247, 59],
   [255, 0, 0],
   [255, 0, 255],
   [255, 33, 0],
@@ -57,7 +65,10 @@ const DRRAA_PALETTE: [number, number, number][] = [
   [255, 123, 0],
   [255, 125, 0],
   [255, 138, 0],
+  [255, 139, 0],
+  [255, 143, 0],
   [255, 153, 255],
+  [255, 156, 255],
   [255, 176, 0],
   [255, 176, 23],
   [255, 179, 255],
@@ -84,10 +95,22 @@ const DRRAA_862_IGNORE: PixelRect[] = [
   [0, 0, 80, 800],
   [0, 780, 862, 20],
 ];
+/** TMD 680×680 images: legend on the left, logo top-left, caption bar at the bottom. */
+const TMD_680_IGNORE: PixelRect[] = [
+  [0, 0, 68, 680],
+  [68, 0, 72, 75],
+  [0, 662, 680, 18],
+];
+/** Some TMD 680 images draw a red crosshair through the radar (2 px lines at row y, column x). */
+const tmdCrosshair = (x: number, y: number): PixelRect[] => [...TMD_680_IGNORE, [68, y, 612, 2], [x, 75, 2, 587]];
+/** Songkhla (Sathing Phra) uses an OpenStreetMap base with a label box bottom-right. */
+const TMD_STP_IGNORE: PixelRect[] = [...TMD_680_IGNORE, [512, 584, 168, 96]];
 /** DRRAA "Rainbow" layout: info and legend panel on the right. */
 const drraaPanel = (width: number): PixelRect[] => [[width - 280, 0, 280, 800]];
 
 const SATURATED = { kind: 'saturation', minChroma: 70 } as const;
+/** TMD 680 terrain map is olive (chroma ~60), so echoes need more saturation; thin range rings are despeckled. */
+const TMD_680_ECHO = { kind: 'saturation', minChroma: 100, minNeighbours: 3 } as const;
 const DRRAA_ECHO = { kind: 'palette', colors: DRRAA_PALETTE } as const;
 
 export const RADARS: Record<string, RadarSpec> = {
@@ -134,6 +157,58 @@ export const RADARS: Record<string, RadarSpec> = {
   pathio: {
     id: 'pathio', agency: 'drraa', name: { th: 'ฝนหลวง ปะทิว', en: 'DRRAA Pathio' },
     bounds: [[8.4773, 96.7357], [12.9052, 101.559]], size: [862, 800], ignore: DRRAA_862_IGNORE, echo: DRRAA_ECHO,
+  },
+  cri240: {
+    id: 'cri240', agency: 'tmd', name: { th: 'กรมอุตุฯ เชียงราย', en: 'TMD Chiang Rai' },
+    bounds: [[17.5259, 97.1623], [22.2429, 102.1459]], size: [680, 680], ignore: TMD_680_IGNORE, echo: TMD_680_ECHO,
+  },
+  lmp240: {
+    id: 'lmp240', agency: 'tmd', name: { th: 'กรมอุตุฯ ลำพูน', en: 'TMD Lamphun' },
+    bounds: [[16.2798, 96.5936], [20.7847, 101.3139]], size: [680, 680], ignore: TMD_680_IGNORE, echo: TMD_680_ECHO,
+  },
+  mhs240: {
+    id: 'mhs240', agency: 'tmd', name: { th: 'กรมอุตุฯ แม่ฮ่องสอน', en: 'TMD Mae Hong Son' },
+    bounds: [[17.099, 95.5676], [21.4305, 100.2062]], size: [680, 680], ignore: TMD_680_IGNORE, echo: TMD_680_ECHO,
+  },
+  phs240: {
+    id: 'phs240', agency: 'tmd', name: { th: 'กรมอุตุฯ พิษณุโลก', en: 'TMD Phitsanulok' },
+    bounds: [[14.3622, 97.524], [19.11, 102.4494]], size: [680, 680], ignore: tmdCrosshair(370, 334), echo: TMD_680_ECHO,
+  },
+  kkn240: {
+    id: 'kkn240', agency: 'tmd', name: { th: 'กรมอุตุฯ ขอนแก่น', en: 'TMD Khon Kaen' },
+    bounds: [[14.0522, 100.1283], [18.8, 105.0458]], size: [680, 680], ignore: TMD_680_IGNORE, echo: TMD_680_ECHO,
+  },
+  skn240: {
+    id: 'skn240', agency: 'tmd', name: { th: 'กรมอุตุฯ สกลนคร', en: 'TMD Sakon Nakhon' },
+    bounds: [[14.7281, 101.4516], [19.4604, 106.3704]], size: [680, 680], ignore: TMD_680_IGNORE, echo: TMD_680_ECHO,
+  },
+  skm240: {
+    id: 'skm240', agency: 'tmd', name: { th: 'กรมอุตุฯ สมุทรสงคราม', en: 'TMD Samut Songkhram' },
+    bounds: [[11.0082, 97.412], [15.756, 102.2602]], size: [680, 680], ignore: TMD_680_IGNORE, echo: TMD_680_ECHO,
+  },
+  cmp240: {
+    id: 'cmp240', agency: 'tmd', name: { th: 'กรมอุตุฯ ชุมพร', en: 'TMD Chumphon' },
+    bounds: [[8.2045, 96.7919], [12.7709, 101.4051]], size: [680, 680], ignore: TMD_680_IGNORE, echo: TMD_680_ECHO,
+  },
+  pkt240: {
+    id: 'pkt240', agency: 'tmd', name: { th: 'กรมอุตุฯ ภูเก็ต', en: 'TMD Phuket' },
+    bounds: [[5.8031, 95.9018], [10.4155, 100.5299]], size: [680, 680], ignore: tmdCrosshair(357, 334), echo: TMD_680_ECHO,
+  },
+  stp240: {
+    id: 'stp240', agency: 'tmd', name: { th: 'กรมอุตุฯ สงขลา', en: 'TMD Songkhla' },
+    bounds: [[5.2622, 98.2739], [9.6287, 102.6482]], size: [680, 680], ignore: TMD_STP_IGNORE, echo: TMD_680_ECHO,
+  },
+  takhli: {
+    id: 'takhli', agency: 'drraa', name: { th: 'ฝนหลวง ตาคลี', en: 'DRRAA Takhli' },
+    bounds: [[13.0904, 98.1093], [17.3948, 103.8007]], size: [1020, 800], ignore: [[800, 0, 220, 800]], echo: DRRAA_ECHO,
+  },
+  sattahip: {
+    id: 'sattahip', agency: 'drraa', name: { th: 'ฝนหลวง สัตหีบ', en: 'DRRAA Sattahip' },
+    bounds: [[10.4714, 98.7565], [14.8126, 104.7001]], size: [1076, 800], ignore: [[800, 0, 276, 800]], echo: DRRAA_ECHO,
+  },
+  phimai: {
+    id: 'phimai', agency: 'drraa', name: { th: 'ฝนหลวง พิมาย', en: 'DRRAA Phimai' },
+    bounds: [[12.9997, 100.3264], [17.325, 105.7111]], size: [967, 800], ignore: [[800, 0, 167, 800]], echo: DRRAA_ECHO,
   },
 };
 

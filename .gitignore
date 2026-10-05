@@ -18,3 +18,5 @@ tools/boundaries/.cache
 
 # Radar calibration downloads
 tools/radar-calibrate/images
+tools/radar-calibrate/*.jsonl
+tools/radar-calibrate/best*.json

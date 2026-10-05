@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import { load } from './decode.mjs';
 // Approximate radar sites (lat, lng) used only to centre the search; the fit finds the real placement.
 const SITES = {
-  cri240: [19.96, 99.88], mhs240: [19.3, 97.97], phs240: [16.78, 100.27], kkn240: [16.43, 102.83], skn240: [17.15, 104.13],
+  cri240: [19.96, 99.88], lmp240: [18.57, 99.04], mhs240: [19.3, 97.97], phs240: [16.78, 100.27], kkn240: [16.43, 102.83], skn240: [17.15, 104.13],
   srn240: [14.88, 103.49], ubn120: [15.25, 104.87], ubn240: [15.25, 104.87], svp120: [13.69, 100.75], skm240: [13.41, 100.0],
   cmp240: [10.49, 99.18], pkt240: [7.89, 98.3], stp240: [7.19, 100.6], njk: [13.83, 100.85], nkm: [13.74, 100.35],
   omkoi: [17.8, 98.36], phimai: [15.22, 102.49], sattahip: [12.68, 100.98], rongkwang: [18.34, 100.32], rasisalai: [15.34, 104.15],
@@ -18,10 +18,23 @@ const [glat, glng] = SITES[id];
 const img = load(process.env.IMAGE_DIR ? `${process.env.IMAGE_DIR}/${id}.jpg` : `images/${id}.jpg`);
 const { w, h, data } = img;
 const raw = new Uint8Array(w * h);
+const lum = new Float32Array(w * h);
+for (let k = 0; k < w * h; k++) lum[k] = (data[k * 4] + data[k * 4 + 1] + data[k * 4 + 2]) / 3;
 for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
   const i = (y * w + x) * 4, r = data[i], g = data[i + 1], b = data[i + 2];
   const mx = Math.max(r, g, b), mn = Math.min(r, g, b);
-  if (mode === 'dark' ? mx < 85 && mx - mn < 30 : mn > 195 && mx - mn < 35) raw[y * w + x] = 1;
+  if (mode === 'coast') {
+    // Sea/land edge: a non-sea pixel next to a sea pixel (sea = clearly blue).
+    const sea = (k) => { const R = data[k * 4], G = data[k * 4 + 1], B = data[k * 4 + 2]; return B > R + 25 && B > G + 5 && B > 80; };
+    const k = y * w + x;
+    if (x > 0 && y > 0 && x < w - 1 && y < h - 1 && !sea(k) && (sea(k - 1) || sea(k + 1) || sea(k - w) || sea(k + w))) raw[k] = 1;
+  } else if (mode === 'ridge') {
+    // Thin light lines (TMD 680px province borders): clearly brighter than the ring 3px around, low colour.
+    if (x < 3 || y < 3 || x >= w - 3 || y >= h - 3 || mx - mn > 45) continue;
+    let sum = 0, n = 0;
+    for (let d = -3; d <= 3; d += 6) { sum += lum[(y + d) * w + x] + lum[y * w + x + d] + lum[(y + d) * w + x + d] + lum[(y + d) * w + x - d]; n += 4; }
+    if (lum[y * w + x] - sum / n > 28) raw[y * w + x] = 1;
+  } else if (mode === 'dark' ? mx < 85 && mx - mn < 30 : mn > 195 && mx - mn < 35) raw[y * w + x] = 1;
 }
 const mask = new Uint8Array(w * h);
 for (let y = 1; y < h - 1; y++) for (let x = 1; x < w - 1; x++)
