@@ -1,16 +1,26 @@
 import { DEFAULT_CONFIG, type Severity } from '@hw/core';
 import type { LayerKey } from './lib/layers';
 
-export type TileProvider = 'stadia' | 'osm';
-export interface TileSource {
-  /** Leaflet URL templates; `{r}` becomes `@2x` on retina screens. */
-  light: string;
-  dark: string;
+export type TileProvider = 'openfreemap' | 'osm';
+
+/** Vector base map from a MapLibre style (OpenFreeMap), drawn in the browser by MapLibre GL inside Leaflet. */
+export interface VectorTileSource {
+  /** MapLibre style URL per app theme. */
+  style: { light: string; dark: string };
+  maxZoom: number;
+  attribution: string;
+}
+
+/** Raster tile fallback (OpenStreetMap standard tiles). */
+export interface RasterTileSource {
+  url: string;
   attribution: string;
   maxZoom: number;
-  /** Darken the light tiles with a CSS filter in dark mode (only for providers without a dark style). */
+  /** Darken the light tiles with a CSS filter in dark mode (no dark style available). */
   invertInDark: boolean;
 }
+
+const OSM_COPYRIGHT = '<a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>';
 
 /**
  * Display settings for the web app. Alert thresholds and units are NOT here —
@@ -25,30 +35,26 @@ export const WEB = {
 
   map: {
     /**
-     * Base-map provider. Stadia Maps (free non-commercial plan) is the default; it authenticates
-     * browsers by domain, so every public domain must be registered in the Stadia dashboard
-     * (localhost works without it). NEXT_PUBLIC_TILE_PROVIDER=osm falls back to the OpenStreetMap
-     * standard tiles — local dev only, tile.openstreetmap.org forbids heavy use.
+     * Base-map provider. Default: OpenFreeMap (public instance, free, no key, commercial use allowed)
+     * vector tiles, styled per theme with labels in the page language. NEXT_PUBLIC_TILE_PROVIDER=osm
+     * falls back to the OpenStreetMap standard raster tiles — emergency/dev only, tile.openstreetmap.org
+     * forbids heavy use.
      */
-    tileProvider: (process.env.NEXT_PUBLIC_TILE_PROVIDER === 'osm' ? 'osm' : 'stadia') as TileProvider,
-    tiles: {
-      stadia: {
-        light: 'https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png',
-        dark: 'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png',
-        attribution:
-          '&copy; <a href="https://stadiamaps.com/" target="_blank" rel="noopener">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/" target="_blank" rel="noopener">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors',
-        maxZoom: 20,
-        invertInDark: false,
-      },
-      osm: {
-        light: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-        dark: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors',
-        maxZoom: 19,
-        /** No dark style: light tiles are CSS-inverted in dark mode (.hw-tiles-invert in app/globals.css). */
-        invertInDark: true,
-      },
-    } satisfies Record<TileProvider, TileSource>,
+    tileProvider: (process.env.NEXT_PUBLIC_TILE_PROVIDER === 'osm' ? 'osm' : 'openfreemap') as TileProvider,
+    openfreemap: {
+      /** Positron: quiet grey basemap, so coloured zones/radar/pins stand out. */
+      style: { light: 'https://tiles.openfreemap.org/styles/positron', dark: 'https://tiles.openfreemap.org/styles/dark' },
+      /** Tile data stops at z14; closer zooms are over-zoomed vectors (still sharp). */
+      maxZoom: 19,
+      attribution: `<a href="https://openfreemap.org/" target="_blank" rel="noopener">OpenFreeMap</a> &copy; <a href="https://www.openmaptiles.org/" target="_blank" rel="noopener">OpenMapTiles</a> Data from ${OSM_COPYRIGHT}`,
+    } satisfies VectorTileSource,
+    osm: {
+      url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+      attribution: `&copy; ${OSM_COPYRIGHT} contributors`,
+      maxZoom: 19,
+      /** No dark style: light tiles are CSS-inverted in dark mode (.hw-tiles-invert in app/globals.css). */
+      invertInDark: true,
+    } satisfies RasterTileSource,
     /** Layers switched on when the page opens. */
     defaultLayers: { zones: true, radar: true, flood: true, water: true, pm25: false, cctv: false } satisfies Record<LayerKey, boolean>,
     defaultRadar: 'nkm',

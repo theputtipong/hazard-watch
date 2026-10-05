@@ -35,7 +35,7 @@ export const privacy: Record<Lang, { updated: string; sections: { heading: strin
         heading: 'ผู้ที่เกี่ยวข้องกับข้อมูล',
         body: [
           'ระบบทำงานบน Cloudflare (เก็บข้อมูลการแจ้งเตือน)',
-          'ภาพแผนที่พื้นหลังโหลดจาก Stadia Maps ซึ่งจะเห็นหมายเลข IP ของคุณและบริเวณแผนที่ที่คุณเปิดดู (ซึ่งอาจอยู่ใกล้ที่ที่คุณอยู่) แต่ไม่ได้รับพิกัด GPS ของคุณ',
+          'แผนที่พื้นหลังโหลดจาก OpenFreeMap (บริการสาธารณะ) ซึ่งจะเห็นหมายเลข IP ของคุณและบริเวณแผนที่ที่คุณเปิดดู (ซึ่งอาจอยู่ใกล้ที่ที่คุณอยู่) แต่ไม่ได้รับพิกัด GPS ของคุณ และไม่ใช้คุกกี้',
           'การแจ้งเตือนถูกส่งผ่านบริการของผู้ผลิตเบราว์เซอร์ เช่น Google, Apple, Mozilla, Microsoft',
           'เราไม่ขายหรือแบ่งปันข้อมูลเพื่อการโฆษณา และไม่มีตัวติดตาม (tracker)',
         ],
@@ -80,7 +80,7 @@ export const privacy: Record<Lang, { updated: string; sections: { heading: strin
         heading: 'Who handles the data',
         body: [
           'The service runs on Cloudflare (stores alert subscriptions).',
-          'Background map images are loaded from Stadia Maps, which sees your IP address and the map area you view (which may be near where you are), but not your GPS coordinates.',
+          'The background map is loaded from OpenFreeMap (a public service), which sees your IP address and the map area you view (which may be near where you are), but not your GPS coordinates, and sets no cookies.',
           'Notifications are delivered through browser vendors’ push services, e.g. Google, Apple, Mozilla, Microsoft.',
           'We do not sell or share data for advertising and use no trackers.',
         ],

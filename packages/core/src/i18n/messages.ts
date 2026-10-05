@@ -273,7 +273,7 @@ export const messages = {
 
   'footer.coffee': { th: 'สนับสนุนค่ากาแฟ', en: 'Buy me a coffee' },
   'footer.credits': {
-    th: 'ข้อมูลจาก กรมอุตุนิยมวิทยา · สำนักการระบายน้ำ กทม. · สสน. (ThaiWater) · กรมควบคุมมลพิษ · GISTDA · USGS · Open-Meteo · ขอบเขตพื้นที่: กรุงเทพมหานคร, geoBoundaries, OCHA/กรมแผนที่ทหาร · แผนที่ © Stadia Maps, © OpenMapTiles, © ผู้ร่วมพัฒนา OpenStreetMap',
-    en: 'Data: TMD · BMA Drainage Dept. · HII ThaiWater · PCD · GISTDA · USGS · Open-Meteo · Boundaries: BMA, geoBoundaries, OCHA/RTSD · Map © Stadia Maps, © OpenMapTiles, © OpenStreetMap contributors',
+    th: 'ข้อมูลจาก กรมอุตุนิยมวิทยา · สำนักการระบายน้ำ กทม. · สสน. (ThaiWater) · กรมควบคุมมลพิษ · GISTDA · USGS · Open-Meteo · ขอบเขตพื้นที่: กรุงเทพมหานคร, geoBoundaries, OCHA/กรมแผนที่ทหาร · แผนที่ OpenFreeMap © OpenMapTiles ข้อมูลจากผู้ร่วมพัฒนา OpenStreetMap',
+    en: 'Data: TMD · BMA Drainage Dept. · HII ThaiWater · PCD · GISTDA · USGS · Open-Meteo · Boundaries: BMA, geoBoundaries, OCHA/RTSD · Map: OpenFreeMap © OpenMapTiles, data from OpenStreetMap contributors',
   },
 } as const satisfies Record<string, { th: string; en: string }>;

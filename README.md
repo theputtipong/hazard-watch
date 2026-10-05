@@ -32,7 +32,7 @@ packages/
 | Street flooding, rain gauges | BMA Drainage Dept. (unofficial endpoints) | GitHub Actions, every 40 min (see below) | 403 bot challenge from Cloudflare IPs |
 | Canal/river levels, radar images | ThaiWater (HII) | GitHub Actions, every 40 min | 429 rate limit from Cloudflare IPs; radar frames are cut to rain echoes only (`apps/ingest/scripts/radarImage.ts`) and placed with `packages/core/src/radars.ts` |
 | CCTV list | BMA Traffic | GitHub Actions, once a day (`INGEST.runnerFeedEveryHours`) | pins + link to source only |
-| Base map | Stadia Maps (`alidade_smooth` / `_dark`, follows the theme) | browser | config in `WEB.map.tiles`; domains must be registered in the Stadia dashboard |
+| Base map | OpenFreeMap vector tiles via MapLibre GL in Leaflet (`positron` / `dark`, follows the theme; labels in the page language) | browser | config in `WEB.map.openfreemap`; free public instance, no key |
 
 GitHub's own schedule for `ingest-runner.yml` runs hours late, so the ingest cron starts it with `workflow_dispatch`
 every `INGEST.runnerDispatchEveryMinutes` (40, to stay inside the 2,000 free Actions minutes of a private repo).
@@ -54,7 +54,7 @@ INGEST_URL=http://localhost:8787 INGEST_TOKEN=dev-token-change-me pnpm --filter 
 pnpm --filter @hw/web dev           # http://localhost:3000
 # deploy order: D1 migrations (--remote) → git push → ingest deploy → web deploy
 # web: NEXT_PUBLIC_API_BASE=https://api.hazard.pdouvch.com pnpm --filter @hw/web run deploy
-#      add NEXT_PUBLIC_TILE_PROVIDER=osm to use OSM tiles instead of Stadia (dev, or before domains are registered)
+#      add NEXT_PUBLIC_TILE_PROVIDER=osm to fall back to OSM raster tiles (emergency/dev only)
 # a fresh checkout needs `pnpm --filter @hw/web exec next typegen` before typecheck
 pnpm test && pnpm typecheck
 ```
