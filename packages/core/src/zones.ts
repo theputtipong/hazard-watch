@@ -26,6 +26,12 @@ export interface ZoneFeature {
   geometry: ZoneGeometry;
 }
 
+/** Centre of a zone's bounding box (good enough to measure distances from an area picked by hand). */
+export function zoneCenter(zone: ZoneFeature): LatLng {
+  const [minLng, minLat, maxLng, maxLat] = zone.properties.bbox;
+  return { lat: (minLat + maxLat) / 2, lng: (minLng + maxLng) / 2 };
+}
+
 export function inZone(zone: ZoneFeature, { lat, lng }: LatLng): boolean {
   const [minLng, minLat, maxLng, maxLat] = zone.properties.bbox;
   if (lng < minLng || lng > maxLng || lat < minLat || lat > maxLat) return false;

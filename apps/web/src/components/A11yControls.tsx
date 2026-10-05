@@ -85,9 +85,23 @@ export function A11yControls({ lang, theme, cvd, onTheme, onCvd, speech, onListe
         <span className="hidden sm:inline">{listenLabel}</span>
       </button>
       {voiceNote && tried && (
-        <span role="status" className="basis-full text-caption text-muted">
-          {voiceNote}
-        </span>
+        <div role="status" className="flex basis-full flex-col text-caption text-muted">
+          <span>{voiceNote}</span>
+          {/* Free fix: install the system's Thai voice (no server speech). Thai page only, as the steps are for Thai. */}
+          {speech.supported && lang === 'th' && (
+            <details className="text-ink-2">
+              <summary className="inline-flex min-h-11 cursor-pointer items-center font-semibold text-accent underline underline-offset-4">
+                {t('a11y.voiceHow', lang)}
+              </summary>
+              <ul className="flex list-disc flex-col gap-1 pb-1 pl-5">
+                <li>{t('a11y.voiceAndroid', lang)}</li>
+                <li>{t('a11y.voiceWindows', lang)}</li>
+                <li>{t('a11y.voiceApple', lang)}</li>
+              </ul>
+              <p>{t('a11y.voiceReload', lang)}</p>
+            </details>
+          )}
+        </div>
       )}
     </div>
   );

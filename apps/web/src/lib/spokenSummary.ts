@@ -1,4 +1,4 @@
-import { DEFAULT_CONFIG, quakeAlertFloor, type Earthquake, type Observation, type Severity, type WeatherNow, type ZoneSummary } from '@hw/core';
+import { DEFAULT_CONFIG, quakeAlertFloor, quakePlace, type Earthquake, type Observation, type Severity, type WeatherNow, type ZoneSummary } from '@hw/core';
 import { t, type Lang } from '@hw/core/i18n';
 
 interface Input {
@@ -59,7 +59,7 @@ export function spokenSummary(d: Input): string {
   if (!d.quakes.available) out.push(t('speak.noData', lang, { topic: t('card.quake', lang) }));
   else if (d.quakes.alerts.length) {
     for (const { quake, km } of d.quakes.alerts) {
-      out.push(t('speak.quakeAlert', lang, { mag: quake.magnitude.toFixed(1), place: quake.place[lang], km: Math.round(km) }));
+      out.push(t('speak.quakeAlert', lang, { mag: quake.magnitude.toFixed(1), place: quakePlace(quake, lang), km: Math.round(km) }));
     }
   } else {
     const floor = quakeAlertFloor(cfg);

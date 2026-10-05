@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import { useEffect, useMemo, useState } from 'react';
-import { activeRegions, DEFAULT_CONFIG, groupByZone, isStale, summarizeZone, type DashboardSnapshot, type WeatherNow } from '@hw/core';
+import { activeRegions, DEFAULT_CONFIG, groupByZone, isStale, summarizeZone, zoneCenter, type DashboardSnapshot, type WeatherNow } from '@hw/core';
 import { t, type Lang, type MessageKey } from '@hw/core/i18n';
 import { WEB } from '@/config';
 import { fetchSnapshot, fetchWeather } from '@/lib/api';
@@ -11,6 +11,7 @@ import { floodCounts, nearest, quakeSummary, uniqueBy } from '@/lib/derive';
 import { feedFreshness, freshnessNote } from '@/lib/freshness';
 import { useLocation } from '@/lib/useLocation';
 import { useZones } from '@/lib/useZones';
+import { loadPickedArea, savePickedArea } from '@/lib/pickedArea';
 import { mapPalette, usePrefs } from '@/lib/prefs';
 import { useSpeech } from '@/lib/speech';
 import { spokenSummary } from '@/lib/spokenSummary';
@@ -31,7 +32,7 @@ const MapView = dynamic(() => import('./MapView'), { ssr: false, loading: () => 
 const LAYER_LABEL: Record<LayerKey, MessageKey> = { zones: 'zone.layer', radar: 'layer.radar', flood: 'layer.flood', water: 'layer.water', pm25: 'layer.pm25', cctv: 'layer.cctv' };
 
 export function Dashboard({ lang, initialArea }: { lang: Lang; initialArea?: string | null }) {
-  const { location, status, locate } = useLocation();
+  const { location: deviceLocation, status, locate } = useLocation();
   const { prefs, cycleTheme, toggleCvd } = usePrefs();
   const palette = useMemo(() => mapPalette(prefs), [prefs]);
   const speech = useSpeech(lang);
@@ -70,6 +71,28 @@ export function Dashboard({ lang, initialArea }: { lang: Lang; initialArea?: str
   useEffect(() => {
     registerServiceWorker();
   }, []);
+
+  const readings = useMemo(
+    () => [
+      ...(snapshot?.runner?.feeds.flood?.items ?? []),
+      ...(snapshot?.runner?.feeds.rain?.items ?? []),
+      ...(snapshot?.runner?.feeds.waterlevel?.items ?? []),
+      ...(snapshot?.edge?.feeds.pm25?.items ?? []),
+    ],
+    [snapshot],
+  );
+  const zones = useZones(readings, initialArea, loadPickedArea);
+  const focusZone = zones.selected ?? zones.path.at(-1) ?? null;
+  // Location off: the area picked on the map stands in for the device position (cards, weather, radar, quakes).
+  const located = status === 'granted';
+  const pickedZone = located ? null : focusZone;
+  const location = useMemo(() => (pickedZone ? zoneCenter(pickedZone) : deviceLocation), [pickedZone, deviceLocation]);
+
+  // Remember a hand-picked area for next time; a real position makes it unnecessary.
+  useEffect(() => {
+    if (!zones.ready || status === 'pending') return;
+    savePickedArea(located ? null : (focusZone?.properties.id ?? null));
+  }, [zones.ready, status, located, focusZone?.properties.id]);
 
   useEffect(() => {
     fetchWeather(location).then(setWeather).catch(() => setWeather(null));
@@ -115,16 +138,6 @@ export function Dashboard({ lang, initialArea }: { lang: Lang; initialArea?: str
     };
   }, [snapshot, location, lang]);
 
-  const readings = useMemo(
-    () => [
-      ...(snapshot?.runner?.feeds.flood?.items ?? []),
-      ...(snapshot?.runner?.feeds.rain?.items ?? []),
-      ...(snapshot?.runner?.feeds.waterlevel?.items ?? []),
-      ...(snapshot?.edge?.feeds.pm25?.items ?? []),
-    ],
-    [snapshot],
-  );
-  const zones = useZones(readings, initialArea);
   const focusId = (zones.selected ?? zones.path.at(-1))?.properties.id ?? null;
 
   // Keep ?area= in the address bar in step with the map, so the URL itself can be copied and shared.
@@ -141,16 +154,15 @@ export function Dashboard({ lang, initialArea }: { lang: Lang; initialArea?: str
   }, [zones.ready, focusId, lang]);
 
   const updatedAt = [snapshot?.edge?.updatedAt, snapshot?.runner?.updatedAt].filter(Boolean).sort().at(-1) ?? null;
-  const focusZone = zones.selected ?? zones.path.at(-1) ?? null;
   // Alert area: from the device location if allowed, otherwise the district picked on the map.
   const alertArea = useMemo(() => {
-    if (status === 'granted') return zones.zonesAt(location);
+    if (located) return zones.zonesAt(deviceLocation);
     const picked = [...zones.path, ...(zones.selected ? [zones.selected] : [])];
     return {
       district: picked.find((z) => z.properties.level === 2) ?? null,
       subdistrict: picked.find((z) => z.properties.level === 3) ?? null,
     };
-  }, [status, location, zones]);
+  }, [located, deviceLocation, zones]);
   const spoken = useMemo(
     () =>
       spokenSummary({
@@ -178,13 +190,18 @@ export function Dashboard({ lang, initialArea }: { lang: Lang; initialArea?: str
       .map((r) => r.name[lang])
       .join(', ');
     const lines = [{ label: t('area.now', lang), area: regionName, summary: summarizeZone(readings, DEFAULT_CONFIG) }];
-    const mine = status === 'granted' ? alertArea.district : null;
+    // GPS: the district around the user. Picked by hand: the area they chose.
+    const mine = located ? alertArea.district : pickedZone;
     if (mine) {
       const inside = groupByZone(readings, [mine]).get(mine.properties.id) ?? [];
-      lines.unshift({ label: t('area.nearYou', lang), area: zoneLabel(mine, lang), summary: summarizeZone(inside, DEFAULT_CONFIG) });
+      lines.unshift({
+        label: t(located ? 'area.nearYou' : 'area.picked', lang),
+        area: zoneLabel(mine, lang),
+        summary: summarizeZone(inside, DEFAULT_CONFIG),
+      });
     }
     return lines;
-  }, [readings, status, alertArea, lang]);
+  }, [readings, located, alertArea, pickedZone, lang]);
   const toggle = (key: LayerKey) => setLayers((l) => ({ ...l, [key]: !l[key] }));
 
   return (
@@ -226,15 +243,31 @@ export function Dashboard({ lang, initialArea }: { lang: Lang; initialArea?: str
         )}
         {/* Only with data: without a snapshot it would wrongly read as "no sensors". */}
         {snapshot && <SummaryBanner lang={lang} lines={summaryLines} />}
-        {status === 'denied' && (
+        {(status === 'denied' || status === 'unsupported') && (
           <div className="flex basis-full flex-wrap items-center gap-2 rounded-box bg-sunken px-4 py-2.5 text-body max-lg:order-first">
-            <span className="flex-[1_1_260px]">{t('location.denied', lang)}</span>
-            <a href="#zones" className="inline-flex min-h-11 items-center rounded-full border border-chip-line bg-panel px-4 font-medium">
-              {t('location.pick', lang)}
+            <span className="flex flex-[1_1_260px] flex-col">
+              {pickedZone ? (
+                <strong className="text-title">{t('location.picked', lang, { area: zoneLabel(pickedZone, lang) })}</strong>
+              ) : (
+                <>
+                  <span>{t('location.denied', lang)}</span>
+                  <span className="text-caption text-muted">{t('location.pickHint', lang)}</span>
+                </>
+              )}
+            </span>
+            <a
+              href="#zones"
+              className={`inline-flex min-h-11 items-center rounded-full px-4 font-semibold ${
+                pickedZone ? 'border border-chip-line bg-panel' : 'bg-accent text-panel'
+              }`}
+            >
+              {t(pickedZone ? 'location.pickChange' : 'location.pick', lang)}
             </a>
-            <button type="button" onClick={() => void locate()} className="min-h-11 rounded-full border border-chip-line bg-panel px-4 font-medium">
-              {t('location.useMine', lang)}
-            </button>
+            {status === 'denied' && (
+              <button type="button" onClick={() => void locate()} className="min-h-11 rounded-full border border-chip-line bg-panel px-4 font-medium">
+                {t('location.useMine', lang)}
+              </button>
+            )}
           </div>
         )}
 
@@ -258,7 +291,7 @@ export function Dashboard({ lang, initialArea }: { lang: Lang; initialArea?: str
           <MapView
             lang={lang}
             center={location}
-            located={status === 'granted'}
+            located={located}
             onLocate={locate}
             layers={layers}
             radarId={radarId}

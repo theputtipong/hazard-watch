@@ -1,9 +1,10 @@
 import type { AlertConfig, PushKind } from './config';
 import { distanceKm } from './geo';
 import { t, type Lang } from './i18n';
+import { quakePlace } from './quakePlace';
 import { isStale, quakeSeverity, rank } from './severity';
 import type { Earthquake, Observation, Severity } from './types';
-import { groupByZone, type ZoneFeature } from './zones';
+import { groupByZone, zoneCenter, type ZoneFeature } from './zones';
 
 /** One thing worth telling people in an area about. */
 export interface Alert {
@@ -116,8 +117,7 @@ export function mergeQuakes(tmd: Earthquake[], usgs: Earthquake[], cfg: AlertCon
 
 /** Earthquake alerts for a district, measured from the district's centre. */
 export function quakeAlerts(quakes: Earthquake[], district: ZoneFeature, cfg: AlertConfig, now: Date = new Date()): Alert[] {
-  const [minLng, minLat, maxLng, maxLat] = district.properties.bbox;
-  const centre = { lat: (minLat + maxLat) / 2, lng: (minLng + maxLng) / 2 };
+  const centre = zoneCenter(district);
   const since = now.getTime() - cfg.quake.lookbackHours * 3_600_000;
   return quakes
     .filter((q) => new Date(q.occurredAt).getTime() >= since)
@@ -129,6 +129,6 @@ export function quakeAlerts(quakes: Earthquake[], district: ZoneFeature, cfg: Al
       severity,
       zoneId: null,
       title: both('alert.quake.title', { mag: q.magnitude.toFixed(1) }),
-      body: { th: t('alert.quake.body', 'th', { place: q.place.th, km }), en: t('alert.quake.body', 'en', { place: q.place.en, km }) },
+      body: { th: t('alert.quake.body', 'th', { place: quakePlace(q, 'th'), km }), en: t('alert.quake.body', 'en', { place: q.place.en, km }) },
     }));
 }

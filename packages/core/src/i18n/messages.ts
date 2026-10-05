@@ -36,10 +36,17 @@ export const messages = {
   'location.change': { th: 'เปลี่ยนตำแหน่ง', en: 'Change location' },
   'location.useMine': { th: 'ใช้ตำแหน่งของฉัน', en: 'Use my location' },
   'location.denied': {
-    th: 'ไม่ได้ใช้ตำแหน่งของคุณ จึงแสดงภาพรวมทั้งพื้นที่ เลือกเขต/อำเภอของคุณได้จากรายการใต้แผนที่',
-    en: 'Your location is not in use, so this shows the whole area. Pick your district from the list under the map.',
+    th: 'ไม่ได้ใช้ตำแหน่งของคุณ เลือกพื้นที่ของคุณเองได้ แล้วข้อมูลและการแจ้งเตือนจะแสดงตามพื้นที่นั้น',
+    en: 'Your location is not in use. Choose your area and the data and alerts will follow it.',
   },
   'location.pick': { th: 'เลือกพื้นที่', en: 'Choose area' },
+  'location.picked': { th: 'พื้นที่ของคุณ: {area}', en: 'Your area: {area}' },
+  'location.pickChange': { th: 'เปลี่ยนพื้นที่', en: 'Change area' },
+  'location.pickHint': {
+    th: 'เลือกจังหวัด แล้วเลือกเขต/อำเภอ และแขวง/ตำบลได้จากรายการใต้แผนที่',
+    en: 'Choose a province, then a district and subdistrict, from the list under the map',
+  },
+  'area.picked': { th: 'พื้นที่ที่เลือก', en: 'Your chosen area' },
 
 
   'area.nav': { th: 'ระดับพื้นที่', en: 'Area level' },
@@ -129,6 +136,9 @@ export const messages = {
     en: 'No M{mag}+ within {km} km in the past {days} days',
   },
   'quake.latest': { th: 'ล่าสุดในภูมิภาค', en: 'Latest in region' },
+  'quake.away': { th: 'ห่าง {km} กม. จากตำแหน่งของคุณ', en: '{km} km from you' },
+  'quake.country': { th: 'ประเทศ{name}', en: '{name}' },
+  'quake.border': { th: 'ชายแดน{a}–{b}', en: '{a}–{b} border' },
 
   'settings.title': { th: 'ตั้งค่าการแจ้งเตือน', en: 'Alert settings' },
   'settings.thresholds': { th: 'เกณฑ์การแจ้งเตือน', en: 'Thresholds' },
@@ -157,9 +167,23 @@ export const messages = {
   'a11y.stop': { th: 'หยุดอ่าน', en: 'Stop' },
   'a11y.noSpeech': { th: 'เบราว์เซอร์นี้อ่านออกเสียงไม่ได้', en: 'This browser cannot read aloud' },
   'a11y.noVoice': {
-    th: 'เครื่องนี้ไม่มีเสียงอ่านภาษาไทย ติดตั้งได้ในการตั้งค่าภาษาของระบบ',
-    en: 'No voice for this language on this device; add one in system language settings',
+    th: 'เครื่องนี้ยังไม่มีเสียงอ่านภาษาไทย ติดตั้งเพิ่มได้ฟรี',
+    en: 'This device has no voice for this language yet; you can add one for free',
   },
+  'a11y.voiceHow': { th: 'วิธีติดตั้งเสียงภาษาไทย', en: 'How to add a Thai voice' },
+  'a11y.voiceAndroid': {
+    th: 'Android: การตั้งค่า → ข้อความเป็นคำพูด (Text-to-speech) → บริการเสียงพูดของ Google → ติดตั้งข้อมูลเสียง → ไทย',
+    en: 'Android: Settings → Text-to-speech → Google speech services → Install voice data → Thai',
+  },
+  'a11y.voiceWindows': {
+    th: 'Windows: การตั้งค่า → เวลาและภาษา → คำพูด → เพิ่มเสียง → ไทย',
+    en: 'Windows: Settings → Time & language → Speech → Add voices → Thai',
+  },
+  'a11y.voiceApple': {
+    th: 'iPhone, iPad และ Mac มีเสียงภาษาไทยในเครื่องแล้ว ลองใช้ Safari',
+    en: 'iPhone, iPad and Mac have a Thai voice built in; try Safari',
+  },
+  'a11y.voiceReload': { th: 'ติดตั้งเสร็จแล้วให้ปิดแล้วเปิดหน้านี้ใหม่', en: 'After installing, close and reopen this page' },
   'a11y.skip': { th: 'ข้ามไปที่สรุปสถานการณ์', en: 'Skip to situation summary' },
   'a11y.summary': { th: 'สรุปสถานการณ์', en: 'Situation summary' },
 
