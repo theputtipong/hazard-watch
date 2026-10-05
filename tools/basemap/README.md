@@ -1,5 +1,10 @@
 # Base map (Protomaps PMTiles in R2)
 
+> **Status: not in use.** The live map uses the public OpenFreeMap instance (`WEB.map.openfreemap`, with an
+> automatic OSM fallback). This self-hosting option was set aside because R2 needs a payment method on the
+> account, and serving every tile through a Worker would use the free plan's 100,000 requests/day shared with
+> the site and API. The ingest tile route described below was never merged. Kept for a future switch.
+
 The web map's base layer is a single [PMTiles](https://docs.protomaps.com/pmtiles/) archive of
 [Protomaps](https://protomaps.com/) vector tiles (OpenStreetMap data), stored in the Cloudflare R2
 bucket `hw-basemap` and served by the ingest Worker. The Worker reads the object key from
