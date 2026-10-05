@@ -18,6 +18,11 @@ export const INGEST = {
   runnerDispatchEveryMinutes: 40,
   runnerWorkflow: 'ingest-runner.yml',
   /**
+   * Cloudflare sometimes fires the same cron twice (~30 s apart), so a dispatch is skipped when the workflow already
+   * has a run created within this many minutes (checked through the GitHub API; no KV write).
+   */
+  runnerDispatchDedupeMinutes: 5,
+  /**
    * Runner feeds refreshed less often than every run (hours). The BMA camera list barely changes, and the
    * data request to BMA promises at most one fetch a day; skipped feeds keep their last stored copy.
    */

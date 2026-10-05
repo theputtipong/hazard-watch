@@ -34,16 +34,23 @@ export async function runEdgeFeeds(env: Env, now = new Date()) {
 async function dispatchRunner(env: Env, now = new Date()) {
   if (!env.GITHUB_DISPATCH_TOKEN) return;
   if (Math.floor(now.getTime() / 60_000) % INGEST.runnerDispatchEveryMinutes >= 10) return; // cron fires every 10 min
-  const res = await fetch(`https://api.github.com/repos/${env.GITHUB_REPO}/actions/workflows/${INGEST.runnerWorkflow}/dispatches`, {
-    method: 'POST',
-    headers: {
-      authorization: `Bearer ${env.GITHUB_DISPATCH_TOKEN}`,
-      accept: 'application/vnd.github+json',
-      'x-github-api-version': '2022-11-28',
-      'user-agent': 'hw-ingest',
-    },
-    body: JSON.stringify({ ref: 'main' }),
-  });
+  const workflow = `https://api.github.com/repos/${env.GITHUB_REPO}/actions/workflows/${INGEST.runnerWorkflow}`;
+  const headers = {
+    authorization: `Bearer ${env.GITHUB_DISPATCH_TOKEN}`,
+    accept: 'application/vnd.github+json',
+    'x-github-api-version': '2022-11-28',
+    'user-agent': 'hw-ingest',
+  };
+  // The same cron can fire twice; skip if a run was just started (by us or anyone).
+  const latest = await fetch(`${workflow}/runs?per_page=1`, { headers });
+  if (latest.ok) {
+    const created = ((await latest.json()) as { workflow_runs?: { created_at: string }[] }).workflow_runs?.[0]?.created_at;
+    if (created && now.getTime() - new Date(created).getTime() < INGEST.runnerDispatchDedupeMinutes * 60_000) {
+      console.log('dispatch runner skipped: run started', created);
+      return;
+    }
+  }
+  const res = await fetch(`${workflow}/dispatches`, { method: 'POST', headers, body: JSON.stringify({ ref: 'main' }) });
   console.log('dispatch runner', res.status);
 }
 
