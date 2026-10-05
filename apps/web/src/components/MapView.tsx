@@ -181,8 +181,22 @@ export default function MapView({ lang, center, located, onLocate, layers, radar
 }
 
 /** Base map from the provider chosen in config; switches style with the theme and labels with the page language. */
+/** MapLibre needs WebGL; without it (old phones, some privacy settings) the raster OSM map is used instead. */
+function hasWebGl(): boolean {
+  try {
+    const c = document.createElement('canvas');
+    return Boolean(c.getContext('webgl2') ?? c.getContext('webgl'));
+  } catch {
+    return false;
+  }
+}
+
 function BaseTiles({ dark, lang }: { dark: boolean; lang: Lang }) {
-  if (WEB.map.tileProvider === 'openfreemap') return <VectorTiles dark={dark} lang={lang} />;
+  const [vectorFailed, setVectorFailed] = useState(false);
+  const [webGl] = useState(hasWebGl);
+  if (WEB.map.tileProvider === 'openfreemap' && webGl && !vectorFailed) {
+    return <VectorTiles dark={dark} lang={lang} onFail={() => setVectorFailed(true)} />;
+  }
   const src = WEB.map.osm;
   return (
     <TileLayer
@@ -198,19 +212,22 @@ function BaseTiles({ dark, lang }: { dark: boolean; lang: Lang }) {
  * OpenFreeMap vector base map. MapLibre is loaded on demand (large, browser-only); the layer is made
  * once and then restyled on a theme change and relabelled on a language change.
  */
-function VectorTiles({ dark, lang }: { dark: boolean; lang: Lang }) {
+function VectorTiles({ dark, lang, onFail }: { dark: boolean; lang: Lang; onFail: () => void }) {
   const map = useMap();
   const [base, setBase] = useState<VectorBaseMap | null>(null);
-  const initial = useRef({ dark, lang });
+  const initial = useRef({ dark, lang, onFail });
   useEffect(() => {
     let cancelled = false;
     let made: VectorBaseMap | null = null;
     import('@/lib/vectorBaseMap').then(({ createVectorBaseMap }) => {
       if (cancelled) return;
-      made = createVectorBaseMap(initial.current.dark, initial.current.lang);
+      made = createVectorBaseMap(initial.current.dark, initial.current.lang, initial.current.onFail);
       made.layer.addTo(map);
       setBase(made);
-    }).catch((e) => console.error('Base map failed to load', e));
+    }).catch((e) => {
+      console.error('Base map failed to load', e);
+      initial.current.onFail();
+    });
     return () => {
       cancelled = true;
       made?.layer.remove();

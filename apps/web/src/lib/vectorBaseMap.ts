@@ -29,7 +29,8 @@ function applyLabels(gl: GlMap, lang: Lang) {
   }
 }
 
-export function createVectorBaseMap(dark: boolean, lang: Lang): VectorBaseMap {
+/** `onFail` fires when the style cannot be loaded at all (e.g. the tile service is down), so the caller can fall back. */
+export function createVectorBaseMap(dark: boolean, lang: Lang, onFail?: () => void): VectorBaseMap {
   const src = WEB.map.openfreemap;
   let current = lang;
   let style = dark ? src.style.dark : src.style.light;
@@ -43,6 +44,11 @@ export function createVectorBaseMap(dark: boolean, lang: Lang): VectorBaseMap {
   layer.on('add', () => {
     const gl = layer.getMaplibreMap();
     gl.on('style.load', () => applyLabels(gl, current));
+    let loaded = false;
+    gl.once('load', () => (loaded = true));
+    gl.on('error', () => {
+      if (!loaded) onFail?.();
+    });
   });
   return {
     layer,
