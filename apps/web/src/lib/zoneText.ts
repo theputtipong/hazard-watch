@@ -3,7 +3,6 @@ import { t, type Lang, type MessageKey } from '@hw/core/i18n';
 
 const u = DEFAULT_CONFIG.units;
 
-/** "เขต" in Bangkok, "อำเภอ" elsewhere (and the same for แขวง/ตำบล). */
 export function levelName(level: number, bangkok: boolean, lang: Lang, kind: 'level' | 'prefix' = 'level'): string {
   if (level <= 1) return kind === 'level' ? t('zone.level1', lang) : '';
   const key = `zone.${kind}${level}${bangkok ? '.bkk' : ''}` as MessageKey;
@@ -16,7 +15,6 @@ export function zoneLabel(z: ZoneFeature, lang: Lang): string {
   return prefix ? `${prefix}${name}` : name;
 }
 
-/** Plain-language one-liner for an area, e.g. "น้ำท่วม 2 จุด · ฝุ่นสูงสุด 24 µg/m³". */
 export function describe(s: ZoneSummary, lang: Lang): string {
   if (s.severity === null) return t('zone.sum.none', lang);
   const parts: string[] = [];

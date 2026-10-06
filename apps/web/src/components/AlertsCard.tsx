@@ -11,10 +11,6 @@ import { zoneLabel } from '@/lib/zoneText';
 
 type Status = 'loading' | 'off' | 'on' | 'busy';
 
-/**
- * Turn push alerts on/off for one area. The area comes from the device location (worked out on the device),
- * or from the district picked on the map when location is off.
- */
 export function AlertsCard({ lang, district, subdistrict }: { lang: Lang; district: ZoneFeature | null; subdistrict: ZoneFeature | null }) {
   const [support, setSupport] = useState<PushSupport>('ok');
   const [status, setStatus] = useState<Status>('loading');

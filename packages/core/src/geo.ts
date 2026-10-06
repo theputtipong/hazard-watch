@@ -13,7 +13,6 @@ export function distanceKm(a: LatLng, b: LatLng): number {
 export const COMPASS_POINTS = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'] as const;
 export type CompassPoint = (typeof COMPASS_POINTS)[number];
 
-/** Nearest of the 8 compass points for a bearing in degrees (clockwise from north). */
 export function compassPoint(deg: number): CompassPoint {
   return COMPASS_POINTS[Math.round((((deg % 360) + 360) % 360) / 45) % 8]!;
 }

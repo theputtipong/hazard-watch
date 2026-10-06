@@ -8,7 +8,6 @@ const WATERLEVEL_URL = `${BASE}/public/waterlevel_load`;
 const MAIN_URL = `${BASE}/public/thailand_main`;
 const IMAGE_URL = `${BASE}/shared/image?image=`;
 
-
 interface WaterLevelRow {
   id: number;
   waterlevel_datetime: string;
@@ -48,10 +47,7 @@ interface RadarRow {
   media_path: string;
 }
 
-/**
- * Every radar that has a calibration in core RADARS, regardless of the coverage regions (the overlay is drawn on
- * top of the map wherever it is). ThaiWater labels times "UTC"/"TST" inconsistently; in practice they are UTC.
- */
+/** All calibrated radars, regardless of region. ThaiWater labels times "UTC"/"TST" inconsistently; they are UTC. */
 export function parseRadars(body: { radar: { data: { data: RadarRow[] } } }): RadarFrame[] {
   return body.radar.data.data
     .filter((r) => r.radar_type in RADARS && r.media_path && r.media_datetime)

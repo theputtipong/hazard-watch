@@ -7,10 +7,6 @@ export interface BBox {
   maxLng: number;
 }
 
-/**
- * A coverage area. Adding a region (another Thai province group, or another country)
- * should only need a new entry here plus adapters for any sources specific to it.
- */
 export interface Region {
   id: string;
   /** ISO 3166-1 alpha-2. */
@@ -19,9 +15,9 @@ export interface Region {
   bbox: BBox;
   center: LatLng;
   zoom: number;
-  /** Province pcodes (OCHA/DOPA, e.g. TH10 = Bangkok) used for the zone map. Keep in sync with tools/boundaries/build.py. */
+  /** OCHA/DOPA pcodes (TH10 = Bangkok); keep in sync with tools/boundaries/build.py. */
   provincePcodes: string[];
-  /** Province names exactly as Thai government feeds spell them (used to filter ThaiWater etc.). */
+  /** Spelled exactly as Thai government feeds do; used to filter ThaiWater etc. */
   provincesTh: string[];
 }
 
@@ -40,7 +36,6 @@ export const REGIONS = {
 
 export type RegionId = keyof typeof REGIONS;
 
-/** Regions currently switched on. Expanding coverage = adding ids here. */
 export const ACTIVE_REGION_IDS: RegionId[] = ['th-bangkok-metro'];
 
 export const activeRegions = (ids: readonly RegionId[] = ACTIVE_REGION_IDS): Region[] => ids.map((id) => REGIONS[id]);
@@ -52,9 +47,6 @@ export function inBBox({ lat, lng }: LatLng, b: BBox): boolean {
 export const inRegions = (p: LatLng, regions: readonly Region[]) => regions.some((r) => inBBox(p, r.bbox));
 
 export const regionProvinces = (regions: readonly Region[]) => new Set(regions.flatMap((r) => r.provincesTh));
-
-
-/** Region containing the point, else the first active one (used as the map's default view). */
 
 export function regionFor(p: LatLng | null, regions: readonly Region[] = activeRegions()): Region {
   return (p && regions.find((r) => inBBox(p, r.bbox))) || regions[0]!;

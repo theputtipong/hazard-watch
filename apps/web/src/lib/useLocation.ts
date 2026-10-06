@@ -6,10 +6,7 @@ import { WEB } from '@/config';
 
 export type LocationStatus = 'pending' | 'granted' | 'denied' | 'unsupported';
 
-/**
- * Browser location, falling back to the centre of the first active region. Coordinates never leave the device here.
- * `locate()` asks again (e.g. from the map's "my location" button) and resolves with the new position or null.
- */
+/** Coordinates never leave the device here. */
 export function useLocation() {
   const [location, setLocation] = useState<LatLng>(() => regionFor(null).center);
   const [status, setStatus] = useState<LocationStatus>('pending');

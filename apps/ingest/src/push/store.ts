@@ -2,7 +2,6 @@ import type { PushKind } from '@hw/core';
 
 export interface SubscriptionPrefs {
   kinds?: PushKind[];
-  /** Personal PM2.5 threshold; defaults to core config pm25.pushAt. */
   pm25At?: number;
 }
 
@@ -15,7 +14,7 @@ export interface SubscriptionRow {
   district: string;
   subdistrict: string | null;
   prefs: string;
-  /** Personal earthquake level (migration 0002); null = central quake tiers. */
+  /** null = central quake tiers. */
   quake_min_mag: number | null;
   quake_max_km: number | null;
 }
@@ -73,7 +72,6 @@ export async function subscriptionsIn(db: D1Database, districts: string[] | 'all
   return (await db.prepare(`SELECT * FROM subscriptions WHERE district IN (${marks})`).bind(...districts).all<SubscriptionRow>()).results;
 }
 
-/** Alert keys this subscription received after `since`. */
 export async function recentlySent(db: D1Database, id: string, since: Date): Promise<Set<string>> {
   const rows = await db
     .prepare('SELECT alert_key FROM sent WHERE subscription_id = ?1 AND sent_at >= ?2')

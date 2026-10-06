@@ -2,10 +2,7 @@ import L from 'leaflet';
 import type { Severity } from '@hw/core';
 import { WEB } from '@/config';
 
-/**
- * Map symbols. Each hazard has its own shape (not just colour) so they can be told apart at a glance:
- * person = you, water drop = flooding, number badge = PM2.5, camera = CCTV. Danger adds a "!" badge.
- */
+/** Each hazard has its own shape, not just colour, so they can be told apart without colour. */
 
 const PERSON =
   '<circle cx="12" cy="6.5" r="3.2" fill="#fff"/><path d="M6.5 20.5v-4.2a5.5 5.5 0 0 1 11 0v4.2z" fill="#fff"/>';
@@ -17,7 +14,7 @@ const alertBadge = (color: string) =>
 
 const cache = new Map<string, L.DivIcon>();
 
-/** Text on a solid severity fill: ink or white, whichever contrasts more (design system on-sev / on-sev-danger). */
+/** Ink or white, whichever contrasts more (design system on-sev / on-sev-danger). */
 function onFill(hex: string) {
   const lum = (h: string) => {
     const [r, g, b] = [1, 3, 5].map((i) => {
@@ -67,7 +64,7 @@ export function pm25Icon(value: number, severity: Severity, colors: Record<Sever
   return round(`pm-${Math.round(value)}-${c}`, s, c, text, severity === 'danger' ? alertBadge(colors.danger) : '');
 }
 
-/** Water level: a rounded square (not a circle) with the % of bank-full, so it isn't confused with PM2.5. */
+/** Rounded square, not a circle, so it isn't confused with PM2.5. */
 export function waterIcon(pct: number, severity: Severity, colors: Record<Severity, string>) {
   const s = WEB.map.iconSize.water;
   const key = `water-${Math.round(pct)}-${colors[severity]}`;
@@ -93,5 +90,4 @@ export function cctvIcon() {
   return round('cctv', s, WEB.map.cctvColor, svg(CAMERA, s * 0.66));
 }
 
-/** Small inline SVGs reused by the legend. */
 export const LEGEND_GLYPH = { person: PERSON, drop: DROP, camera: CAMERA };

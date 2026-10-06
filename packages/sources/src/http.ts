@@ -6,7 +6,6 @@ export type FetchLike = (input: string, init?: RequestInit) => Promise<Response>
 export interface AdapterContext {
   fetch: FetchLike;
   config: AlertConfig;
-  /** Coverage areas; adapters drop data outside them. */
   regions: Region[];
   now: Date;
 }
@@ -14,7 +13,6 @@ export interface AdapterContext {
 export function defaultContext(partial: Partial<AdapterContext> = {}): AdapterContext {
   return { fetch: globalThis.fetch.bind(globalThis), config: DEFAULT_CONFIG, regions: activeRegions(), now: new Date(), ...partial };
 }
-
 
 async function request(ctx: AdapterContext, url: string, init: RequestInit = {}): Promise<Response> {
   const res = await ctx.fetch(url, {
@@ -40,7 +38,6 @@ export async function getText(ctx: AdapterContext, url: string, init?: RequestIn
   return (await request(ctx, url, init)).text();
 }
 
-/** Wraps an adapter run so one failing source never breaks the others. */
 export async function settle<T>(source: SourceId, ctx: AdapterContext, run: () => Promise<T[]>): Promise<SourceResult<T>> {
   const fetchedAt = ctx.now.toISOString();
   try {

@@ -21,7 +21,6 @@ export async function generateMetadata({ params }: LayoutProps<'/[lang]'>): Prom
   if (!isLang(lang)) return {};
   const title = t('app.name', lang);
   const description = t('app.tagline', lang);
-  // Link previews (LINE, Facebook, X): title, short description and the app icon.
   return {
     metadataBase: new URL(WEB.siteUrl),
     title,
@@ -46,7 +45,7 @@ export default async function LangLayout({ children, params }: LayoutProps<'/[la
   const { lang } = await params;
   if (!isLang(lang)) notFound();
   return (
-    // data-theme/data-cvd are set by the inline script before paint, so the server value may differ.
+    // data-theme/data-cvd are set by the inline script before paint, so they may differ from the server.
     <html lang={lang} className={plexThai.variable} data-theme="light" data-cvd="off" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: PREFS_SCRIPT }} />

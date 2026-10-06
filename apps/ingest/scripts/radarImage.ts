@@ -9,7 +9,7 @@ interface Rgba {
   data: Uint8Array;
 }
 
-/** JPEG (BMA, TMD), PNG (DRRAA) or GIF (some TMD; the last frame of an animation is the newest). */
+/** GIF: every frame is blitted so the last (newest) one ends up on top. */
 export function decodeImage(buf: Uint8Array): Rgba {
   if (buf[0] === 0xff && buf[1] === 0xd8) {
     const j = jpeg.decode(buf, { useTArray: true });
@@ -28,10 +28,6 @@ export function decodeImage(buf: Uint8Array): Rgba {
   throw new Error('unsupported image format');
 }
 
-/**
- * Turns a radar image (rain echoes drawn over a base map) into a PNG holding only the echoes, so it can sit
- * on our own map. How echoes are told apart from the base map depends on the source (see RadarSpec.echo).
- */
 export function echoesOnly(buf: Uint8Array, spec: RadarSpec): { png: Buffer; echoPixels: number } {
   const img = decodeImage(buf);
   const { width: w, height: h, data } = img;
@@ -59,7 +55,7 @@ export function echoesOnly(buf: Uint8Array, spec: RadarSpec): { png: Buffer; ech
     }
   }
 
-  // Optional despeckle: drop pixels with few echo neighbours (thin range rings, labels, JPEG noise).
+  // Despeckle removes thin range rings, labels and JPEG noise.
   const need = rule.minNeighbours ?? 0;
   const png = new PNG({ width: w, height: h });
   let echoPixels = 0;
@@ -85,10 +81,7 @@ export function echoesOnly(buf: Uint8Array, spec: RadarSpec): { png: Buffer; ech
   return { png: PNG.sync.write(png), echoPixels };
 }
 
-/**
- * Packs many PNGs into one upload (and one KV write): [u32 header length][header JSON][PNG bytes…].
- * Keeps the free KV write quota safe however many radars there are.
- */
+/** One upload and one KV write for all radars: [u32 header length][header JSON][PNG bytes…]. */
 export function packBundle(items: { id: string; time: string; echoPixels: number; png: Buffer }[]): Buffer {
   let offset = 0;
   const radars = items.map((it) => {

@@ -1,7 +1,7 @@
 import type { MetadataRoute } from 'next';
 import { DEFAULT_LANG, t } from '@hw/core/i18n';
 
-/** Installable app (needed for push on iPhone: Add to Home Screen first). */
+/** Needed for push on iPhone (Add to Home Screen first). */
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: `${t('app.name', 'th')} · ${t('app.name', 'en')}`,

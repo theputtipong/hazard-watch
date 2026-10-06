@@ -1,7 +1,4 @@
-// Renders the app icons from the design system's SVGs (tools/icons/source, group "Logos") at the sizes
-// browsers, phones and the extension need. The artwork is never redrawn or recoloured here.
-//   hazardwatch-icon.svg        48px and up (PWA, store logo)
-//   hazardwatch-icon-small.svg  32px and below (toolbar, favicon): no rain lines, thicker wave
+// Design-system artwork is never redrawn or recoloured. hazardwatch-icon.svg: 48px+; -small.svg: 32px and below.
 // Usage: node tools/icons/make-icons.mjs   (sharp comes with Next.js in apps/web)
 import fs from 'node:fs';
 import { createRequire } from 'node:module';
@@ -15,7 +12,7 @@ const src = (name) => fs.readFileSync(new URL(`source/${name}`, import.meta.url)
 const full = src('hazardwatch-icon.svg');
 const small = src('hazardwatch-icon-small.svg');
 
-/** The SVG at `size` px; `bleed` fills the corners with brand navy (maskable / Apple icons), `pad` shrinks the art. */
+/** `bleed` fills the corners with brand navy (maskable / Apple icons); `pad` shrinks the art. */
 async function render(svg, size, { bleed = false, pad = 0 } = {}) {
   const inner = Math.round(size * (1 - 2 * pad));
   const art = await sharp(svg, { density: Math.max(72, (72 * inner) / 512) }).resize(inner, inner).png().toBuffer();
@@ -39,7 +36,6 @@ await write('apps/web/public/icons/icon-maskable-512.png', render(full, 512, { b
 await write('apps/web/src/app/icon.png', render(small, 64));
 await write('apps/web/src/app/apple-icon.png', render(full, 180, { bleed: true }));
 fs.copyFileSync(new URL('source/hazardwatch-icon-small.svg', import.meta.url), out('apps/web/public/icons/hazardwatch-icon-small.svg'));
-// Browser extension: toolbar sizes use the small icon, store and notifications the full one.
 fs.copyFileSync(new URL('source/hazardwatch-icon-small.svg', import.meta.url), out('apps/extension/static/icons/hazardwatch-icon-small.svg'));
 for (const size of [16, 32]) await write(`apps/extension/static/icons/icon-${size}.png`, render(small, size));
 for (const size of [48, 128]) await write(`apps/extension/static/icons/icon-${size}.png`, render(full, size));

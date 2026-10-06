@@ -2,7 +2,6 @@ packages:
   - apps/*
   - packages/*
 
-# Packages allowed to run install scripts (native binaries for wrangler/Next).
 onlyBuiltDependencies:
   - esbuild
   - workerd

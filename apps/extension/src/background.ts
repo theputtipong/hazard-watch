@@ -1,7 +1,3 @@
-/**
- * Background worker: every EXT.pollMinutes reads the public snapshot, builds the same alerts as web push for the
- * person's district, shows the new ones as notifications and keeps the toolbar badge current.
- */
 import { DEFAULT_CONFIG, type Alert } from '@hw/core';
 import { fetchSnapshot, siteLink } from './api';
 import { EXT } from './config';
@@ -20,7 +16,6 @@ chrome.alarms.onAlarm.addListener((a) => {
   if (a.name === ALARM) void check();
 });
 
-/** The popup asks for a check after the person changes place or settings. */
 chrome.runtime.onMessage.addListener((msg: { type?: string }, _sender, reply) => {
   if (msg.type !== 'check') return;
   check().then(() => reply({ ok: true }), (err: unknown) => reply({ ok: false, error: String(err) }));

@@ -31,7 +31,6 @@ let error: MessageKey | null = null;
 
 type Child = Node | string | null | false | undefined;
 
-/** Tiny element helper: el('div', { class: 'card' }, child, 'text'). */
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, attrs: Record<string, string> = {}, ...children: Child[]) {
   const node = document.createElement(tag);
   for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v);
@@ -48,13 +47,13 @@ function button(label: string, cls: string, onclick: () => void) {
 const tr = (key: MessageKey, vars?: Record<string, string | number>) => t(key, settings.lang, vars);
 const name = (o: { name: { th: string; en: string } }) => o.name[settings.lang] || o.name.th;
 
-/** Three bars; the level is the count of filled bars, so it reads without colour. */
+/** Level is the count of filled bars, so it reads without colour. */
 function meter(sev: Severity, large = false) {
   return el('span', { class: large ? 'meter meter--lg' : 'meter', 'data-level': String(rank(sev)), 'aria-hidden': 'true' }, el('i'), el('i'), el('i'));
 }
 const badge = (sev: Severity) => el('span', { class: `sev sev--${rank(sev)}` }, meter(sev), tr(`severity.${sev}`));
 
-/** Arrow pointing where the wind blows to. */
+/** Points where the wind blows to. */
 function arrow(fromDeg: number) {
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   svg.setAttribute('viewBox', '0 0 24 24');
@@ -125,7 +124,6 @@ function placeCard() {
   );
 }
 
-/** AlertBanner list: worst first, at most EXT.maxBanners; normal shows a quiet line instead. */
 function alertsSection(alerts: Alert[]) {
   if (!alerts.length) return el('p', { class: 'calm', role: 'status' }, tr('ext.allClear'));
   const shown = alerts.slice(0, EXT.maxBanners);
@@ -145,7 +143,6 @@ function alertsSection(alerts: Alert[]) {
   );
 }
 
-/** One ReadingCard row: label + badge, figure, plain-language note, source and time. */
 function reading(label: string, sev: Severity | null, value: Child, note: Child, source: string) {
   return el(
     'div',
@@ -238,7 +235,6 @@ function readingsCard(snap: DashboardSnapshot, place: Place) {
   return rows.length ? el('section', { class: 'card' }, ...rows) : null;
 }
 
-/** FeedStatus: freshness by shape (dot / ring / cross), at the bottom. */
 function feedsCard(snap: DashboardSnapshot) {
   const now = new Date();
   return el(

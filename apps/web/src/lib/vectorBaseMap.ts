@@ -1,8 +1,4 @@
-/**
- * OpenFreeMap vector base map drawn by MapLibre GL inside Leaflet (tile pane, under every overlay).
- * Imported only with `import()` from the client-only map, so MapLibre (large, browser-only) stays
- * out of SSR and out of the initial bundle.
- */
+/** Load only via import(): MapLibre is large and browser-only, so it stays out of SSR and the initial bundle. */
 import 'maplibre-gl/dist/maplibre-gl.css';
 import L from 'leaflet';
 import type { Map as GlMap, ExpressionSpecification } from 'maplibre-gl';
@@ -16,10 +12,10 @@ export interface VectorBaseMap {
   setLang(lang: Lang): void;
 }
 
-/** Label in the page language, falling back to the local name (OpenMapTiles `name:xx` / `name`). */
+/** OpenMapTiles `name:xx` in the page language, falling back to the local `name`. */
 const labelExpr = (lang: Lang): ExpressionSpecification => ['coalesce', ['get', `name:${lang}`], ['get', 'name']];
 
-/** Symbol layers that show a place/road name (not shields, which show `ref`). */
+/** Name-bearing symbol layers (not shields, which show `ref`). */
 function applyLabels(gl: GlMap, lang: Lang) {
   for (const layer of gl.getStyle().layers) {
     if (layer.type !== 'symbol') continue;
@@ -29,7 +25,6 @@ function applyLabels(gl: GlMap, lang: Lang) {
   }
 }
 
-/** `onFail` fires when the style cannot be loaded at all (e.g. the tile service is down), so the caller can fall back. */
 export function createVectorBaseMap(dark: boolean, lang: Lang, onFail?: () => void): VectorBaseMap {
   const src = WEB.map.openfreemap;
   let current = lang;

@@ -6,10 +6,6 @@ import { t, type Lang } from '@hw/core/i18n';
 import { shareContent, shareTargets } from '@/lib/share';
 import { zoneLabel } from '@/lib/zoneText';
 
-/**
- * Share an area's situation. Uses the phone's share sheet when there is one; otherwise offers
- * copy link, LINE, Facebook and X.
- */
 export function ShareButton({ lang, zone, summary }: { lang: Lang; zone: ZoneFeature; summary: ZoneSummary }) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -22,7 +18,7 @@ export function ShareButton({ lang, zone, summary }: { lang: Lang; zone: ZoneFea
         await navigator.share(content);
         return;
       } catch (err) {
-        // Cancelled by the user: nothing to do. Any other failure falls back to the menu.
+        // AbortError = user cancelled; any other failure falls back to the menu.
         if ((err as Error).name === 'AbortError') return;
       }
     }

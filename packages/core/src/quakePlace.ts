@@ -1,7 +1,7 @@
 import { t, type Lang } from './i18n';
 import type { Earthquake } from './types';
 
-/** Thai names for countries USGS commonly names around Thailand (lower-case English key → Thai). */
+/** Lower-case USGS country name → Thai. */
 export const COUNTRY_TH: Record<string, string> = {
   thailand: 'ไทย',
   myanmar: 'เมียนมา',
@@ -50,10 +50,7 @@ const ISLAND_COUNTRY: [RegExp, string][] = [
 
 const countryName = (key: string) => COUNTRY_TH[key] ?? null;
 
-/**
- * Thai name of the area in a USGS place string, or null when it can't be told.
- * Examples: "45 km NNE of Mawlaik, Myanmar" → "ประเทศเมียนมา"; "Myanmar-China border region" → "ชายแดนเมียนมา–จีน".
- */
+/** "45 km NNE of Mawlaik, Myanmar" → "ประเทศเมียนมา"; "Myanmar-China border region" → "ชายแดนเมียนมา–จีน". */
 export function thaiQuakeArea(usgsPlace: string): string | null {
   const text = usgsPlace.trim().toLowerCase();
   if (!text) return null;
@@ -78,10 +75,7 @@ export function thaiQuakeArea(usgsPlace: string): string | null {
   return null;
 }
 
-/**
- * Place text for a quake in the chosen language. TMD names come in Thai and are shown as-is; USGS names are
- * English only, so in Thai they become the country (when known) plus the distance from the user, if given.
- */
+/** TMD names are already Thai; USGS names are English only, so in Thai they become the country plus distance. */
 export function quakePlace(quake: Pick<Earthquake, 'source' | 'place'>, lang: Lang, km?: number): string {
   if (lang !== 'th' || quake.source !== 'usgs') return quake.place[lang] || quake.place.en;
   const area = thaiQuakeArea(quake.place.en || quake.place.th);
@@ -90,5 +84,4 @@ export function quakePlace(quake: Pick<Earthquake, 'source' | 'place'>, lang: La
   return area ? `${area} ${away}` : away;
 }
 
-/** True when `quakePlace(q, lang, km)` already says how far away the quake is. */
 export const quakePlaceHasDistance = (quake: Pick<Earthquake, 'source'>, lang: Lang) => lang === 'th' && quake.source === 'usgs';

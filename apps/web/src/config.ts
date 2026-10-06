@@ -3,48 +3,34 @@ import type { LayerKey } from './lib/layers';
 
 export type TileProvider = 'openfreemap' | 'osm';
 
-/** Vector base map from a MapLibre style (OpenFreeMap), drawn in the browser by MapLibre GL inside Leaflet. */
 export interface VectorTileSource {
-  /** MapLibre style URL per app theme. */
   style: { light: string; dark: string };
   maxZoom: number;
   attribution: string;
 }
 
-/** Raster tile fallback (OpenStreetMap standard tiles). */
 export interface RasterTileSource {
   url: string;
   attribution: string;
   maxZoom: number;
-  /** Darken the light tiles with a CSS filter in dark mode (no dark style available). */
   invertInDark: boolean;
 }
 
 const OSM_COPYRIGHT = '<a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>';
 
-/**
- * Display settings for the web app. Alert thresholds and units are NOT here —
- * they live in packages/core/src/config.ts so the server and the web agree.
- */
+/** Thresholds and units live in packages/core config so server and web agree. */
 export const WEB = {
-  /** Public address of the site (link previews, absolute URLs). Change when a custom domain is added. */
   siteUrl: process.env.NEXT_PUBLIC_SITE_URL ?? 'https://hazard.pdouvch.com',
 
-  /** How often the dashboard re-fetches the snapshot. */
   refreshMs: 2 * 60_000,
 
   map: {
-    /**
-     * Base-map provider. Default: OpenFreeMap (public instance, free, no key, commercial use allowed)
-     * vector tiles, styled per theme with labels in the page language. NEXT_PUBLIC_TILE_PROVIDER=osm
-     * falls back to the OpenStreetMap standard raster tiles — emergency/dev only, tile.openstreetmap.org
-     * forbids heavy use.
-     */
+    /** OSM raster is emergency/dev only: tile.openstreetmap.org forbids heavy use. */
     tileProvider: (process.env.NEXT_PUBLIC_TILE_PROVIDER === 'osm' ? 'osm' : 'openfreemap') as TileProvider,
     openfreemap: {
-      /** Positron: quiet grey basemap, so coloured zones/radar/pins stand out. */
+      /** Positron: quiet grey basemap so coloured zones/radar/pins stand out. */
       style: { light: 'https://tiles.openfreemap.org/styles/positron', dark: 'https://tiles.openfreemap.org/styles/dark' },
-      /** Tile data stops at z14; closer zooms are over-zoomed vectors (still sharp). */
+      /** Tile data stops at z14; closer zooms over-zoom the vectors. */
       maxZoom: 19,
       attribution: `<a href="https://openfreemap.org/" target="_blank" rel="noopener">OpenFreeMap</a> &copy; <a href="https://www.openmaptiles.org/" target="_blank" rel="noopener">OpenMapTiles</a> Data from ${OSM_COPYRIGHT}`,
     } satisfies VectorTileSource,
@@ -52,91 +38,72 @@ export const WEB = {
       url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
       attribution: `&copy; ${OSM_COPYRIGHT} contributors`,
       maxZoom: 19,
-      /** No dark style: light tiles are CSS-inverted in dark mode (.hw-tiles-invert in app/globals.css). */
+      /** No dark style: tiles are CSS-inverted in dark mode (.hw-tiles-invert). */
       invertInDark: true,
     } satisfies RasterTileSource,
-    /** Layers switched on when the page opens. */
     defaultLayers: { zones: true, radar: true, flood: true, water: true, pm25: false, cctv: false } satisfies Record<LayerKey, boolean>,
     defaultRadar: 'nkm',
     radarOpacity: 0.75,
-    /** A radar frame older than this is labelled as not current. */
     radarStaleMinutes: 60, // ThaiWater frames normally arrive 35–50 min after the scan
-    /** Fewer rain pixels than this in a frame = "no rain in radar range" (a few stray pixels are noise). */
+    /** Below this many rain pixels a frame counts as no rain (stray pixels are noise). */
     radarMinEchoPixels: 150,
-    /** Below this 700 hPa wind speed the radar badge says rain is barely moving instead of showing a direction. */
+    /** 700 hPa wind below this: radar badge says rain is barely moving instead of a direction. */
     driftCalmKmh: 5,
-    /** Opacity of markers whose reading is older than core config `staleAfterMinutes`. */
     staleOpacity: 0.4,
-    /** Marker sizes in pixels (icons are square). Normal flood points stay small dots so problems stand out. */
+    /** Normal flood points stay small dots so problems stand out. */
     markerRadius: { floodNormal: 4 },
     iconSize: { you: 34, floodWatch: 26, floodWarn: 30, floodDanger: 34, pm25: 30, water: 30, cctv: 24 },
-    /** Colour of the "you are here" person marker. */
     youColor: '#2457d6', // accent
-    /** Zoom used when jumping to the user's location with the locate button. */
     locateZoom: 14,
-    /** Legend starts open on screens at least this wide (px); collapsed on phones. */
     legendOpenMinWidth: 640,
-    /** CCTV icons appear only at this zoom or closer, so hundreds of cameras don't bury the hazards. */
+    /** Hidden below this zoom so hundreds of cameras don't bury the hazards. */
     cctvMinZoom: 13,
     cctvColor: '#0f1b2e', // ink
   },
 
-  /** Marker/dot colours per severity (fills for cards are CSS tokens in app/globals.css). */
-  // Design system sev-* solid colours (same values as app/globals.css). Normal is grey: no colour when nothing is wrong.
+  /** Same values as the sev-* tokens in app/globals.css; normal is grey so only problems get colour. */
   severityColor: {
     light: { ok: '#8a93a3', watch: '#b07f00', warn: '#e0640a', danger: '#c81e1e' },
     dark: { ok: '#5d6b84', watch: '#f5c542', warn: '#ff9440', danger: '#ff6464' },
   } satisfies Record<'light' | 'dark', Record<Severity, string>>,
-  /** Same, for the colour-blind mode (Paul Tol "muted": sand / rose / wine — also differ in lightness). */
+  /** Paul Tol "muted" palette for colour-blind mode (hues also differ in lightness). */
   severityColorCvd: { ok: '#8a93a3', watch: '#ddcc77', warn: '#cc6677', danger: '#882255' } satisfies Record<Severity, string>,
-  /** Colour of flood points that are normal (sev-normal, so alerts stand out). */
-  floodNormalColor: '#8a93a3',
+  floodNormalColor: '#8a93a3', // sev-normal
 
-  /** Zone (province/district/subdistrict) shading. Status comes from packages/core config `zones`. */
   zones: {
-    /** Fill opacity per status; zones with no sensors are left unfilled. */
     fillOpacity: { ok: 0.1, watch: 0.28, warn: 0.32, danger: 0.36 } satisfies Record<Severity, number>,
     borderColor: '#566072', // ink-muted
     borderWeight: 1.2,
     selectedWeight: 4,
-    /** Padding (px) around an area when the map zooms to it. */
     fitPadding: 24,
   },
 
   cctv: {
-    /** Wait after opening the source's main page before moving the tab to the camera (session must exist first). */
+    /** The source's main page must be opened first to create a session. */
     sessionDelayMs: 2500,
   },
 
-  /** How many nearby CCTV junctions to list. */
   nearbyCameras: 4,
 
   location: {
-    /** Re-use a position up to this old instead of asking the device again. */
     maximumAgeMs: 10 * 60_000,
     timeoutMs: 15_000,
   },
 
   push: {
-    /** Choices offered for the personal PM2.5 alert level (µg/m³); the default is core config pm25.pushAt. */
     pm25Choices: [25, 37.5, 50, 75],
-    /**
-     * Choices offered for the personal earthquake alert level. They live in core config push.quakeChoices
-     * because the server only accepts those values; the default is the central quake tiers (quakeAlertFloor).
-     */
+    /** From core config: the server only accepts these values. */
     quakeMagnitudeChoices: DEFAULT_CONFIG.push.quakeChoices.minMagnitude,
     quakeDistanceChoices: DEFAULT_CONFIG.push.quakeChoices.maxDistanceKm,
   },
 
-  /** Which area levels get a Share button (1 province, 2 เขต/อำเภอ, 3 แขวง/ตำบล). */
+  /** Area levels: 1 province, 2 เขต/อำเภอ, 3 แขวง/ตำบล. */
   share: { levels: [2, 3] as number[] },
 
-  /** Read-aloud (Web Speech API). 1 = normal speed; lower is easier to follow. */
+  /** Slightly below 1 (normal) so it is easier to follow. */
   speech: { rate: 0.95 },
 
-  /** Days the chosen language is remembered. */
   langCookieDays: 365,
 
-  /** Support link in the footer. */
   donateUrl: 'https://buymeacoffee.com/theputtipong',
 } as const;

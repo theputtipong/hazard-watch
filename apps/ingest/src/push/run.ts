@@ -10,7 +10,6 @@ import {
   type Observation,
   type ZoneFeature,
 } from '@hw/core';
-// District polygons built by tools/boundaries/build.py (shared with the web app).
 import districtsFile from '../../../web/public/geo/districts.json';
 import { webPushNotifier, type OutgoingMessage } from './notifier';
 import { quakeLimitFor } from './prefs';
@@ -34,17 +33,12 @@ export function messageFor(alert: Pick<Alert, 'title' | 'body' | 'key'>, sub: Pi
   return { title: alert.title[sub.lang], body: alert.body[sub.lang], url: `${siteUrl}/${sub.lang}`, tag: alert.key };
 }
 
-/** Which of the area's alerts this person wants, given their own settings. */
 export function wanted(alerts: Alert[], prefs: SubscriptionPrefs): Alert[] {
   const kinds = new Set(prefs.kinds?.length ? prefs.kinds : DEFAULT_CONFIG.push.kinds);
   const pmAt = prefs.pm25At ?? DEFAULT_CONFIG.pm25.pushAt;
   return alerts.filter((a) => kinds.has(a.kind) && (a.kind !== 'pm25' || (a.value ?? 0) >= pmAt));
 }
 
-/**
- * Builds alerts from the latest snapshot and sends each subscriber what is new for their district.
- * Runs after every data update (edge cron and runner upload).
- */
 export async function sendAlerts(env: PushEnv, snapshot: DashboardSnapshot, now = new Date()) {
   const cfg = DEFAULT_CONFIG;
   const readings: Observation[] = [

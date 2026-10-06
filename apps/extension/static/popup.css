@@ -1,4 +1,4 @@
-/* HazardWatch design system (tokens.json + components/bundle.css), trimmed to what the popup uses. */
+/* Trimmed copy of the design system (tokens.json + components/bundle.css); keep in sync. */
 @font-face { font-family: 'IBM Plex Sans Thai'; font-weight: 400; src: url(fonts/IBMPlexSansThai-Regular.ttf) format('truetype'); }
 @font-face { font-family: 'IBM Plex Sans Thai'; font-weight: 500; src: url(fonts/IBMPlexSansThai-Medium.ttf) format('truetype'); }
 @font-face { font-family: 'IBM Plex Sans Thai'; font-weight: 600; src: url(fonts/IBMPlexSansThai-SemiBold.ttf) format('truetype'); }
@@ -48,7 +48,6 @@ header h1 { flex: 1; font-size: 17px; line-height: 26px; font-weight: 600; }
 
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--rounded-card); box-shadow: var(--shadow-raised); padding: var(--space-4); display: grid; gap: var(--space-3); }
 
-/* Button */
 .btn { font: inherit; font-size: 13px; line-height: 20px; font-weight: 500; display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2);
   height: 36px; padding: 0 var(--space-4); border-radius: var(--rounded-control); border: 1px solid var(--line-control); background: var(--surface); color: var(--ink); cursor: pointer; }
 .btn:hover { background: var(--surface-sunken); }
@@ -63,7 +62,6 @@ header h1 { flex: 1; font-size: 17px; line-height: 26px; font-weight: 600; }
 select { font: inherit; font-size: 13px; line-height: 20px; height: 28px; max-width: 100%; padding: 0 var(--space-2); border-radius: var(--rounded-control);
   border: 1px solid var(--line-control); background: var(--surface); color: var(--ink); }
 
-/* Severity meter + badge */
 .meter { display: inline-flex; align-items: flex-end; gap: 2px; height: 12px; }
 .meter i { display: block; width: 3px; border-radius: var(--rounded-tiny); background: currentColor; opacity: .28; }
 .meter i:nth-child(1) { height: 6px; } .meter i:nth-child(2) { height: 9px; } .meter i:nth-child(3) { height: 12px; }
@@ -76,7 +74,6 @@ select { font: inherit; font-size: 13px; line-height: 20px; height: 28px; max-wi
 .sev--2 { background: var(--sev-warning-soft); color: var(--sev-warning-ink); }
 .sev--3 { background: var(--sev-danger-soft); color: var(--sev-danger-ink); }
 
-/* AlertBanner: tinted field, no stripe */
 .alert { display: grid; grid-template-columns: auto 1fr; gap: var(--space-1) var(--space-3); align-items: start; padding: var(--space-3) var(--space-4);
   border-radius: var(--rounded-card); background: var(--surface-sunken); }
 .alert__icon { padding-top: 4px; }
@@ -88,7 +85,6 @@ select { font: inherit; font-size: 13px; line-height: 20px; height: 28px; max-wi
 .calm { padding: var(--space-3) var(--space-4); border-radius: var(--rounded-card); background: var(--surface-sunken); color: var(--ink-muted); font-size: 13px; line-height: 20px; }
 .link { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; font-size: 13px; font-weight: 500; background: none; border: 0; padding: 0; cursor: pointer; font-family: inherit; }
 
-/* ReadingCard */
 .reading { display: grid; gap: var(--space-2); }
 .reading + .reading { border-top: 1px solid var(--line); padding-top: var(--space-3); }
 .reading__head { display: flex; justify-content: space-between; align-items: center; gap: var(--space-3); }
@@ -99,7 +95,6 @@ select { font: inherit; font-size: 13px; line-height: 20px; height: 28px; max-wi
 .reading__note { font-size: 13px; line-height: 20px; }
 .arrow { width: 16px; height: 16px; vertical-align: -3px; }
 
-/* RiverGauge */
 .gauge { display: grid; gap: var(--space-2); }
 .gauge__top { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-3); font-size: 13px; line-height: 20px; }
 .gauge__name { font-weight: 500; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -111,7 +106,7 @@ select { font: inherit; font-size: 13px; line-height: 20px; height: 28px; max-wi
 .gauge[data-level="2"] .gauge__fill { background: var(--sev-warning); } .gauge[data-level="2"] .gauge__pct { color: var(--sev-warning-ink); }
 .gauge[data-level="3"] .gauge__fill { background: var(--sev-danger); } .gauge[data-level="3"] .gauge__pct { color: var(--sev-danger-ink); }
 
-/* FeedStatus: dot = live, ring = stale, cross = down; never severity colours */
+/* Feed status never uses severity colours. */
 .feed { display: grid; grid-template-columns: 16px max-content 1fr; align-items: center; gap: var(--space-2); padding: var(--space-2) 0; border-top: 1px solid var(--line); font-size: 13px; line-height: 20px; }
 .feed:first-child { border-top: 0; padding-top: 0; }
 .feed__age { font-size: 12px; line-height: 18px; color: var(--ink-muted); font-variant-numeric: tabular-nums; text-align: right; }

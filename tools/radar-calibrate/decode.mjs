@@ -1,4 +1,4 @@
-// Image decoding for the calibration scripts (uses the libraries installed for apps/ingest).
+// Uses the image libraries installed for apps/ingest.
 import fs from 'node:fs';
 import { createRequire } from 'node:module';
 const require = createRequire(new URL('../../apps/ingest/package.json', import.meta.url));
@@ -6,7 +6,7 @@ const jpeg = require('jpeg-js');
 const { PNG } = require('pngjs');
 const { GifReader } = require('omggif');
 
-/** JPEG / PNG / GIF (last animation frame) → { w, h, data: RGBA }. */
+/** GIF: last animation frame. */
 export function decode(buf) {
   if (buf[0] === 0xff && buf[1] === 0xd8) { const j = jpeg.decode(buf, { useTArray: true }); return { w: j.width, h: j.height, data: j.data }; }
   if (buf[0] === 0x89 && buf[1] === 0x50) { const p = PNG.sync.read(buf); return { w: p.width, h: p.height, data: p.data }; }

@@ -17,7 +17,7 @@ export function Header({ lang, updatedAt, children }: { lang: Lang; updatedAt: s
     <header className="border-b border-line bg-surface">
       <div className="mx-auto flex max-w-[1360px] flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2.5 sm:px-6">
         <div className="flex min-w-0 flex-[1_1_280px] items-center gap-2.5">
-          {/* Design system icon, fixed colours in both themes; the small variant (no rain lines) is for 32px and below. */}
+          {/* The small icon variant (no rain lines) is for 32px and below. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/icons/hazardwatch-icon-small.svg" width={32} height={32} alt="" className="shrink-0" />
           <div className="flex min-w-0 flex-col">
@@ -27,7 +27,6 @@ export function Header({ lang, updatedAt, children }: { lang: Lang; updatedAt: s
             </span>
           </div>
         </div>
-        {/* One row of controls on phones too, so the header stays short. */}
         <div className="flex flex-wrap items-center gap-1.5">
         {children}
         <nav aria-label={t('common.language', lang)} className="flex gap-0.5 rounded-control bg-surface-sunken p-[3px]">

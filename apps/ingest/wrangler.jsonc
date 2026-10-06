@@ -2,31 +2,26 @@
   "$schema": "../../node_modules/wrangler/config-schema.json",
   "name": "hw-ingest",
   "main": "src/index.ts",
-  // Public address of the API (DNS record and certificate are created by Cloudflare on deploy).
   "routes": [{ "pattern": "api.hazard.pdouvch.com", "custom_domain": true }],
-  // Keep the workers.dev address too (older builds and links use it).
+  // Older builds and links still use the workers.dev address.
   "workers_dev": true,
   "compatibility_date": "2026-09-01",
   "compatibility_flags": ["nodejs_compat"],
   "observability": { "enabled": true },
-  // Edge feeds (Air4Thai, USGS, TMD) every 10 minutes.
   "triggers": { "crons": ["*/10 * * * *"] },
   "kv_namespaces": [
-    // Created with `wrangler kv namespace create SNAPSHOTS`.
     { "binding": "SNAPSHOTS", "id": "377230799e294be5a12ecc9ca7a9b0f3" }
   ],
   "d1_databases": [
-    // Push subscriptions. Schema: migrations/ (apply with `wrangler d1 migrations apply hw-push --remote`).
     { "binding": "PUSH_DB", "database_name": "hw-push", "database_id": "36625d1e-d797-48c1-af87-c4e847bf1c3a" }
   ],
   "vars": {
     "ALLOWED_ORIGINS": "https://hazard.pdouvch.com,https://pdouvch.com,https://hw-web.pdouvch.workers.dev,http://localhost:3000",
-    // Web Push (VAPID). The private key is a secret: `wrangler secret put VAPID_PRIVATE_KEY`.
+    // Private key is the VAPID_PRIVATE_KEY secret.
     "VAPID_PUBLIC_KEY": "BGx4EhUOVhaclyTgFL44N865zJfC1EOgnfJyErvG5q7WXOkhFiTB9QRCIkc3AQmfO_9apt7ON0xi4Q4KxhdJLjQ",
     "VAPID_SUBJECT": "https://hazard.pdouvch.com",
-    // Where a tapped notification opens.
     "SITE_URL": "https://hazard.pdouvch.com",
-    // Repo whose ingest-runner workflow the cron starts (needs secret GITHUB_DISPATCH_TOKEN; off without it).
+    // The cron dispatches this repo's ingest-runner workflow only when GITHUB_DISPATCH_TOKEN is set.
     "GITHUB_REPO": "theputtipong/hazard-watch"
   }
   // Secrets: INGEST_TOKEN (shared with the GitHub Actions runner), VAPID_PRIVATE_KEY, optional GITHUB_DISPATCH_TOKEN.

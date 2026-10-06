@@ -1,7 +1,3 @@
-/**
- * Every external URL and request setting in one place. If a source moves or changes its address,
- * edit it here only. Notes on each source's quirks are in TODO.md ("ข้อมูลอ้างอิง").
- */
 export const ENDPOINTS = {
   air4thai: 'https://air4thai.pcd.go.th/services/getNewAQI_JSON.php',
   /** Unofficial; POST only; blocks cloud IPs (403). */
@@ -9,9 +5,9 @@ export const ENDPOINTS = {
   bmaRain: 'https://weather.bangkok.go.th/rain/PageMap/GetDataForUpdate',
   bmaTraffic: 'http://www.bmatraffic.com/',
   bmaTrafficView: (id: string) => `http://www.bmatraffic.com/PlayVideo.aspx?ID=${id}`,
-  /** Opening this first creates the ASP.NET session the camera page needs. */
+  /** Must be opened first to create the ASP.NET session the camera page needs. */
   bmaTrafficSession: 'http://www.bmatraffic.com/index.aspx',
-  /** Feed size: 4.5_day, 4.5_week, 2.5_week, significant_month ... see USGS docs. */
+  /** USGS feed sizes: 4.5_day, 4.5_week, 2.5_week, significant_month, ... */
   usgs: 'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_week.geojson',
   tmdQuakeRss: 'https://earthquake.tmd.go.th/feed/rss_tmd.xml',
   /** Rate-limits cloud IPs (429) except GitHub runners. */
@@ -22,8 +18,8 @@ export const ENDPOINTS = {
 export const REQUEST = {
   userAgent: 'hazard-watch/0.1 (public non-commercial dashboard)',
   timeoutMs: 30_000,
-  /** Timezone the Thai feeds use for local timestamps without an offset. */
+  /** Thai feeds send local timestamps without an offset. */
   thaiOffset: '+07:00',
-  /** Open-Meteo coordinates are rounded to this many decimals (~1 km) so responses cache well. */
+  /** ~1 km, so Open-Meteo responses cache well. */
   weatherCoordDecimals: 2,
 } as const;

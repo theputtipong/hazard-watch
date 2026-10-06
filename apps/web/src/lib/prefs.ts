@@ -8,9 +8,7 @@ import { PREF_KEYS } from './prefsScript';
 export type ThemePref = 'system' | 'light' | 'dark';
 export interface Prefs {
   theme: ThemePref;
-  /** Colour-vision-deficiency palette. */
   cvd: boolean;
-  /** Theme actually shown (system resolved). */
   dark: boolean;
 }
 
@@ -58,7 +56,6 @@ const THEME_ORDER: ThemePref[] = ['system', 'light', 'dark'];
 export function usePrefs() {
   const prefs = useSyncExternalStore(subscribe, snapshot, () => SERVER);
 
-  // Follow the OS when the theme is "system".
   useEffect(() => {
     const mq = window.matchMedia('(prefers-color-scheme: dark)');
     const onChange = () => {
@@ -76,10 +73,9 @@ export function usePrefs() {
   };
 }
 
-/** Colours the map needs as real values (SVG/inline styles can't follow CSS variables reliably). */
+/** Real colour values: SVG/inline styles can't follow CSS variables reliably. */
 export interface MapPalette {
   severity: Record<Severity, string>;
-  /** Outline of the selected zone. */
   selected: string;
 }
 

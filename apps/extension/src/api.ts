@@ -10,5 +10,4 @@ async function getJson<T>(path: string): Promise<T> {
 export const fetchSnapshot = () => getJson<DashboardSnapshot>('/v1/snapshot');
 export const fetchWeather = ({ lat, lng }: LatLng) => getJson<WeatherNow>(`/v1/weather?lat=${lat.toFixed(2)}&lng=${lng.toFixed(2)}`);
 
-/** The dashboard opened on the person's district. */
 export const siteLink = (lang: string, districtId?: string) => `${EXT.siteUrl}/${lang}${districtId ? `?area=${districtId}` : ''}`;

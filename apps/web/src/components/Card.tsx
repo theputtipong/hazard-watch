@@ -12,7 +12,6 @@ export function Card({
   status?: ReactNode;
   children: ReactNode;
   source?: string;
-  /** Warning about data age (see lib/freshness.ts); shown above the source line. */
   note?: string;
   id?: string;
 }) {

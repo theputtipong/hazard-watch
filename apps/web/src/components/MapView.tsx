@@ -20,32 +20,25 @@ import type { VectorBaseMap } from '@/lib/vectorBaseMap';
 interface Props {
   lang: Lang;
   center: LatLng;
-  /** True once the browser gave a real position (not the region fallback). */
   located: boolean;
   onLocate: () => Promise<LatLng | null>;
   layers: Layers;
   radarId: string;
-  /** Time of the radar frame (cache key for the image). */
   radarTime: string | null;
-  /** Changes when the user picks a radar: the map then flies to that radar's area. */
+  /** Bumped on each radar pick so the map flies to it. */
   radarFocus: number;
-  /** Weather at the user's location; its cloud-level wind shows which way radar echoes drift. */
   weather: WeatherNow | null;
   floodPoints: Observation[];
   pmStations: Observation[];
   cameras: CctvCamera[];
   waterStations: Observation[];
   zones: ZoneView;
-  /** Severity colours for the current theme / colour-blind setting. */
   palette: MapPalette;
-  /** Dark theme is showing (picks the dark base-map style). */
   dark: boolean;
 }
 
-/** Draw order: problems above normal points, and "you" above everything. */
 const Z = { cctv: 100, pm25: 200, water: 250, flood: 300, you: 1000 } as const;
 const FLOOD_RANK: Record<Severity, number> = { ok: 0, watch: 1, warn: 2, danger: 3 };
-/** Readings older than `staleAfterMinutes` are drawn faded so they don't read as current. */
 const fade = (o: Observation) => (isStale(o.observedAt, DEFAULT_CONFIG) ? WEB.map.staleOpacity : 1);
 
 export default function MapView({ lang, center, located, onLocate, layers, radarId, radarTime, radarFocus, weather, floodPoints, pmStations, cameras, waterStations, zones, palette, dark }: Props) {
@@ -165,7 +158,7 @@ export default function MapView({ lang, center, located, onLocate, layers, radar
             </Marker>
           ))}
 
-        {/* Only a real device position is "you"; a hand-picked area or the default centre is not. */}
+        {/* A hand-picked area or the default centre is not "you". */}
         {located && (
           <Marker position={[center.lat, center.lng]} icon={youIcon()} zIndexOffset={Z.you}>
             <Popup>{t('map.you', lang)}</Popup>
@@ -184,7 +177,6 @@ export default function MapView({ lang, center, located, onLocate, layers, radar
   );
 }
 
-/** Base map from the provider chosen in config; switches style with the theme and labels with the page language. */
 /** MapLibre needs WebGL; without it (old phones, some privacy settings) the raster OSM map is used instead. */
 function hasWebGl(): boolean {
   try {
@@ -212,10 +204,7 @@ function BaseTiles({ dark, lang }: { dark: boolean; lang: Lang }) {
   );
 }
 
-/**
- * OpenFreeMap vector base map. MapLibre is loaded on demand (large, browser-only); the layer is made
- * once and then restyled on a theme change and relabelled on a language change.
- */
+/** MapLibre is large and browser-only, so it is imported on demand. */
 function VectorTiles({ dark, lang, onFail }: { dark: boolean; lang: Lang; onFail: () => void }) {
   const map = useMap();
   const [base, setBase] = useState<VectorBaseMap | null>(null);
@@ -242,7 +231,6 @@ function VectorTiles({ dark, lang, onFail }: { dark: boolean; lang: Lang; onFail
   return null;
 }
 
-/** Zone polygons coloured by the worst reading inside; tap to drill down. */
 function ZoneLayer({ lang, zones, palette }: { lang: Lang; zones: ZoneView; palette: MapPalette }) {
   const z = WEB.zones;
   return (
@@ -288,14 +276,13 @@ function FlyToRadar({ radarId, focus }: { radarId: string; focus: number }) {
   return null;
 }
 
-/** Zooms to the area the user drilled into; back at the top level, returns to the region. */
 function FitToFocus({ focus, depth, center }: { focus: ZoneFeature | null; depth: number; center: LatLng }) {
   const map = useMap();
   const last = useRef<string | null | undefined>(undefined);
   useEffect(() => {
     const key = focus?.properties.id ?? null;
     if (last.current === undefined) {
-      last.current = key; // don't move on first render
+      last.current = key;
       return;
     }
     if (last.current === key) return;
@@ -320,7 +307,6 @@ function ZoomWatcher({ onZoom }: { onZoom: (zoom: number) => void }) {
   return null;
 }
 
-/** When the browser first returns a real position, move the map there once. */
 function FollowFirstFix({ center, located }: { center: LatLng; located: boolean }) {
   const map = useMap();
   const done = useRef(false);
@@ -333,7 +319,7 @@ function FollowFirstFix({ center, located }: { center: LatLng; located: boolean 
   return null;
 }
 
-/** Rendered outside the Leaflet container (so React click handlers work) and drives the map through its instance. */
+/** Kept outside the Leaflet container so React click handlers work. */
 function MapButtons({
   map,
   lang,

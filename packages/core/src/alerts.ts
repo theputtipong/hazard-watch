@@ -6,29 +6,23 @@ import { isStale, quakeAlertFloor, quakeSeverity, rank } from './severity';
 import type { Earthquake, Observation, Severity } from './types';
 import { groupByZone, zoneCenter, type ZoneFeature } from './zones';
 
-/** One thing worth telling people in an area about. */
 export interface Alert {
-  /** Stable for the same hazard in the same area, so repeats can be suppressed. */
+  /** Stable per hazard and area so repeats can be suppressed. */
   key: string;
   kind: PushKind;
   severity: Severity;
-  /** Zone the alert is about (district id), or null for region-wide (earthquakes). */
   zoneId: string | null;
   title: Record<Lang, string>;
   body: Record<Lang, string>;
-  /** The reading behind the alert (e.g. PM2.5 value), so per-user thresholds can be applied at send time. */
+  /** Lets per-user thresholds be applied at send time. */
   value?: number;
 }
 
-/** Level word that opens every alert title ("ระวังมาก: …"), per the design system's alert format. */
+/** Design system alert format: every title opens with the level word ("ระวังมาก: …"). */
 const level = (s: Severity, lang: Lang) => t(`severity.${s}`, lang);
 
 const zoneName = (z: ZoneFeature) => ({ th: z.properties.name_th, en: z.properties.name_en });
 
-/**
- * Alerts per district from current readings. Only readings newer than `staleAfterMinutes` count,
- * and each hazard uses the thresholds in AlertConfig (so tuning config.ts tunes the pushes too).
- */
 export function districtAlerts(
   readings: Observation[],
   districts: ZoneFeature[],
@@ -70,7 +64,7 @@ export function districtAlerts(
       make('flood', sev, 'alert.flood.title', 'alert.flood.body', { n: flooded.length, depth: Math.round(deepest) });
     }
 
-    // Severity already folds in the 24 h total (rainSeverity), so a long steady rain alerts too.
+    // Severity already folds in the 24 h total, so a long steady rain alerts too.
     const rain = inside.filter((o) => o.kind === 'rain' && rank(o.severity) >= rank('warn'));
     if (rain.length) {
       const top = rain.reduce((a, b) => (rank(a.severity) > rank(b.severity) || (a.severity === b.severity && (a.value ?? 0) >= (b.value ?? 0)) ? a : b));
@@ -98,7 +92,7 @@ export function districtAlerts(
       });
     }
 
-    // PM2.5: built from the lowest band so each person's own threshold (default pm25.pushAt) can filter it.
+    // Built from the lowest band so each person's own threshold (default pm25.pushAt) can filter it.
     const pm = inside.filter((o) => o.kind === 'pm25' && (o.value ?? 0) > cfg.pm25.bands.ok);
     if (pm.length) {
       const top = pm.reduce((a, b) => ((a.value ?? 0) >= (b.value ?? 0) ? a : b));
@@ -110,7 +104,7 @@ export function districtAlerts(
   return out;
 }
 
-/** USGS and TMD often report the same event; keep one (preferring TMD, which has Thai text). Window is in config. */
+/** On duplicates keep TMD, which has Thai text. */
 export function mergeQuakes(tmd: Earthquake[], usgs: Earthquake[], cfg: AlertConfig): Earthquake[] {
   const { duplicateWithinSeconds, duplicateWithinKm } = cfg.quake;
   const out = [...tmd];
@@ -125,25 +119,21 @@ export function mergeQuakes(tmd: Earthquake[], usgs: Earthquake[], cfg: AlertCon
   return out.sort((a, b) => b.occurredAt.localeCompare(a.occurredAt));
 }
 
-/** Smallest magnitude and widest distance (from the person's district) that raise a quake alert. */
 export interface QuakeLimit {
   minMagnitude: number;
   maxDistanceKm: number;
 }
 
-/** A person's own quake choice; null/undefined (or a value not in the allowed choices) = the central quake tiers. */
 export interface QuakePref {
   minMagnitude?: number | null;
   maxDistanceKm?: number | null;
 }
 
-/** Returns `value` when it is one of `choices`, otherwise null (= use the central default). */
 export function pickChoice(value: unknown, choices: readonly number[]): number | null {
   const n = typeof value === 'number' ? value : typeof value === 'string' && value.trim() !== '' ? Number(value) : NaN;
   return Number.isFinite(n) && choices.includes(n) ? n : null;
 }
 
-/** The limit a person's quake alerts use: their own choice where valid, otherwise the central quake tiers. */
 export function personalQuakeLimit(cfg: AlertConfig, pref: QuakePref = {}): QuakeLimit {
   const floor = quakeAlertFloor(cfg);
   return {
@@ -152,7 +142,6 @@ export function personalQuakeLimit(cfg: AlertConfig, pref: QuakePref = {}): Quak
   };
 }
 
-/** The widest limit anyone can have (central default included): a quake inside it may concern someone. */
 export function loosestQuakeLimit(cfg: AlertConfig): QuakeLimit {
   const floor = quakeAlertFloor(cfg);
   const { minMagnitude, maxDistanceKm } = cfg.push.quakeChoices;
@@ -162,12 +151,7 @@ export function loosestQuakeLimit(cfg: AlertConfig): QuakeLimit {
   };
 }
 
-/**
- * Earthquake alerts for a district, measured from the district's centre.
- * Without `limit` an event alerts when it matches a quake tier. With `limit` (a person's own choice) it alerts
- * when magnitude >= limit.minMagnitude and distance <= limit.maxDistanceKm; an event below every tier but
- * inside the personal limit gets severity 'watch'.
- */
+/** With a personal `limit`, an event below every tier but inside the limit alerts as 'watch'. */
 export function quakeAlerts(quakes: Earthquake[], district: ZoneFeature, cfg: AlertConfig, now: Date = new Date(), limit?: QuakeLimit): Alert[] {
   const centre = zoneCenter(district);
   const since = now.getTime() - cfg.quake.lookbackHours * 3_600_000;

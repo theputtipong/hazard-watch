@@ -1,12 +1,7 @@
 import type { HazardKind, Severity } from './types';
 
-/**
- * Every value that changes how hazards are judged or displayed lives here, so it can be tuned
- * without touching logic. Both the ingest worker and the web app read this file, so after editing
- * it redeploy both (see TODO.md). Deployments may also override parts with mergeConfig().
- */
+/** Read by both the ingest worker and the web app: redeploy both after editing. */
 export interface AlertConfig {
-  /** Units shown next to values. Change here only — adapters and UI read these. */
   units: {
     pm25: string;
     rain: string;
@@ -19,73 +14,54 @@ export interface AlertConfig {
     windSpeed: string;
   };
   pm25: {
-    /** Upper bound (in `units.pm25`) of each display band. Defaults: WHO 2021 guideline + interim targets. */
+    /** WHO 2021 guideline + interim targets. */
     bands: { ok: number; watch: number; warn: number };
-    /** Push notification fires at or above this value. Default = Thai national 24h standard. */
+    /** Thai national 24 h standard. */
     pushAt: number;
   };
   quake: {
-    /**
-     * Checked from the top; the first tier whose magnitude and distance match wins.
-     * An event matching no tier is 'ok'. Add or remove tiers freely (e.g. a 'watch' tier for M5 within 500 km).
-     */
+    /** Most severe matching tier wins; no match = 'ok'. */
     tiers: { severity: Exclude<Severity, 'ok'>; minMagnitude: number; maxDistanceKm: number }[];
-    /** How far back the dashboard looks, in hours. */
     lookbackHours: number;
-    /** USGS and TMD often report the same event; treat reports this close in time and space as one. */
+    /** USGS and TMD often report the same event: reports this close in time and space are one. */
     duplicateWithinSeconds: number;
     duplicateWithinKm: number;
   };
   flood: {
-    /** BMA flood point `flood_sub_status` → severity. Codes not listed (1 normal, 0/5 offline) are 'ok'. */
+    /** BMA `flood_sub_status` → severity; unlisted codes (1 normal, 0/5 offline) are 'ok'. */
     bmaSubStatus: Record<number, Severity>;
-    /** Water depth (in `units.floodDepth`) at a flooded point that upgrades it to danger. */
     dangerDepthCm: number;
   };
   waterLevel: {
-    /** Percent of bank-full at a river/canal gauge (ThaiWater storage_percent). 70 = ThaiWater "น้ำมาก", 100 = "ล้นตลิ่ง"; 120 is our own. */
+    /** ThaiWater storage_percent: 70 = "น้ำมาก", 100 = "ล้นตลิ่ง"; 120 is our own. */
     watchPct: number;
     warnPct: number;
     dangerPct: number;
   };
   rain: {
-    /**
-     * Rain in the past hour (in `units.rain`). No official Thai hourly scale exists: 10 = WMO/JMA "heavy",
-     * 30 = JMA "very heavy", 60 = BMA drains cannot keep up (see notes/thresholds-th.md).
-     */
+    /** No official Thai hourly scale: 10 = WMO/JMA "heavy", 30 = JMA "very heavy", 60 = BMA drains overwhelmed. */
     watchMmPerHour: number;
     warnMmPerHour: number;
     dangerMmPerHour: number;
-    /**
-     * Rain over the past 24 h (mm), where a source reports it (BMA gauges). TMD 24 h classes: heavy from 35.1,
-     * very heavy from 90.1; 60 sits between. A gauge takes the worse of its hourly and 24 h levels.
-     */
+    /** TMD 24 h classes: heavy from 35.1, very heavy from 90.1; 60 sits between. */
     watch24hMm: number;
     warn24hMm: number;
     danger24hMm: number;
   };
   zones: {
-    /** Which point readings decide a zone's colour. Earthquakes are regional, so they are not zoned. */
+    /** Earthquakes are regional, so they are not zoned. */
     kinds: HazardKind[];
-    /** How a zone's status is derived from the points inside it. Only 'worst' exists for now. */
     aggregate: 'worst';
   };
   push: {
-    /** Hazards that can trigger a push. Users can switch each off for themselves. */
     kinds: PushKind[];
-    /** Don't repeat the same alert (same hazard, same area) to the same person within this many hours. */
     cooldownHours: number;
-    /** Maximum notifications sent per run (keeps one run inside Worker limits). */
+    /** Keeps one run inside Cloudflare Worker limits. */
     maxPerRun: number;
-    /** How long a push service should keep trying to deliver (seconds). */
     ttlSeconds: number;
-    /**
-     * Earthquake alert levels a person may pick for themselves (the server rejects anything else).
-     * Not picked = the quake tiers above (smallest tier magnitude, widest tier radius).
-     */
+    /** The only values the server accepts for a personal quake limit. */
     quakeChoices: { minMagnitude: number[]; maxDistanceKm: number[] };
   };
-  /** Readings older than this are shown as stale and ignored for alerts. */
   staleAfterMinutes: number;
 }
 
@@ -149,7 +125,7 @@ export const DEFAULT_CONFIG: AlertConfig = {
 
 type DeepPartial<T> = { [K in keyof T]?: T[K] extends unknown[] ? T[K] : T[K] extends object ? DeepPartial<T[K]> : T[K] };
 
-/** Deep-merges overrides into the defaults. Arrays (e.g. quake tiers) are replaced, not merged. */
+/** Arrays (e.g. quake tiers) are replaced, not merged. */
 export function mergeConfig(override: DeepPartial<AlertConfig> = {}, base: AlertConfig = DEFAULT_CONFIG): AlertConfig {
   const out = JSON.parse(JSON.stringify(base)) as Record<string, unknown>;
   for (const [key, value] of Object.entries(override)) {

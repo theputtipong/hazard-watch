@@ -4,7 +4,7 @@ import { WEB } from '@/config';
 
 const kmh = (n: number) => `${Math.round(n)} ${DEFAULT_CONFIG.units.windSpeed}`;
 
-/** Arrow pointing where the wind blows TO (meteorological direction is where it comes FROM). */
+/** Points where the wind blows TO; meteorological direction is where it comes FROM. */
 export function WindArrow({ fromDeg, size = 18 }: { fromDeg: number; size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" style={{ transform: `rotate(${fromDeg + 180}deg)` }} className="shrink-0">
@@ -13,7 +13,6 @@ export function WindArrow({ fromDeg, size = 18 }: { fromDeg: number; size?: numb
   );
 }
 
-/** "from the northeast · 4 km/h · gusts 20 km/h" for the weather card, or null when Open-Meteo sent no wind. */
 export function SurfaceWind({ lang, weather }: { lang: Lang; weather: WeatherNow }) {
   const { windFromDeg: from, windSpeedKmh: speed, windGustKmh: gust } = weather;
   if (from == null || speed == null) return null;
@@ -36,7 +35,6 @@ export function SurfaceWind({ lang, weather }: { lang: Lang; weather: WeatherNow
   );
 }
 
-/** Map badge over the radar: which way rain is likely drifting, from the ~3 km steering wind. */
 export function RadarDrift({ lang, weather }: { lang: Lang; weather: WeatherNow | null }) {
   const from = weather?.cloudWindFromDeg;
   const speed = weather?.cloudWindSpeedKmh;

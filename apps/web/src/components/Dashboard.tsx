@@ -40,13 +40,11 @@ export function Dashboard({ lang, initialArea }: { lang: Lang; initialArea?: str
   const [snapshot, setSnapshot] = useState<DashboardSnapshot | null>(null);
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [retry, setRetry] = useState(0);
-  /** Clock reading taken when the snapshot arrives (keeps render pure). */
+  /** Captured on arrival so render stays pure. */
   const [loadedAt, setLoadedAt] = useState(0);
   const [weather, setWeather] = useState<WeatherNow | null>(null);
   const [layers, setLayers] = useState<Layers>({ ...WEB.map.defaultLayers });
-  /** Radar the user picked; until then the radar covering their location is used. */
   const [radarChoice, setRadarChoice] = useState<string | null>(null);
-  /** Bumped when the user picks a radar, so the map flies to it. */
   const [radarFocus, setRadarFocus] = useState(0);
 
   useEffect(() => {
@@ -59,7 +57,7 @@ export function Dashboard({ lang, initialArea }: { lang: Lang; initialArea?: str
           setLoadedAt(Date.now());
           setLoadState('ready');
         })
-        // Keep showing the last snapshot if there is one, but say the service can't be reached.
+        // Keep the last snapshot on screen; only flag that the service is unreachable.
         .catch(() => alive && setLoadState('error'));
     load();
     const timer = setInterval(load, WEB.refreshMs);
@@ -84,12 +82,11 @@ export function Dashboard({ lang, initialArea }: { lang: Lang; initialArea?: str
   );
   const zones = useZones(readings, initialArea, loadPickedArea);
   const focusZone = zones.selected ?? zones.path.at(-1) ?? null;
-  // Location off: the area picked on the map stands in for the device position (cards, weather, radar, quakes).
+  // Location off: the area picked on the map stands in for the device position.
   const located = status === 'granted';
   const pickedZone = located ? null : focusZone;
   const location = useMemo(() => (pickedZone ? zoneCenter(pickedZone) : deviceLocation), [pickedZone, deviceLocation]);
 
-  // Remember a hand-picked area for next time; a real position makes it unnecessary.
   useEffect(() => {
     if (!zones.ready || status === 'pending') return;
     savePickedArea(located ? null : (focusZone?.properties.id ?? null));
@@ -123,13 +120,13 @@ export function Dashboard({ lang, initialArea }: { lang: Lang; initialArea?: str
           : undefined,
       },
       pmStations: pm,
-      // Nearest station with a current reading; old readings are not shown as the local value.
+      // Stale readings are never shown as the local value.
       nearestPm: nearest(fresh(pm.filter((s) => s.value !== null)), location)[0] ?? null,
       floodPoints: flood,
-      // A feed counts as available only if it has data; a failed fetch must never read as "normal".
+      // A failed fetch must never read as "normal".
       floodAvailable: fresh(flood).length > 0,
       quakeAvailable: !!(snapshot?.edge?.feeds.quakesTmd?.items.length || snapshot?.edge?.feeds.quakesUsgs?.items.length),
-      // Counts and the nearest flooded spot use current readings only; old ones are just faded on the map.
+      // Stale readings are only faded on the map, never counted.
       counts: floodCounts(fresh(flood)),
       nearestFlooded: nearest(fresh(flood).filter((p) => !p.offline && (p.severity === 'warn' || p.severity === 'danger')), location)[0] ?? null,
       cameras: cams,
@@ -141,7 +138,7 @@ export function Dashboard({ lang, initialArea }: { lang: Lang; initialArea?: str
 
   const focusId = (zones.selected ?? zones.path.at(-1))?.properties.id ?? null;
 
-  // Keep ?area= in the address bar in step with the map, so the URL itself can be copied and shared.
+  // Keep ?area= in sync so the address bar URL is shareable.
   useEffect(() => {
     if (!zones.ready) return;
     const url = new URL(window.location.href);
@@ -155,7 +152,6 @@ export function Dashboard({ lang, initialArea }: { lang: Lang; initialArea?: str
   }, [zones.ready, focusId, lang]);
 
   const updatedAt = [snapshot?.edge?.updatedAt, snapshot?.runner?.updatedAt].filter(Boolean).sort().at(-1) ?? null;
-  // Alert area: from the device location if allowed, otherwise the district picked on the map.
   const alertArea = useMemo(() => {
     if (located) return zones.zonesAt(deviceLocation);
     const picked = [...zones.path, ...(zones.selected ? [zones.selected] : [])];
@@ -185,13 +181,11 @@ export function Dashboard({ lang, initialArea }: { lang: Lang; initialArea?: str
   const radarOld = !!radarFrame && loadedAt - new Date(radarFrame.time).getTime() > WEB.map.radarStaleMinutes * 60_000;
   const clock = (iso: string) =>
     new Date(iso).toLocaleTimeString(lang === 'th' ? 'th-TH' : 'en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok' });
-  // Banner: the user's own district first (when location is known), then the whole coverage area.
   const summaryLines = useMemo(() => {
     const regionName = activeRegions()
       .map((r) => r.name[lang])
       .join(', ');
     const lines = [{ label: t('area.now', lang), area: regionName, summary: summarizeZone(readings, DEFAULT_CONFIG) }];
-    // GPS: the district around the user. Picked by hand: the area they chose.
     const mine = located ? alertArea.district : pickedZone;
     if (mine) {
       const inside = groupByZone(readings, [mine]).get(mine.properties.id) ?? [];
@@ -225,7 +219,7 @@ export function Dashboard({ lang, initialArea }: { lang: Lang; initialArea?: str
         />
       </Header>
       <main className="mx-auto flex max-w-[1360px] flex-wrap items-start gap-5 px-4 py-5 sm:px-6">
-        {/* Same text as read-aloud, for screen readers (blind users): one place with the whole picture. */}
+        {/* Same text as read-aloud, so screen-reader users get the whole picture in one place. */}
         <section id="summary" tabIndex={-1} aria-label={t('a11y.summary', lang)} className="sr-only">
           <h2>{t('a11y.summary', lang)}</h2>
           <p>{spoken}</p>

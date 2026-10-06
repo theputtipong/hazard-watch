@@ -1,23 +1,16 @@
 #!/usr/bin/env bash
-# Extract the HazardWatch base map (Protomaps vector tiles, one PMTiles archive) for the
-# Thailand region from a Protomaps daily build, verify it, and print the upload commands.
-# It never uploads anything. See README.md in this folder.
-#
-# Usage: tools/basemap/build.sh [BUILD]        e.g. tools/basemap/build.sh 20261005
-#   or:  BUILD=20261005 BBOX=... MAXZOOM=14 OUT_DIR=... tools/basemap/build.sh
+# Usage: [BUILD=... BBOX=... MAXZOOM=... OUT_DIR=...] tools/basemap/build.sh [BUILD]   (prints upload commands, never uploads)
 set -euo pipefail
 
-# ---- Parameters (env overrides; defaults live only here) ----------------------------
 BUILDS_URL="${BUILDS_URL:-https://build-metadata.protomaps.dev/builds.json}"
 BUILD_BASE_URL="${BUILD_BASE_URL:-https://build.protomaps.com}"
 BUILD="${1:-${BUILD:-}}"                       # YYYYMMDD; empty = latest in builds.json
 BBOX="${BBOX:-95.5,4.5,108.5,21.5}"            # west,south,east,north: Thailand + neighbours
 MAXZOOM="${MAXZOOM:-14}"                       # Protomaps max zoom; the client overzooms past it
 OUT_DIR="${OUT_DIR:-$HOME/hw-basemap}"         # outside the repo (files are ~750 MB)
-REGION="${REGION:-thailand}"                   # object key prefix
+REGION="${REGION:-thailand}"
 R2_BUCKET="${R2_BUCKET:-hw-basemap}"
 WRANGLER_LIMIT_MB=300                          # `wrangler r2 object put` rejects files above 300 MiB
-# ----------------------------------------------------------------------------------------
 
 command -v pmtiles >/dev/null || { echo "pmtiles CLI not found (brew install pmtiles)" >&2; exit 1; }
 

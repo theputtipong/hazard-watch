@@ -1,11 +1,11 @@
 import { t, type Lang } from './i18n';
 import type { DashboardSnapshot, SourceResult } from './types';
 
-/** Topics people care about, in display order (design system FeedStatus). Both quake sources count as one. */
+/** Design system FeedStatus order; both quake sources count as one topic. */
 export const FEED_TOPICS = ['flood', 'rain', 'waterlevel', 'radar', 'pm25', 'quakes'] as const;
 export type FeedTopic = (typeof FEED_TOPICS)[number];
 
-/** A feed whose last good fetch is older than this (minutes) is stale. Keep in step with tools/monitor/config.json. */
+/** Must match the group limits in tools/monitor/config.json. */
 export const FEED_MAX_AGE_MINUTES = { edge: 60, runner: 360 } as const;
 
 export interface FeedStatus {
@@ -13,7 +13,6 @@ export interface FeedStatus {
   /** live = fresh · stale = no new data for too long · down = the last fetch failed. */
   state: 'live' | 'stale' | 'down';
   lastOkAt: string | null;
-  /** When the current failure started (down only). */
   failingSince: string | null;
 }
 
@@ -35,7 +34,7 @@ function one(r: SourceResult<unknown>, maxAgeMinutes: number, now: Date): Omit<F
   return { state: old ? 'stale' : 'live', lastOkAt, failingSince: null };
 }
 
-/** Freshness per topic, judged like tools/monitor: by the age of the last successful fetch. */
+/** Judged like tools/monitor: by the age of the last successful fetch. */
 export function feedStatuses(snapshot: DashboardSnapshot, now = new Date()): FeedStatus[] {
   const out: FeedStatus[] = [];
   for (const topic of FEED_TOPICS) {
@@ -54,7 +53,6 @@ export function feedStatuses(snapshot: DashboardSnapshot, now = new Date()): Fee
 
 const minutesSince = (iso: string, now: Date) => Math.max(0, Math.round((now.getTime() - Date.parse(iso)) / 60_000));
 
-/** "4 นาทีที่แล้ว" / "2 ชม.ที่แล้ว". */
 export function agoText(iso: string, lang: Lang, now = new Date()): string {
   const min = minutesSince(iso, now);
   if (min < 2) return t('time.justNow', lang);
@@ -63,7 +61,7 @@ export function agoText(iso: string, lang: Lang, now = new Date()): string {
 
 const bangkokDay = (d: Date) => d.toLocaleDateString('en-CA', { timeZone: 'Asia/Bangkok' });
 
-/** "10:40 น." in Thai time; "5 ต.ค. 21:40 น." when it is not today, so an old time never reads as today. */
+/** Adds the date when not today, so an old time never reads as today. */
 export function clockText(iso: string, lang: Lang, now = new Date()): string {
   const d = new Date(iso);
   const locale = lang === 'th' ? 'th-TH' : 'en-GB';
@@ -73,7 +71,6 @@ export function clockText(iso: string, lang: Lang, now = new Date()): string {
   return t('time.clock', lang, { time: day + time }).replace(/ /g, '\u00a0');
 }
 
-/** The age line of a FeedStatus row, in the design system's words. */
 export function feedAgeText(f: FeedStatus, lang: Lang, now = new Date()): string {
   if (f.state === 'down') return f.failingSince ? t('feeds.down', lang, { time: clockText(f.failingSince, lang, now) }) : t('feeds.downNever', lang);
   if (!f.lastOkAt) return t('feeds.downNever', lang);

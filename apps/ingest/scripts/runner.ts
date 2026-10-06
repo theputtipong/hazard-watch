@@ -1,8 +1,4 @@
-/**
- * Fetches the feeds that Cloudflare IPs are blocked from (BMA, ThaiWater) and pushes them
- * to the ingest worker. Runs on a schedule in GitHub Actions; can also be run locally:
- *   INGEST_URL=http://localhost:8787 INGEST_TOKEN=dev-token-change-me pnpm --filter @hw/ingest runner
- */
+// Runs outside Cloudflare because BMA and ThaiWater block Cloudflare IPs; uploads the feeds to the ingest worker.
 import { defaultContext, FEEDS, type RunnerFeed } from '@hw/sources';
 import { RADARS, type RadarFrame } from '@hw/core';
 import { echoesOnly, packBundle } from './radarImage';
@@ -15,7 +11,6 @@ if (!base || !token) throw new Error('INGEST_URL and INGEST_TOKEN are required')
 const ctx = defaultContext();
 const auth = { authorization: `Bearer ${token}` };
 
-/** Feeds fetched recently enough (INGEST.runnerFeedEveryHours) are skipped; the ingest keeps their stored copy. */
 async function recentlyFetched(): Promise<Set<string>> {
   const skip = new Set<string>();
   try {
@@ -41,7 +36,6 @@ const entries = await Promise.all(
 const feeds = Object.fromEntries(entries);
 for (const [name, r] of entries) console.log(`${name.padEnd(10)} ${r.ok ? 'ok ' : 'ERR'} ${r.items.length} items ${r.error ?? ''}`);
 
-// Radar images: every calibrated radar, cut to rain echoes, packed into one bundle (one KV write per run).
 const radar = feeds.radar;
 if (radar?.ok) {
   const items: { id: string; time: string; echoPixels: number; png: Buffer }[] = [];
@@ -52,7 +46,7 @@ if (radar?.ok) {
       const img = await fetch(frame.imageUrl, { signal: AbortSignal.timeout(INGEST.radarDownloadTimeoutMs) });
       if (!img.ok) throw new Error(`download failed ${img.status}`);
       const out = echoesOnly(new Uint8Array(await img.arrayBuffer()), spec);
-      // Lets the app say "no rain in range" instead of showing an empty layer without explanation.
+      // Lets the app say "no rain in range" instead of showing an unexplained empty layer.
       frame.echoPixels = out.echoPixels;
       items.push({ id: frame.radarId, time: frame.time, echoPixels: out.echoPixels, png: out.png });
       console.log(`radar ${frame.radarId.padEnd(10)} ${out.echoPixels} echo px`);
@@ -60,7 +54,6 @@ if (radar?.ok) {
       console.log(`radar ${frame.radarId}: ${err instanceof Error ? err.message : err}`);
     }
   }
-  // Frames that could not be processed are not offered to the app.
   radar.items = (radar.items as RadarFrame[]).filter((f) => items.some((it) => it.id === f.radarId));
   if (items.length) {
     const put = await fetch(`${base}/ingest/radar-bundle`, {

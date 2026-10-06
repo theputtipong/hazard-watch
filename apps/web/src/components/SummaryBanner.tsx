@@ -11,7 +11,6 @@ interface Line {
   summary: ZoneSummary;
 }
 
-/** First thing on the page: the situation in plain words, near the user first, then the whole area. */
 export function SummaryBanner({ lang, lines }: { lang: Lang; lines: Line[] }) {
   const top = lines[0];
   if (!top) return null;

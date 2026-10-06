@@ -24,7 +24,6 @@ export function pm25ShouldPush(value: number, cfg: AlertConfig): boolean {
   return value >= cfg.pm25.pushAt;
 }
 
-/** Rain level from the past hour and, when the source has it, the past 24 h — whichever is worse. */
 export function rainSeverity(mmPerHour: number, cfg: AlertConfig, mm24h?: number | null): Severity {
   const r = cfg.rain;
   const hourly: Severity =
@@ -42,7 +41,6 @@ export function waterLevelSeverity(bankFullPct: number, cfg: AlertConfig): Sever
   return 'ok';
 }
 
-/** BMA flood point: sub-status codes are mapped in config; deep water upgrades a flooded point to danger. */
 export function bmaFloodSeverity(subStatus: number, depthCm: number | null, cfg: AlertConfig): Severity {
   const base = cfg.flood.bmaSubStatus[subStatus] ?? 'ok';
   if (base === 'ok') return 'ok';
@@ -57,7 +55,6 @@ export function quakeSeverity(q: Earthquake, from: LatLng, cfg: AlertConfig): Se
   return tier?.severity ?? 'ok';
 }
 
-/** Smallest magnitude and widest radius that can raise any quake alert (used in "no quakes" text). */
 export function quakeAlertFloor(cfg: AlertConfig): { minMagnitude: number; maxDistanceKm: number } {
   const tiers = cfg.quake.tiers;
   if (!tiers.length) return { minMagnitude: Infinity, maxDistanceKm: 0 };

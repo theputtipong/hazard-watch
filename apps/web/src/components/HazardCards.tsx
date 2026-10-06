@@ -59,7 +59,6 @@ export function Pm25Card({ lang, station, note }: { lang: Lang; station: (Observ
             <span className="num text-figure">{fmt(value)}</span>
             <span className="text-label text-ink-muted">{station.unit || u.pm25}</span>
           </div>
-          {/* What the number means, from the same level as the badge. */}
           <p className="text-label text-ink">{t(`note.pm25.${pm25Severity(value, cfg)}`, lang)}</p>
           <p className="text-caption text-ink-muted">
             {t('pm25.nearest', lang, { name: placeName(station, lang) })} · <span className="num">
@@ -196,7 +195,6 @@ export function WaterLevelCard({
 }: {
   lang: Lang;
   nearest: (Observation & { km: number }) | null;
-  /** Gauges at or above the watch level, highest first. */
   high: Observation[];
   note?: string;
 }) {
@@ -222,7 +220,6 @@ export function WaterLevelCard({
           {others.length > 0 ? (
             <div className="flex flex-col gap-3 border-t border-line pt-3">
               <p className="text-label text-ink-muted">{t('water.high', lang, { pct: cfg.waterLevel.watchPct })}</p>
-              {/* Closest to overflowing first. */}
               {others.map((o) => (
                 <RiverGauge key={o.id} lang={lang} name={placeName(o, lang)} pct={o.value!} severity={o.severity} />
               ))}

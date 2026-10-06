@@ -14,7 +14,6 @@ export interface LocalizedText {
   en: string;
 }
 
-/** One normalized reading from any source, e.g. a PM2.5 station or a flood sensor. */
 export interface Observation {
   id: string;
   kind: HazardKind;
@@ -26,7 +25,6 @@ export interface Observation {
   value: number | null;
   unit: string;
   severity: Severity;
-  /** Sensor reported a fault; value should not be trusted. */
   offline?: boolean;
   extra?: Record<string, string | number | boolean | null>;
 }
@@ -50,11 +48,11 @@ export interface WeatherNow {
   humidityPct: number | null;
   precipitationMm: number | null;
   weatherCode: number | null;
-  /** Surface (10 m) wind. Direction is where the wind comes FROM, degrees clockwise from north. Optional: older cached responses lack it. */
+  /** 10 m wind; direction is where it comes FROM, clockwise from north. Missing in older cached responses. */
   windSpeedKmh?: number | null;
   windFromDeg?: number | null;
   windGustKmh?: number | null;
-  /** Wind at 700 hPa (~3 km), which steers most rain clouds: a rough guide to where radar echoes are drifting. */
+  /** 700 hPa (~3 km) wind steers most rain cells: a rough guide to radar echo drift. */
   cloudWindSpeedKmh?: number | null;
   cloudWindFromDeg?: number | null;
 }
@@ -64,12 +62,8 @@ export interface CctvCamera {
   source: SourceId;
   name: LocalizedText;
   location: LatLng;
-  /** Page at the source where the live view can be watched. */
   viewUrl: string;
-  /**
-   * Page that must be opened first so the source creates a session (BMA Traffic shows a blank camera page
-   * otherwise). The app opens this, then moves the same tab to `viewUrl`.
-   */
+  /** Opened first in the same tab so BMA Traffic creates a session; otherwise `viewUrl` shows a blank page. */
   sessionUrl?: string;
 }
 
@@ -78,7 +72,6 @@ export interface RadarFrame {
   source: SourceId;
   time: string;
   imageUrl: string;
-  /** Number of rain-echo pixels found when the frame was processed (0 = no rain in range). */
   echoPixels?: number;
 }
 
@@ -93,16 +86,15 @@ export type SourceId =
   | 'bma-traffic'
   | 'thaiwater';
 
-/** Result of one adapter run, stored by the ingest worker. */
 export interface SourceResult<T> {
   source: SourceId;
   fetchedAt: string;
   ok: boolean;
   error?: string;
   items: T[];
-  /** Set by the ingest store: time of the last successful fetch (kept across failures). */
+  /** Set by the ingest store; kept across failures. */
   lastOkAt?: string;
-  /** Set by the ingest store while `ok` is false: time of the first failure in the current run of failures. */
+  /** Set by the ingest store while `ok` is false: start of the current failure streak. */
   failingSince?: string;
 }
 
@@ -111,7 +103,6 @@ export interface GroupSnapshot<F> {
   feeds: F;
 }
 
-/** Shape returned by the ingest worker's GET /v1/snapshot. */
 export interface DashboardSnapshot {
   edge: GroupSnapshot<{
     pm25?: SourceResult<Observation>;

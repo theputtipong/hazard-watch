@@ -7,12 +7,9 @@ import { WEB } from '@/config';
 const BCP47: Record<Lang, string> = { th: 'th-TH', en: 'en-US' };
 const noSubscribe = () => () => {};
 
-/**
- * Read-aloud with the browser's built-in speech (Web Speech API, free, works offline on most phones).
- * Voices load asynchronously, so `hasVoice` updates once the list arrives.
- */
+/** Voices load asynchronously, so `hasVoice` updates once the list arrives. */
 export function useSpeech(lang: Lang) {
-  // false on the server, real value in the browser (no hydration mismatch, no setState in an effect).
+  // false on the server: avoids a hydration mismatch and setState in an effect.
   const supported = useSyncExternalStore(noSubscribe, () => 'speechSynthesis' in window, () => false);
   const [hasVoice, setHasVoice] = useState(true);
   const [speaking, setSpeaking] = useState(false);

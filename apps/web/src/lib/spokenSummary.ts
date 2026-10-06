@@ -16,10 +16,7 @@ interface Input {
 const status = (s: Severity, lang: Lang) => t(`severity.${s}`, lang);
 const n1 = (v: number) => (Math.round(v * 10) / 10).toString();
 
-/**
- * Plain sentences for read-aloud and screen readers: units are spoken as words (no "µg/m³"),
- * numbers are rounded, and every topic says "no data" rather than going silent.
- */
+/** Units spoken as words (no "µg/m³"), numbers rounded, and every topic says "no data" rather than going silent. */
 export function spokenSummary(d: Input): string {
   const { lang } = d;
   const cfg = DEFAULT_CONFIG;

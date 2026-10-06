@@ -13,10 +13,7 @@ import { bmaTrafficCameras } from './adapters/cctv';
 import { tmdQuakes, usgsQuakes } from './adapters/quakes';
 import { thaiwaterLevels, thaiwaterRadars } from './adapters/thaiwater';
 
-/**
- * Feeds grouped by where they can be fetched from.
- * `edge`: works from Cloudflare Workers. `runner`: blocked there, fetched by GitHub Actions instead.
- */
+/** `edge`: fetchable from Cloudflare Workers. `runner`: blocked there, fetched by GitHub Actions. */
 export const FEEDS = {
   edge: { pm25: air4thai, quakesUsgs: usgsQuakes, quakesTmd: tmdQuakes },
   runner: { flood: bmaFlood, rain: bmaRain, waterlevel: thaiwaterLevels, radar: thaiwaterRadars, cctv: bmaTrafficCameras },

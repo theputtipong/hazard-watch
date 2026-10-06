@@ -1,9 +1,6 @@
 import type { Lang } from '@hw/core/i18n';
 
-/**
- * Privacy notice (PDPA). Both languages side by side, like messages.ts.
- * ⚠️ Draft written for the app as built; have it reviewed before a public launch, and fill in the contact line.
- */
+/** PDPA notice. Draft: have it legally reviewed before a public launch. */
 export const privacy: Record<Lang, { updated: string; sections: { heading: string; body: string[] }[] }> = {
   th: {
     updated: 'ปรับปรุงล่าสุด 6 ตุลาคม 2569',

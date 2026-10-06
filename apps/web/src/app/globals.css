@@ -1,13 +1,7 @@
 @import "tailwindcss";
 
-/*
- * Design tokens from the HazardWatch design system (tokens.json). Components only use these names
- * (bg-surface, text-ink-muted, bg-sev-danger-soft …), never raw hex, so themes are variable overrides below:
- *   [data-theme="dark"]  dark mode
- *   [data-cvd="on"]      colour-vision-deficiency palette (Paul Tol "muted"), applied to the sev-* tokens only
- * Severity colours mean risk only: never use sev-* for decoration, buttons or system status.
- * The map's solid marker/zone colours live in src/config.ts (WEB.severityColor) with the same values.
- */
+/* Components use these token names, never raw hex. sev-* means risk only: never for decoration, buttons or system status.
+   Map marker/zone colours in src/config.ts (WEB.severityColor) must keep the same values. */
 @theme {
   --font-sans: var(--font-plex-thai), "Noto Sans Thai", system-ui, sans-serif;
 
@@ -24,7 +18,6 @@
   --color-on-accent: #ffffff;
   --color-water: #3d7bff;
 
-  /* Severity: solid (map, meter, gauge) · ink (text) · soft (badge, banner background). Normal has no colour. */
   --color-sev-normal: #8a93a3;
   --color-sev-watch: #b07f00;
   --color-sev-watch-ink: #7a5500;
@@ -38,32 +31,31 @@
   --color-on-sev: #0f1b2e;
   --color-on-sev-danger: #ffffff;
 
-  /* Type scale — use only these. Thai needs line-height of at least 1.5× so vowels and tone marks never clip. */
-  --text-caption: 12px; /* sources, update times, units */
+  /* Thai needs line-height of at least 1.5× so vowels and tone marks never clip. */
+  --text-caption: 12px;
   --text-caption--line-height: 18px;
-  --text-label: 13px; /* labels, buttons, badges */
+  --text-label: 13px;
   --text-label--line-height: 20px;
   --text-label--font-weight: 500;
   --text-body: 15px;
   --text-body--line-height: 24px;
-  --text-title: 17px; /* card and banner titles */
+  --text-title: 17px;
   --text-title--line-height: 26px;
   --text-title--font-weight: 600;
-  --text-heading: 22px; /* page headings, chosen area name */
+  --text-heading: 22px;
   --text-heading--line-height: 32px;
   --text-heading--font-weight: 600;
-  --text-figure-sm: 24px; /* figures in small cards and map popups */
+  --text-figure-sm: 24px;
   --text-figure-sm--line-height: 28px;
   --text-figure-sm--letter-spacing: -0.01em;
-  --text-figure: 36px; /* main reading figures */
+  --text-figure: 36px;
   --text-figure--line-height: 40px;
   --text-figure--letter-spacing: -0.02em;
 
-  /* Radii by element size (plus rounded-full for pills, dots and gauge tracks). */
-  --radius-tiny: 4px; /* meter bars, gauge ticks */
-  --radius-small: 6px; /* badges, segmented buttons */
-  --radius-control: 8px; /* buttons, inputs, segmented controls */
-  --radius-card: 12px; /* cards, banners, map popups */
+  --radius-tiny: 4px;
+  --radius-small: 6px;
+  --radius-control: 8px;
+  --radius-card: 12px;
 
   --shadow-raised: 0 1px 2px rgba(15, 27, 46, 0.06);
   --shadow-overlay: 0 8px 24px rgba(15, 27, 46, 0.14);
@@ -128,19 +120,17 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Figures: tabular so numbers don't jump when values change (design system hw-num). */
 .num {
   font-variant-numeric: tabular-nums;
   font-weight: 600;
 }
 
-/* One focus ring for everything interactive: solid accent, 2px, 2px away. */
 :where(a, button, input, select, summary, [tabindex]):focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
 }
 
-/* The only motion: fresh data fades in. */
+/* The only motion in the design system: fresh data fades in. */
 @media (prefers-reduced-motion: no-preference) {
   .hw-fade-in {
     animation: hw-fade-in 150ms ease-out;
@@ -152,7 +142,7 @@ body {
   }
 }
 
-/* Severity meter: three rising bars, the level is the number of filled bars (readable without colour). */
+/* Level = number of filled bars, so severity reads without colour. */
 .hw-meter {
   display: inline-flex;
   align-items: flex-end;
@@ -178,8 +168,7 @@ body {
 .hw-meter--lg i:nth-child(2) { height: 15px; }
 .hw-meter--lg i:nth-child(3) { height: 20px; }
 
-/* Dark map: the default provider (OpenFreeMap) has its own dark style, so no filter. Only
-   the OSM raster fallback (WEB.map.osm), which has no dark style, gets its light tiles inverted. */
+/* Only the OSM raster fallback has no dark style, so its light tiles are inverted. */
 :root[data-theme='dark'] .hw-tiles-invert {
   filter: invert(1) hue-rotate(180deg) brightness(0.92) contrast(0.88);
 }

@@ -5,9 +5,8 @@ import nextTs from "eslint-config-next/typescript";
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
-  // Override default ignores of eslint-config-next.
+  // Replaces eslint-config-next's default ignores, so they are repeated here.
   globalIgnores([
-    // Default ignores of eslint-config-next:
     ".next/**",
     ".open-next/**",
     ".wrangler/**",

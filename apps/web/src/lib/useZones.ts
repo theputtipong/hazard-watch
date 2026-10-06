@@ -20,7 +20,7 @@ interface ZoneData {
 
 let cache: Promise<ZoneData> | null = null;
 
-/** Loads the static boundary files once (built by tools/boundaries/build.py into public/geo). */
+/** Static boundary files built by tools/boundaries/build.py into public/geo. */
 function loadZones(): Promise<ZoneData> {
   cache ??= Promise.all(
     ['provinces', 'districts', 'subdistricts'].map((name) =>
@@ -42,27 +42,19 @@ function loadZones(): Promise<ZoneData> {
 
 export interface ZoneView {
   ready: boolean;
-  /** Drilled-into zones, top level first (empty = whole coverage area). */
   path: ZoneFeature[];
-  /** Zones drawn and listed at the current level. */
   visible: ZoneFeature[];
-  /** A leaf zone the user tapped (no deeper level), highlighted on the map. */
   selected: ZoneFeature | null;
   summaries: Map<string, ZoneSummary>;
-  /** Summary of what the user is looking at: the selected zone, else the current parent, else everything. */
   focusSummary: ZoneSummary;
   hasChildren: (id: string) => boolean;
-  /** District and subdistrict containing a point (computed on the device; the point is not sent anywhere). */
+  /** Computed on the device; the point is never sent anywhere. */
   zonesAt: (p: LatLng) => { district: ZoneFeature | null; subdistrict: ZoneFeature | null };
   open: (id: string) => void;
   goTo: (depth: number) => void;
   back: () => void;
 }
 
-/**
- * @param initialArea zone id from a shared link (?area=); the view opens on it once boundaries load.
- * @param fallbackArea read when there is no shared link (e.g. the area the user picked last time).
- */
 export function useZones(readings: Observation[], initialArea?: string | null, fallbackArea?: () => string | null): ZoneView {
   const [data, setData] = useState<ZoneData | null>(null);
   const [pathIds, setPathIds] = useState<string[]>([]);

@@ -26,7 +26,7 @@ export interface ZoneFeature {
   geometry: ZoneGeometry;
 }
 
-/** Centre of a zone's bounding box (good enough to measure distances from an area picked by hand). */
+/** Bounding-box centre: good enough for distances from a hand-picked area. */
 export function zoneCenter(zone: ZoneFeature): LatLng {
   const [minLng, minLat, maxLng, maxLat] = zone.properties.bbox;
   return { lat: (minLat + maxLat) / 2, lng: (minLng + maxLng) / 2 };
@@ -50,7 +50,6 @@ export function inZone(zone: ZoneFeature, { lat, lng }: LatLng): boolean {
   });
 }
 
-/** Groups readings by the zone that contains them (a reading outside every zone is dropped). */
 export function groupByZone<T extends { location: LatLng }>(items: T[], zones: ZoneFeature[]): Map<string, T[]> {
   const out = new Map<string, T[]>(zones.map((z) => [z.properties.id, []]));
   for (const item of items) {
@@ -61,10 +60,9 @@ export function groupByZone<T extends { location: LatLng }>(items: T[], zones: Z
 }
 
 export interface ZoneSummary {
-  /** null = no usable reading inside the zone, which must be shown as "no data", never "normal". */
+  /** null must be shown as "no data", never "normal". */
   severity: Severity | null;
   readings: number;
-  /** Readings ignored because they are older than `staleAfterMinutes`. */
   stale: number;
   flooded: number;
   minorFlood: number;

@@ -1,9 +1,9 @@
-# Fetches BMA and ThaiWater feeds (blocked from Cloudflare IPs) and pushes them to the ingest worker.
+# Runs on GitHub because BMA and ThaiWater block Cloudflare IPs.
 name: ingest-runner
 
 on:
   schedule:
-    # Every 30 minutes. Private repos get ~2,000 free minutes/month; every 10 min would need ~4,300.
+    # Private repos get ~2,000 free Actions min/month; every 10 min would need ~4,300.
     - cron: '*/30 * * * *'
   workflow_dispatch:
 

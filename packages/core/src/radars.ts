@@ -3,7 +3,6 @@ import type { LocalizedText } from './types';
 /** [x, y, width, height] in image pixels. */
 export type PixelRect = [number, number, number, number];
 
-/** How rain echoes are told apart from the base map drawn under them. */
 export type EchoRule =
   /** Lossy images (JPEG/GIF) over a grey map: strongly saturated, not blue. */
   | { kind: 'saturation'; minChroma: number; minNeighbours?: number }
@@ -11,10 +10,8 @@ export type EchoRule =
   | { kind: 'palette'; colors: [number, number, number][]; minNeighbours?: number };
 
 /**
- * One radar image from the ThaiWater feed and where it sits on the map.
- * Bounds were fitted by matching the province borders drawn in each image against real boundaries, with the
- * radar centre and scale taken from the image's own crosshair/range rings (see TODO.md "เรดาร์").
- * Re-fit if a source changes its image size or framing — the runner refuses mismatched sizes.
+ * Bounds fitted to the province borders drawn in each image, centre and scale from its crosshair/range rings.
+ * Re-fit if a source changes image size or framing; the runner refuses mismatched sizes.
  */
 export interface RadarSpec {
   id: string;
@@ -28,7 +25,6 @@ export interface RadarSpec {
   echo: EchoRule;
 }
 
-/** Legend colours used by DRRAA (ฝนหลวง) radar images. */
 const DRRAA_PALETTE: [number, number, number][] = [
   [0, 0, 255],
   [0, 1, 255],
@@ -212,5 +208,5 @@ export const RADARS: Record<string, RadarSpec> = {
   },
 };
 
-/** Radar ids in a stable order for pickers: Bangkok area first, then by name. */
+/** Order follows RADARS: Bangkok area first, then by name. */
 export const RADAR_IDS = Object.keys(RADARS);

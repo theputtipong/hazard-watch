@@ -19,15 +19,12 @@ export interface SummaryReading {
   name: LocalizedText;
 }
 
-/** A few hundred bytes for embeds (e.g. the project card on pdouvch.com), instead of the full snapshot. */
 export interface Summary {
   updatedAt: string | null;
   region: LocalizedText;
-  /** Highest live PM2.5 station in the region. */
   pm25: { worst: SummaryReading; stations: number } | null;
-  /** Fullest canal/river gauge in the region (% of bank-full) and how many are at warn or above. */
+  /** Gauge values are % of bank-full. */
   water: { worst: SummaryReading; stations: number; alerts: number } | null;
-  /** Largest quake in the past 24 h within the widest alert radius of the region centre. */
   quake: { magnitude: number; place: LocalizedText; occurredAt: string; distanceKm: number; severity: Severity } | null;
   feeds: { ok: number; total: number };
 }

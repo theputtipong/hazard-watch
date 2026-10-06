@@ -3,10 +3,8 @@ import { t, type Lang } from '@hw/core/i18n';
 import { WEB } from '@/config';
 import { describe, zoneLabel } from '@/lib/zoneText';
 
-/** Levels that can be shared (2 = เขต/อำเภอ, 3 = แขวง/ตำบล); see WEB.share. */
 export const canShare = (z: ZoneFeature | null): z is ZoneFeature => !!z && WEB.share.levels.includes(z.properties.level);
 
-/** Link that opens the dashboard focused on this area, in the given language. */
 export const areaUrl = (id: string, lang: Lang) => `${WEB.siteUrl}/${lang}?area=${encodeURIComponent(id)}`;
 
 export function shareContent(zone: ZoneFeature, summary: ZoneSummary, lang: Lang) {
@@ -19,7 +17,6 @@ export function shareContent(zone: ZoneFeature, summary: ZoneSummary, lang: Lang
   };
 }
 
-/** Share pages of the services offered when the device has no share sheet. */
 export function shareTargets({ text, url }: { text: string; url: string }) {
   const u = encodeURIComponent(url);
   const both = encodeURIComponent(`${text}\n${url}`);

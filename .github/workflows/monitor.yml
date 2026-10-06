@@ -1,10 +1,9 @@
-# Opens one `outage` issue per data source that is down or stale, and closes it when the source recovers.
-# Thresholds and the ignore list: tools/monitor/config.json. Uses only the built-in GITHUB_TOKEN.
+# Needs no extra secrets: uses only the built-in GITHUB_TOKEN.
 name: monitor
 
 on:
   schedule:
-    # Every 2 h: with the 30-min ingest runner this stays inside the 2,000 free Actions minutes/month of a private repo.
+    # With the 30-min runner this stays inside the 2,000 free Actions min/month of a private repo.
     - cron: '17 */2 * * *'
   workflow_dispatch:
 

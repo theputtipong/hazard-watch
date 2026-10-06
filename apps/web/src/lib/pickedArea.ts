@@ -1,7 +1,4 @@
-/**
- * The area a user chose by hand when location is off (zone id, e.g. TH10 / TH1028 / TH102803).
- * Kept on this device only; storage can be blocked (private mode), so every access is guarded.
- */
+/** Device-only; storage can be blocked (private mode), so every access is guarded. */
 const KEY = 'hw.area';
 const ZONE_ID = /^TH\d{2}(\d{2}){0,2}$/;
 

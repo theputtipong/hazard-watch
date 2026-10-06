@@ -3,14 +3,10 @@ import { t, type Lang } from '@hw/core/i18n';
 
 export interface Freshness {
   state: 'fresh' | 'stale' | 'failed';
-  /** Time of the newest data we are showing. */
   at: string | null;
 }
 
-/**
- * How current a feed is. 'failed' = the last fetch errored and we show older items;
- * 'stale' = the newest reading is older than `staleAfterMinutes`.
- */
+/** 'failed' = last fetch errored and older items are shown; 'stale' = newest reading is past `staleAfterMinutes`. */
 export function feedFreshness(
   result: SourceResult<unknown> | undefined,
   cfg: AlertConfig,

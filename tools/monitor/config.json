@@ -1,19 +1,19 @@
 {
-  "$comment": "Thresholds for tools/monitor/check.mjs (run hourly by .github/workflows/monitor.yml). A feed is down when its last successful fetch is older than maxStaleMinutes.",
+  "$comment": "Read by tools/monitor/check.mjs (hourly). A feed is down when its last successful fetch is older than maxStaleMinutes.",
   "snapshotUrl": "https://api.hazard.pdouvch.com/v1/snapshot",
   "requestTimeoutMs": 20000,
   "label": "outage",
   "titlePrefix": "แหล่งข้อมูลล่ม: ",
   "apiIssueName": "api",
   "groups": {
-    "$comment": "Default per snapshot group. edge = Cloudflare cron every 10 min. runner = GitHub Actions every 30 min, but GitHub schedules can lag 2-3 h, so allow 6 h.",
+    "$comment": "edge: Cloudflare cron every 10 min. runner: GitHub Actions every 30 min, but schedules can lag 2-3 h, so 6 h. Keep in sync with FEED_MAX_AGE_MINUTES in packages/core/src/feeds.ts.",
     "edge": { "maxStaleMinutes": 60 },
     "runner": { "maxStaleMinutes": 360 }
   },
   "feeds": {
-    "$comment": "Per-feed overrides of the group default, e.g. \"radar\": { \"maxStaleMinutes\": 180 }. cctv is fetched once a day on purpose (INGEST.runnerFeedEveryHours.cctv = 24), so allow 24 h + the same 6 h runner lag.",
+    "$comment": "Per-feed overrides. cctv is fetched once a day (INGEST.runnerFeedEveryHours.cctv = 24): 24 h + 6 h runner lag = 1800 min.",
     "cctv": { "maxStaleMinutes": 1800 }
   },
-  "$ignoreComment": "flood (bma-flood) and rain (bma-rain) are known blocked: BMA answers 403 to both Cloudflare and GitHub Actions IPs. Remove them from ignore once a working fetch path exists.",
+  "$ignoreComment": "flood and rain: BMA answers 403 to both Cloudflare and GitHub Actions IPs. Remove once a working fetch path exists.",
   "ignore": ["flood", "rain"]
 }

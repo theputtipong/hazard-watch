@@ -3,8 +3,7 @@ import { ENDPOINTS } from '../endpoints';
 import { getJson, settle, type AdapterContext } from '../http';
 import { aspNetDate } from '../time';
 
-// Unofficial endpoints used by weather.bangkok.go.th. They only answer POST and block cloud IPs,
-// so these adapters run from the GitHub Actions ingest job, not the Cloudflare worker.
+// Unofficial POST-only endpoints that block cloud IPs: these run from GitHub Actions, not the Cloudflare worker.
 const POST = { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' };
 
 interface FloodPoint {

@@ -1,7 +1,7 @@
 import { feedAgeText, feedStatuses, type DashboardSnapshot, type FeedStatus as Feed } from '@hw/core';
 import { t, type Lang } from '@hw/core/i18n';
 
-/** Freshness by shape, never by severity colour: dot = live, ring = stale, cross = down. */
+/** Freshness by shape, never by severity colour (severity colours mean risk only). */
 function Mark({ state }: { state: Feed['state'] }) {
   if (state === 'live') return <span className="size-2 justify-self-center rounded-full bg-ink-muted" aria-hidden="true" />;
   if (state === 'stale') return <span className="size-2 justify-self-center rounded-full border-2 border-ink-muted" aria-hidden="true" />;
@@ -12,7 +12,6 @@ function Mark({ state }: { state: Feed['state'] }) {
   );
 }
 
-/** "When did the data last update": placed at the end of the dashboard, not the top. */
 export function FeedStatus({ lang, snapshot }: { lang: Lang; snapshot: DashboardSnapshot }) {
   const now = new Date();
   const feeds = feedStatuses(snapshot, now);

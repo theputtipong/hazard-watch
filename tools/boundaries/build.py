@@ -1,19 +1,15 @@
 #!/usr/bin/env python3
 """
-Builds the zone boundary files used by the map (apps/web/public/geo/*.json).
+Usage: python3 tools/boundaries/build.py   (re-downloads only missing files into .cache)
 
-Sources (downloaded into tools/boundaries/.cache, not committed):
-  - geoBoundaries THA ADM1 (provinces, OSM / ODbL) and ADM2 (districts, RTSD via OCHA / CC BY-IGO), simplified
-  - OCHA COD-AB Thailand name table (Thai/English names, pcodes, centres; CC BY-IGO)
-  - BMA GIS (cpudgiapp.bangkok.go.th) layer 16: Bangkok's 180 subdistricts (khwaeng)
-  - OCHA COD-AB shapefile tha_admin3 (tambon polygons) for provinces outside Bangkok. Only the admin3 members
-    of the 377 MB zip are fetched (~180 MB) using HTTP range requests, and parsed without GDAL.
+Sources and licences:
+  - geoBoundaries THA ADM1 (OSM / ODbL) and ADM2 (RTSD via OCHA / CC BY-IGO)
+  - OCHA COD-AB Thailand name table (CC BY-IGO)
+  - BMA GIS (cpudgiapp.bangkok.go.th) layer 16: Bangkok's 180 khwaeng
+  - OCHA COD-AB tha_admin3 tambon polygons outside Bangkok: only the admin3 members of the 377 MB zip
+    are range-fetched (~180 MB) and parsed without GDAL.
 
-Thai names are attached by finding which polygon contains each OCHA centre point, so differences in
-English spelling between sources do not matter.
-
-Usage:  python3 tools/boundaries/build.py            (re-downloads only missing files)
-Change which provinces are built in PROVINCES below (pcodes; keep in sync with packages/core/src/regions.ts).
+Thai names are attached by locating OCHA centre points inside polygons, so English spelling differences don't matter.
 """
 import json, os, re, struct, sys, urllib.request, zipfile, zlib
 import xml.etree.ElementTree as ET
@@ -22,10 +18,10 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 CACHE = os.path.join(HERE, '.cache')
 OUT = os.path.join(HERE, '..', '..', 'apps', 'web', 'public', 'geo')
 
-# Bangkok + 5 metropolitan provinces.
+# Bangkok + 5 metropolitan provinces; keep in sync with packages/core/src/regions.ts.
 PROVINCES = ['TH10', 'TH11', 'TH12', 'TH13', 'TH73', 'TH74']
 DECIMALS = 5  # ~1 m; keeps files small
-# Douglas-Peucker tolerance in degrees (~33 m) for OCHA tambon polygons, which are very detailed.
+# Degrees (~33 m); OCHA tambon polygons are very detailed.
 SIMPLIFY_DEG = 0.0003
 
 OCHA_SHP_ZIP = 'https://data.humdata.org/dataset/d24bdc45-eb4c-4e3d-8b16-44db02667c27/resource/10dde461-b781-4904-9559-7deb3e960913/download/tha_admin_boundaries.shp.zip'
@@ -91,7 +87,6 @@ def fetch_zip_members(url, names):
 
 
 def read_dbf(path):
-    """Minimal dBASE reader: returns list of {field: str}."""
     with open(path, 'rb') as f:
         n, header_len, rec_len = struct.unpack('<xxxxIHH20x', f.read(32))
         fields = []
@@ -113,7 +108,6 @@ def read_dbf(path):
 
 
 def read_shp_polygons(shp_path, shx_path, wanted):
-    """Yields (record index, GeoJSON geometry) for polygon records whose index is in `wanted`."""
     with open(shx_path, 'rb') as shx:
         shx.seek(100)
         index = [struct.unpack('>ii', shx.read(8)) for _ in range((os.path.getsize(shx_path) - 100) // 8)]
@@ -141,7 +135,6 @@ def read_shp_polygons(shp_path, shx_path, wanted):
 
 
 def _dp(points, tol):
-    """Douglas-Peucker on an open polyline."""
     if len(points) < 3:
         return points
     keep = [False] * len(points)
@@ -165,8 +158,7 @@ def _dp(points, tol):
 
 
 def simplify_ring(ring, tol):
-    """Simplifies a closed ring: split at the vertex farthest from the start, simplify both halves.
-    (Running Douglas-Peucker on a closed ring directly does nothing, because its two ends are the same point.)"""
+    """Split at the farthest vertex first: Douglas-Peucker does nothing on a closed ring (both ends coincide)."""
     if len(ring) <= 4:
         return ring
     x0, y0 = ring[0]
@@ -182,7 +174,6 @@ def simplify(geom, tol):
 
 
 def read_xlsx(path):
-    """Minimal .xlsx reader (no openpyxl needed): returns {sheet_name: [row dicts]}."""
     ns = {'m': 'http://schemas.openxmlformats.org/spreadsheetml/2006/main'}
     z = zipfile.ZipFile(path)
     shared = [''.join(t.text or '' for t in si.iter('{%s}t' % ns['m']))
@@ -210,7 +201,6 @@ def rings(geom):
 
 
 def contains(geom, lng, lat):
-    """Ray casting; holes handled by even-odd across all rings of each polygon."""
     for poly in rings(geom):
         inside = False
         for ring in poly:
@@ -244,7 +234,6 @@ def feature(geom, **props):
 
 
 def match(polygons, table, pcode_key, lat_key='center_lat', lng_key='center_lon'):
-    """Return {polygon index: name row} by locating each name row's centre inside a polygon."""
     found = {}
     for row in table:
         lat, lng = float(row[lat_key]), float(row[lng_key])
@@ -294,7 +283,7 @@ def main():
         path = os.path.join(OUT, f'{name}.json')
         json.dump({'type': 'FeatureCollection', 'features': feats}, open(path, 'w'), ensure_ascii=False, separators=(',', ':'))
         print(f'{name:13} {len(feats):4} features  {os.path.getsize(path) / 1024:7.0f} KB')
-    # Small id → name index for the server (link previews) without loading the polygons.
+    # Lets the server name ids for link previews without loading the polygons.
     names = {f['properties']['id']: [f['properties']['name_th'], f['properties']['name_en']]
              for f in provinces + districts + subdistricts}
     path = os.path.join(OUT, 'names.json')

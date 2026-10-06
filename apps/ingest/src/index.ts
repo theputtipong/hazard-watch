@@ -13,7 +13,6 @@ import { buildSummary } from './summary';
 
 export interface Env extends PushEnv {
   SNAPSHOTS: KVNamespace;
-  /** owner/repo of this project, for starting the runner workflow. */
   GITHUB_REPO: string;
   /** Optional secret: fine-grained token with Actions read/write on GITHUB_REPO only. */
   GITHUB_DISPATCH_TOKEN?: string;
@@ -31,7 +30,6 @@ export async function runEdgeFeeds(env: Env, now = new Date()) {
   return writeGroup(env.SNAPSHOTS, KEYS.edge, Object.fromEntries(entries) as FeedMap, now);
 }
 
-/** Starts the GitHub Actions runner on time (GitHub's own cron is unreliable). No-op without a token. */
 async function dispatchRunner(env: Env, now = new Date()) {
   if (!env.GITHUB_DISPATCH_TOKEN) return;
   if (Math.floor(now.getTime() / 60_000) % INGEST.runnerDispatchEveryMinutes >= 10) return; // cron fires every 10 min
@@ -42,7 +40,6 @@ async function dispatchRunner(env: Env, now = new Date()) {
     'x-github-api-version': '2022-11-28',
     'user-agent': 'hw-ingest',
   };
-  // The same cron can fire twice; skip if a run was just started (by us or anyone).
   const latest = await fetch(`${workflow}/runs?per_page=1`, { headers });
   if (latest.ok) {
     const created = ((await latest.json()) as { workflow_runs?: { created_at: string }[] }).workflow_runs?.[0]?.created_at;
@@ -55,7 +52,6 @@ async function dispatchRunner(env: Env, now = new Date()) {
   console.log('dispatch runner', res.status);
 }
 
-/** Reads both snapshot groups and pushes whatever is new to subscribers. */
 async function pushAfterUpdate(env: Env) {
   const [edge, runner] = await Promise.all([readGroup(env.SNAPSHOTS, KEYS.edge), readGroup(env.SNAPSHOTS, KEYS.runner)]);
   const stats = await sendAlerts(env, { edge, runner } as DashboardSnapshot);
@@ -71,14 +67,12 @@ app.use('/v1/*', async (c, next) =>
 
 app.get('/', (c) => c.text('hw-ingest ok'));
 
-/** Everything the dashboard needs in one request. */
 app.get('/v1/snapshot', async (c) => {
   const [edge, runner] = await Promise.all([readGroup(c.env.SNAPSHOTS, KEYS.edge), readGroup(c.env.SNAPSHOTS, KEYS.runner)]);
   c.header('cache-control', `public, max-age=${INGEST.cacheSeconds.snapshot}`);
   return c.json({ edge, runner });
 });
 
-/** Headline numbers only, for embeds on other sites (see ALLOWED_ORIGINS). */
 app.get('/v1/summary', async (c) => {
   const [edge, runner] = await Promise.all([readGroup(c.env.SNAPSHOTS, KEYS.edge), readGroup(c.env.SNAPSHOTS, KEYS.runner)]);
   c.header('cache-control', `public, max-age=${INGEST.cacheSeconds.snapshot}`);
@@ -99,7 +93,7 @@ app.get('/v1/weather', async (c) => {
 app.get('/v1/radar/:id', async (c) => {
   const id = c.req.param('id');
   if (!(id in RADARS)) return c.json({ error: 'unknown radar' }, 404);
-  // Edge cache per URL (the app adds ?t=<frame time>), so the bundle is read from KV once per frame.
+  // Edge-cached per URL (?t=<frame time>) so the bundle is read from KV once per frame.
   const cache = caches.default;
   const hit = await cache.match(c.req.raw);
   if (hit) return hit;
@@ -118,8 +112,6 @@ app.get('/v1/radar/:id', async (c) => {
   c.executionCtx.waitUntil(cache.put(c.req.raw, res.clone()));
   return res;
 });
-
-// ---- Web Push subscriptions (only the area is stored, never coordinates) ----
 
 app.get('/v1/push/key', (c) => c.json({ publicKey: c.env.VAPID_PUBLIC_KEY }));
 
@@ -165,7 +157,6 @@ app.post('/v1/push/unsubscribe', async (c) => {
   return c.json({ ok: true });
 });
 
-/** Sends one test notification to an existing subscription (at most once a minute). */
 app.post('/v1/push/test', async (c) => {
   const body = await c.req.json<{ endpoint?: string }>().catch(() => null);
   if (!body?.endpoint) return c.json({ error: 'endpoint required' }, 400);
@@ -186,8 +177,6 @@ app.post('/v1/push/test', async (c) => {
   return c.json({ result });
 });
 
-// ---- Writes from the GitHub Actions runner (feeds blocked from Cloudflare IPs) ----
-
 app.use('/ingest/*', async (c, next) => {
   const auth = c.req.header('authorization') ?? '';
   if (!c.env.INGEST_TOKEN || auth !== `Bearer ${c.env.INGEST_TOKEN}`) return c.json({ error: 'unauthorized' }, 401);
@@ -196,7 +185,6 @@ app.use('/ingest/*', async (c, next) => {
   await next();
 });
 
-/** Runs the edge feeds now instead of waiting for the cron (for checks after a deploy). */
 app.post('/ingest/run-edge', async (c) => {
   const snapshot = await runEdgeFeeds(c.env);
   return c.json(Object.fromEntries(Object.entries(snapshot.feeds).map(([name, r]) => [name, { ok: r!.ok, items: r!.items.length, error: r!.error }])));
@@ -217,7 +205,6 @@ app.post('/ingest/runner', async (c) => {
 
 app.put('/ingest/radar-bundle', async (c) => {
   const body = await c.req.arrayBuffer();
-  // Must start with a readable header (see packBundle) before it replaces the stored bundle.
   const headerLength = body.byteLength >= 4 ? new DataView(body).getUint32(0) : 0;
   let valid = headerLength > 0 && 4 + headerLength <= body.byteLength;
   if (valid) {

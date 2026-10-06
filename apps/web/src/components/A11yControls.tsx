@@ -39,11 +39,10 @@ function ThemeIcon({ theme }: { theme: ThemePref }) {
   );
 }
 
-/** Theme, colour-blind palette and read-aloud. Icons always carry a text label for screen readers. */
 export function A11yControls({ lang, theme, cvd, onTheme, onCvd, speech, onListen }: Props) {
   const themeLabel = t('a11y.theme', lang, { mode: t(`a11y.theme.${theme}`, lang) });
   const listenLabel = speech.speaking ? t('a11y.stop', lang) : t('a11y.listen', lang);
-  // Shown after the first press, so the header stays short until it matters.
+  // Shown only after the first press so the header stays short.
   const [tried, setTried] = useState(false);
   const voiceNote = !speech.supported ? t('a11y.noSpeech', lang) : !speech.hasVoice ? t('a11y.noVoice', lang) : null;
 
@@ -87,7 +86,7 @@ export function A11yControls({ lang, theme, cvd, onTheme, onCvd, speech, onListe
       {voiceNote && tried && (
         <div role="status" className="flex basis-full flex-col text-caption text-ink-muted">
           <span>{voiceNote}</span>
-          {/* Free fix: install the system's Thai voice (no server speech). Thai page only, as the steps are for Thai. */}
+          {/* Free fix (no server speech); the steps are for Thai, so Thai page only. */}
           {speech.supported && lang === 'th' && (
             <details className="text-ink">
               <summary className="inline-flex min-h-11 cursor-pointer items-center font-semibold text-accent underline underline-offset-4">

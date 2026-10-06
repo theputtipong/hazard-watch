@@ -1,14 +1,10 @@
 import type { SourceResult } from '@hw/core';
 import type { FeedName } from '@hw/sources';
 
-/**
- * KV layout. Free plan allows 1,000 writes/day, so each run writes one key per group
- * (edge every 10 min = 144/day) plus the runner group and one radar bundle per runner run (~100/day at 30 min).
- */
+// KV free plan allows 1,000 writes/day: one put per group per run (edge 144/day, runner + radar bundle ~100/day).
 export const KEYS = {
   edge: 'snapshot:edge',
   runner: 'snapshot:runner',
-  /** All radar PNGs in one value (see scripts/radarImage.ts packBundle). */
   radarBundle: 'radar:bundle',
 } as const;
 
@@ -24,13 +20,10 @@ export async function readGroup(kv: KVNamespace, key: string): Promise<GroupSnap
 }
 
 /**
- * Keeps the previous items of a feed that failed this run (or was not fetched at all this run), so one bad fetch
- * doesn't blank the dashboard; the stale data is flagged by `ok: false`.
- * Also carries `lastOkAt` / `failingSince` forward so outages can be dated (tools/monitor);
- * this adds no KV writes, it rides on the one put per group.
+ * Failed or skipped feeds keep their previous items (flagged `ok: false`) so one bad fetch doesn't blank the dashboard;
+ * `lastOkAt` / `failingSince` let tools/monitor date outages without extra KV writes.
  */
 export function mergeWithPrevious(next: FeedMap, prev: GroupSnapshot | null): FeedMap {
-  // Feeds left out of this upload (refreshed less often, see INGEST.runnerFeedEveryHours) keep their stored copy.
   const out: FeedMap = { ...(prev?.feeds ?? {}), ...next };
   for (const [name, result] of Object.entries(next) as [FeedName, SourceResult<unknown>][]) {
     const old = prev?.feeds[name];
@@ -62,7 +55,6 @@ export interface BundledRadar {
   length: number;
 }
 
-/** Reads one radar's PNG out of the bundle without copying the others. */
 export function unpackRadar(bundle: ArrayBuffer, id: string): { png: Uint8Array; entry: BundledRadar } | null {
   const view = new DataView(bundle);
   const headerLength = view.getUint32(0);

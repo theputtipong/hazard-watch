@@ -7,12 +7,10 @@ import { API_BASE } from './api';
 export interface PushPrefs {
   kinds: PushKind[];
   pm25At: number;
-  /** Personal earthquake level; one of WEB.push.quakeMagnitudeChoices / quakeDistanceChoices. */
   quakeMinMag: number;
   quakeMaxKm: number;
 }
 
-/** Settings shown before the person changes anything: the central defaults from core config. */
 export function defaultPrefs(): PushPrefs {
   const floor = quakeAlertFloor(DEFAULT_CONFIG);
   return {
@@ -47,7 +45,7 @@ export async function currentSubscription(): Promise<PushSubscription | null> {
 export function savedPrefs(): { prefs: PushPrefs; district: string; subdistrict: string | null } | null {
   try {
     const saved = JSON.parse(localStorage.getItem(PREFS_KEY) ?? 'null') as { prefs?: Partial<PushPrefs>; district: string; subdistrict: string | null } | null;
-    // Settings saved before a field existed (e.g. the quake level) fall back to the default for that field.
+    // Settings saved before a field existed fall back to that field's default.
     return saved ? { ...saved, prefs: { ...defaultPrefs(), ...saved.prefs } } : null;
   } catch {
     return null;
@@ -68,7 +66,6 @@ async function post(path: string, body: unknown) {
   return res.json();
 }
 
-/** Asks permission, subscribes this browser and registers the area + preferences with the server. */
 export async function subscribe(input: { lang: Lang; district: string; subdistrict: string | null; prefs: PushPrefs }) {
   if ((await Notification.requestPermission()) !== 'granted') throw new Error('denied');
   const reg = await navigator.serviceWorker.register('/sw.js');
@@ -94,7 +91,7 @@ export async function unsubscribe() {
   try {
     localStorage.removeItem(PREFS_KEY);
   } catch {
-    // Nothing to clean.
+    // Storage blocked: nothing to clean.
   }
 }
 

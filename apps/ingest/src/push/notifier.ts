@@ -1,21 +1,15 @@
 import { buildPushPayload, type PushSubscription as WebPushSubscription } from '@block65/webcrypto-web-push';
 
-/** What a channel needs to deliver one notification. */
 export interface OutgoingMessage {
   title: string;
   body: string;
-  /** Page to open when the notification is tapped. */
   url: string;
-  /** Same tag replaces an older notification for the same alert instead of stacking. */
+  /** Same tag replaces an older notification instead of stacking. */
   tag: string;
 }
 
 export type DeliveryResult = 'sent' | 'gone' | 'failed';
 
-/**
- * One delivery channel. Web Push is the only one today; Telegram or LINE Messaging API can be added
- * as further implementations without touching the alert logic.
- */
 export interface Notifier<Target> {
   channel: string;
   send(target: Target, message: OutgoingMessage, ttlSeconds: number): Promise<DeliveryResult>;
@@ -48,7 +42,7 @@ export function webPushNotifier(vapid: { subject: string; publicKey: string; pri
   };
 }
 
-/** Push services browsers use. Subscriptions pointing anywhere else are refused (no posting to arbitrary URLs). */
+/** Only browser push services, so a subscription can't make us POST to arbitrary URLs. */
 const PUSH_HOSTS = [/\.googleapis\.com$/, /\.mozilla\.com$/, /\.push\.apple\.com$/, /\.notify\.windows\.com$/, /^push\.services\.mozilla\.com$/];
 
 export function isPushEndpoint(endpoint: string): boolean {

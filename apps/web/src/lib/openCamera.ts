@@ -2,9 +2,8 @@ import type { CctvCamera } from '@hw/core';
 import { WEB } from '@/config';
 
 /**
- * Opens a camera at its source. BMA Traffic only shows the camera once its main page has created a session,
- * so we open that page in a new tab and then move the same tab to the camera (as a person would on their site).
- * Must be called from a click so the browser allows the new tab.
+ * BMA Traffic shows a camera only after its main page has created a session, so open that page first
+ * and then move the tab to the camera. Must run from a click so the browser allows the new tab.
  */
 export function openCamera(cam: Pick<CctvCamera, 'viewUrl' | 'sessionUrl'>) {
   if (!cam.sessionUrl) {
@@ -13,7 +12,7 @@ export function openCamera(cam: Pick<CctvCamera, 'viewUrl' | 'sessionUrl'>) {
   }
   const tab = window.open(cam.sessionUrl, '_blank');
   if (!tab) {
-    // Pop-up blocked: fall back to opening the camera page directly.
+    // Pop-up blocked.
     window.location.href = cam.viewUrl;
     return;
   }

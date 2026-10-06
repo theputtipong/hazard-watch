@@ -1,7 +1,4 @@
-/**
- * All UI text, both languages side by side. Add a key here, then use t('key').
- * Placeholders use {name} and are filled by t(key, lang, { name: value }).
- */
+/** Keep {placeholders} unchanged in both languages; t(key, lang, vars) fills them. */
 export const messages = {
   'app.name': { th: 'เฝ้าระวังภัย', en: 'HazardWatch' },
   'app.tagline': {
@@ -44,7 +41,6 @@ export const messages = {
     en: 'Choose a province, then a district and subdistrict, from the list under the map',
   },
   'area.picked': { th: 'พื้นที่ที่เลือก', en: 'Your chosen area' },
-
 
   'area.nav': { th: 'ระดับพื้นที่', en: 'Area level' },
   'zone.layer': { th: 'โซนพื้นที่', en: 'Zones' },
@@ -279,7 +275,7 @@ export const messages = {
   },
   'privacy.title': { th: 'ความเป็นส่วนตัว', en: 'Privacy' },
 
-  /* Plain-language line under a reading: what the number means and what to do (design system ReadingCard). */
+  /* Design system ReadingCard: plain language, say what the number means and what to do. */
   'note.pm25.ok': { th: 'อากาศดี', en: 'The air is fine' },
   'note.pm25.watch': { th: 'ฝุ่นเริ่มเยอะ คนที่แพ้ง่ายควรใส่หน้ากาก', en: 'Some dust. Sensitive people should wear a mask' },
   'note.pm25.warn': { th: 'ฝุ่นเยอะ ถ้าออกนอกบ้านควรใส่หน้ากาก', en: 'Lots of dust. Wear a mask if you go out' },
@@ -294,7 +290,6 @@ export const messages = {
   'gauge.tick.danger': { th: 'ล้นมาก', en: 'Overflowing' },
   'gauge.aria': { th: '{state} {v}% ของตลิ่ง', en: '{state}, {v}% of bank-full' },
 
-  /* FeedStatus: when each kind of data last arrived. */
   'feeds.title': { th: 'ข้อมูลอัปเดตล่าสุดเมื่อไหร่', en: 'When the data last updated' },
   'feeds.stale': { th: 'ไม่มีข้อมูลใหม่มา {age}', en: 'No new data for {age}' },
   'feeds.down': { th: 'แหล่งข้อมูลมีปัญหา ตั้งแต่ {time}', en: 'Source has a problem since {time}' },

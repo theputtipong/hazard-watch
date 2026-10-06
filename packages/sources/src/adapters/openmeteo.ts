@@ -36,7 +36,7 @@ export function parseOpenMeteo(body: OpenMeteoResponse, location: LatLng): Weath
   };
 }
 
-/** Called per user location (not by cron); round coordinates so responses cache well. */
+/** Called per user location: coordinates are rounded so responses cache well. */
 export async function fetchWeather(ctx: AdapterContext, location: LatLng): Promise<WeatherNow> {
   const lat = location.lat.toFixed(REQUEST.weatherCoordDecimals);
   const lng = location.lng.toFixed(REQUEST.weatherCoordDecimals);

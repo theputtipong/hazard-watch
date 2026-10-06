@@ -1,14 +1,6 @@
 #!/usr/bin/env node
-/**
- * Source-outage monitor. Fetches the public snapshot, decides which feeds are down
- * (last successful fetch older than the threshold in config.json), then keeps exactly one
- * open GitHub issue per down feed and closes it with a comment once the feed recovers.
- *
- *   node tools/monitor/check.mjs --dry-run      # print what it would do, no GitHub calls
- *   GITHUB_TOKEN=... GITHUB_REPOSITORY=owner/repo node tools/monitor/check.mjs
- *
- * No dependencies: Node 22 (global fetch).
- */
+// Keeps exactly one open GitHub issue per down feed and closes it once the feed recovers.
+// Usage: [GITHUB_TOKEN=... GITHUB_REPOSITORY=owner/repo] node tools/monitor/check.mjs [--dry-run]
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
@@ -24,7 +16,6 @@ function maxStaleMinutes(config, group, feed) {
   return config.feeds?.[feed]?.maxStaleMinutes ?? config.groups[group].maxStaleMinutes;
 }
 
-/** Last time the feed is known to have fetched successfully, or null if unknown. */
 function lastGoodAt(result) {
   if (result.lastOkAt) return result.lastOkAt;
   if (result.ok) return result.fetchedAt;
@@ -32,11 +23,7 @@ function lastGoodAt(result) {
   return result.items?.length ? result.fetchedAt : null;
 }
 
-/**
- * Pure decision step. Returns one entry per checked name:
- * { name, group, down, ignored, reason, since, details }.
- * `apiError` set means the snapshot could not be read at all (only the API entry is returned).
- */
+/** Returns { name, group, down, ignored, reason, since, details }[]; only the API entry when `apiError` is set. */
 export function evaluate({ snapshot, apiError, config, now = new Date() }) {
   const ignore = new Set(config.ignore ?? []);
   if (apiError) {
@@ -83,12 +70,11 @@ export function evaluate({ snapshot, apiError, config, now = new Date() }) {
   return out;
 }
 
-/** Turns evaluation + currently open issues ({number, name}) into create/close actions. */
 export function plan(results, openIssues) {
   const open = new Map(openIssues.map((i) => [i.name, i]));
   const actions = [];
   for (const r of results) {
-    if (r.ignored) continue; // known problems: never open, and leave any existing issue to the owner
+    if (r.ignored) continue; // never open, and leave any existing issue to the owner
     const issue = open.get(r.name);
     if (r.down && !issue) actions.push({ type: 'open', result: r });
     if (!r.down && issue) actions.push({ type: 'close', result: r, issue });
@@ -162,7 +148,7 @@ async function listOpenIssues(gh, config) {
 async function main() {
   const dryRun = process.argv.includes('--dry-run');
   const config = loadConfig();
-  if (process.env.MONITOR_SNAPSHOT_URL) config.snapshotUrl = process.env.MONITOR_SNAPSHOT_URL; // for testing
+  if (process.env.MONITOR_SNAPSHOT_URL) config.snapshotUrl = process.env.MONITOR_SNAPSHOT_URL;
   const { snapshot, apiError } = await fetchSnapshot(config);
   const results = evaluate({ snapshot, apiError, config });
 

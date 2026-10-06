@@ -10,7 +10,7 @@ for (let x = left + 3; x < w - 3; x++) { let n = 0; for (let y = 15; y < h - 25;
 const cx = bc[0], cy = br[0];
 const hit = new Array(800).fill(0), tot = new Array(800).fill(0);
 for (let y = 0; y < h; y++) for (let x = left; x < w; x++) {
-  if (Math.abs(x - cx) < 3 || Math.abs(y - cy) < 3) continue; // skip crosshair
+  if (Math.abs(x - cx) < 3 || Math.abs(y - cy) < 3) continue;
   const r = Math.round(Math.hypot(x - cx, y - cy)); if (r >= 800) continue; tot[r]++; if (dark(x, y)) hit[r]++;
 }
 const f = hit.map((v, r) => (tot[r] > 40 ? v / tot[r] : 0));

@@ -5,6 +5,64 @@ Currently covers Bangkok and the five metropolitan provinces; built to expand to
 
 Live: https://hazard.pdouvch.com · API: https://api.hazard.pdouvch.com
 
+## Features
+
+There are no native store apps: phones and tablets use the website (installable as a PWA), and desktop browsers can
+add the extension. Every platform reads the same public API, so the data, alert thresholds and wording are identical.
+
+### Shared by every platform
+
+- Hazards: street flooding and rain gauges (Bangkok), canal/river levels as % of bank-full, PM2.5, earthquakes (TMD +
+  USGS, duplicates merged), current weather with surface wind and the ~3 km wind that steers rain.
+- Levels: ปกติ / ระวัง / ระวังมาก / อันตราย (Normal / Caution / Warning / Danger), always as a word plus a three-bar meter.
+  Every reading has a plain-language note on what it means and what to do.
+- Data freshness: stale readings are never shown as current. "When the data last updated" lists every source.
+- Thai and English.
+
+### Web (desktop browsers)
+
+| Feature | Notes |
+|---|---|
+| Dashboard | Cards for weather, PM2.5, flooding, earthquakes and river levels for your location or a chosen area |
+| Map | Zones (province → district → subdistrict) coloured by the worst reading; flood, PM2.5, river and CCTV pins; legend |
+| Rain radar | 24 radars nationwide on the map, plus a badge showing which way rain may be moving |
+| Location | Browser geolocation, or pick an area by hand (remembered on the device). Links `/<lang>?area=<id>` open an area |
+| Push alerts | Web Push per district, even with the tab closed (Chrome, Edge, Firefox, Safari on macOS) |
+| Sharing | Copy link, LINE, Facebook, X; link previews show the area name |
+| Accessibility | Light/dark/system theme, colour-blind palette, read-aloud summary (Web Speech API), screen-reader summary |
+| CCTV | Nearby BMA traffic cameras, opened at the source (BMA site, needs about 3 s to start a session) |
+
+### Android (mobile browser / installed PWA)
+
+- Everything the web has, in a single-column layout for phones.
+- Install from Chrome's menu ("Install app" / "Add to Home screen").
+- Push alerts work in the browser or the installed app.
+- Read-aloud needs a Thai voice in Text-to-speech settings (the page explains how).
+
+### iOS / iPadOS (Safari / installed PWA)
+
+- Everything the web has, in a single-column layout for phones.
+- **Push alerts need the site added to the Home Screen first** (Share → Add to Home Screen, iOS 16.4 or later).
+  In a normal Safari tab the alert card explains this instead of offering the button.
+- A Thai voice is built in for read-aloud.
+
+### Desktop browser extension (Chrome, Edge)
+
+| Feature | Notes |
+|---|---|
+| Notifications | Checks every 15 minutes while the browser is open; same alerts and 3-hour no-repeat rule as Web Push |
+| Toolbar badge | Number of current alerts for your district, coloured by the worst level |
+| Popup summary | Your district: alerts, nearest PM2.5 and river gauge, flooding, weather + wind, data-source status |
+| Settings | Choose hazards and the PM2.5 level; GPS or pick a district |
+| Limits | Desktop Chrome/Edge only (no Firefox or mobile build yet); no server account; alerts stop when the browser is closed |
+
+### Coverage and limits
+
+- Area: Bangkok and five provinces (Nonthaburi, Pathum Thani, Samut Prakan, Samut Sakhon, Nakhon Pathom). Radar covers
+  the whole country.
+- BMA street-flood and rain data are currently blocked by the source (403), so those cards show "no data".
+- The rain-movement badge is an estimate from the wind forecast, not tracked from radar images.
+
 ## Layout
 
 ```
@@ -77,7 +135,8 @@ needs its own adapters in `packages/sources`.
   `push.quakeChoices` in `packages/core/src/config.ts`, `WEB.push.*` in `apps/web/src/config.ts`. Unknown values fall
   back to the central default (stored as NULL).
 - Another channel (Telegram, LINE): implement `Notifier` in `apps/ingest/src/push/notifier.ts`.
-- App icons: `node tools/icons/make-icons.mjs`.
+- App icons: `node tools/icons/make-icons.mjs` (renders the design system SVGs in `tools/icons/source`).
+- Alert titles start with the level word: `<ระวัง|ระวังมาก|อันตราย>: <what> ที่<where>` (`alert.*` in i18n).
 
 ## Browser extension
 
@@ -89,8 +148,11 @@ needs its own adapters in `packages/sources`.
 - No server state: every `pollMinutes` (15, `apps/extension/src/config.ts`) the service worker reads `/v1/snapshot`,
   builds the same alerts as Web Push for the chosen district (`localAlerts` → core `districtAlerts` / `quakeAlerts`),
   shows new ones as notifications (repeat after `push.cooldownHours`) and sets the toolbar badge.
-- Popup: area (GPS or a picked district), alerts, weather + wind, nearest PM2.5 / river gauge, flooding in the
-  district, and each feed's status (same age limits as `tools/monitor/config.json`). Text lives in core i18n (`ext.*`).
+- Popup: area (GPS or a picked district), alerts (up to `maxBanners`), weather + wind, nearest PM2.5 / river gauge,
+  flooding in the district, and "when the data last updated" (core `feedStatuses`, shared with the web). Text lives in
+  core i18n (`ext.*`, `feeds.*`, `note.*`, `gauge.*`). Fonts (IBM Plex Sans Thai 400/500/600) ship in `static/fonts`.
+- Store screenshots: `apps/extension/screenshots/` (Thai/English × light/dark), taken from headless Edge with the
+  unpacked build.
 
 ## Radar
 
@@ -135,7 +197,8 @@ store across failures; `failingSince` marks the first failure) is older than the
 - Thresholds and the ignore list are in `tools/monitor/config.json`: group defaults (`edge` 60 min for the Cloudflare
   cron, `runner` 6 h because GitHub schedules can run hours late), per-feed overrides under `feeds`, and `ignore`
   (default: BMA `flood` and `rain`, which answer 403 to both Cloudflare and GitHub IPs). The daily CCTV list has its own
-  30 h limit; keep `feeds.cctv` in step with `INGEST.runnerFeedEveryHours.cctv`.
+  30 h limit; keep `feeds.cctv` in step with `INGEST.runnerFeedEveryHours.cctv`, and the group limits in step with
+  `FEED_MAX_AGE_MINUTES` in `packages/core/src/feeds.ts` (what the web and extension show as "no new data").
 - Uses only the built-in `GITHUB_TOKEN` (`issues: write`). Try it locally without touching GitHub:
   `node tools/monitor/check.mjs --dry-run` (tests: `node --test tools/monitor/check.test.mjs`).
 
