@@ -3,6 +3,7 @@ import { t, type Lang } from '@hw/core/i18n';
 import { NoData } from '@/lib/loadState';
 import { Card } from './Card';
 import { SeverityPill } from './Severity';
+import { SurfaceWind } from './Wind';
 
 const cfg = DEFAULT_CONFIG;
 const u = cfg.units;
@@ -32,6 +33,7 @@ export function WeatherCard({ lang, weather }: { lang: Lang; weather: WeatherNow
                 {fmt(weather.precipitationMm)} {u.precipitation}
               </dd>
             </div>
+            <SurfaceWind lang={lang} weather={weather} />
           </dl>
         </>
       ) : (

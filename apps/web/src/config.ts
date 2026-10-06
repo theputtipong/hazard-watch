@@ -63,6 +63,8 @@ export const WEB = {
     radarStaleMinutes: 60, // ThaiWater frames normally arrive 35–50 min after the scan
     /** Fewer rain pixels than this in a frame = "no rain in radar range" (a few stray pixels are noise). */
     radarMinEchoPixels: 150,
+    /** Below this 700 hPa wind speed the radar badge says rain is barely moving instead of showing a direction. */
+    driftCalmKmh: 5,
     /** Opacity of markers whose reading is older than core config `staleAfterMinutes`. */
     staleOpacity: 0.4,
     /** Marker sizes in pixels (icons are square). Normal flood points stay small dots so problems stand out. */

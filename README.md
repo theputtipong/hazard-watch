@@ -12,6 +12,7 @@ apps/
   web/      Next.js 16 (App Router) on Cloudflare Workers via OpenNext. Leaflet map. /th and /en routes.
   ingest/   Cloudflare Worker (Hono): cron for edge feeds, KV snapshots, public read API, authenticated writes,
             Web Push (D1 subscriptions, alerts after every data update).
+  extension/ Chrome/Edge extension (MV3): alerts for the person's district + a summary popup, read from the public API.
 packages/
   core/     Shared types, coverage regions (src/regions.ts), alert thresholds (src/config.ts), severity rules,
             i18n (src/i18n/messages.ts).
@@ -78,10 +79,23 @@ needs its own adapters in `packages/sources`.
 - Another channel (Telegram, LINE): implement `Notifier` in `apps/ingest/src/push/notifier.ts`.
 - App icons: `node tools/icons/make-icons.mjs`.
 
+## Browser extension
+
+- `pnpm --filter @hw/extension build` → load `apps/extension/dist` unpacked (`chrome://extensions`, Developer mode).
+  `API_BASE=http://localhost:8787` builds against a local ingest.
+- No server state: every `pollMinutes` (15, `apps/extension/src/config.ts`) the service worker reads `/v1/snapshot`,
+  builds the same alerts as Web Push for the chosen district (`localAlerts` → core `districtAlerts` / `quakeAlerts`),
+  shows new ones as notifications (repeat after `push.cooldownHours`) and sets the toolbar badge.
+- Popup: area (GPS or a picked district), alerts, weather + wind, nearest PM2.5 / river gauge, flooding in the
+  district, and each feed's status (same age limits as `tools/monitor/config.json`). Text lives in core i18n (`ext.*`).
+
 ## Radar
 
 - Radars and where their images sit on the map: `packages/core/src/radars.ts` (24 calibrated, nationwide: BMA 2, TMD 14, DRRAA 8).
 - Adding or re-fitting a radar: `tools/radar-calibrate/README.md`.
+- Wind: `/v1/weather` carries Open-Meteo 10 m wind and 700 hPa (~3 km) wind. The map badge over the radar uses the
+  700 hPa wind as a rough guide to which way rain is drifting (`WEB.map.driftCalmKmh` = "barely moving"); it is
+  not tracked from radar frames.
 
 ## Sharing an area
 
@@ -113,7 +127,8 @@ store across failures; `failingSince` marks the first failure) is older than the
 - If the API itself is unreachable, it opens `แหล่งข้อมูลล่ม: api` and leaves the per-feed issues alone.
 - Thresholds and the ignore list are in `tools/monitor/config.json`: group defaults (`edge` 60 min for the Cloudflare
   cron, `runner` 6 h because GitHub schedules can run hours late), per-feed overrides under `feeds`, and `ignore`
-  (default: BMA `flood` and `rain`, which answer 403 to both Cloudflare and GitHub IPs).
+  (default: BMA `flood` and `rain`, which answer 403 to both Cloudflare and GitHub IPs). The daily CCTV list has its own
+  30 h limit; keep `feeds.cctv` in step with `INGEST.runnerFeedEveryHours.cctv`.
 - Uses only the built-in `GITHUB_TOKEN` (`issues: write`). Try it locally without touching GitHub:
   `node tools/monitor/check.mjs --dry-run` (tests: `node --test tools/monitor/check.test.mjs`).
 

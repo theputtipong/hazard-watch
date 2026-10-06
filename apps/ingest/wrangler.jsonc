@@ -20,7 +20,7 @@
     { "binding": "PUSH_DB", "database_name": "hw-push", "database_id": "36625d1e-d797-48c1-af87-c4e847bf1c3a" }
   ],
   "vars": {
-    "ALLOWED_ORIGINS": "https://hazard.pdouvch.com,https://hw-web.pdouvch.workers.dev,http://localhost:3000",
+    "ALLOWED_ORIGINS": "https://hazard.pdouvch.com,https://pdouvch.com,https://hw-web.pdouvch.workers.dev,http://localhost:3000",
     // Web Push (VAPID). The private key is a secret: `wrangler secret put VAPID_PRIVATE_KEY`.
     "VAPID_PUBLIC_KEY": "BGx4EhUOVhaclyTgFL44N865zJfC1EOgnfJyErvG5q7WXOkhFiTB9QRCIkc3AQmfO_9apt7ON0xi4Q4KxhdJLjQ",
     "VAPID_SUBJECT": "https://hazard.pdouvch.com",

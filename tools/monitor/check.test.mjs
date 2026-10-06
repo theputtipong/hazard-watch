@@ -35,6 +35,13 @@ test('fresh feeds are ok; stale or long-failing feeds are down', () => {
   assert.equal(r.flood.ignored, true);
 });
 
+test('daily cctv list uses its own threshold, not the 6 h runner default', () => {
+  const r = byName(evaluate({ now, config, snapshot: snapshot({}, { cctv: feed({ fetchedAt: minsAgo(449) }) }) }));
+  assert.equal(r.cctv.down, false);
+  const late = byName(evaluate({ now, config, snapshot: snapshot({}, { cctv: feed({ fetchedAt: minsAgo(31 * 60) }) }) }));
+  assert.equal(late.cctv.down, true);
+});
+
 test('plan opens one issue per new outage, closes recovered ones, skips ignored', () => {
   const results = [
     { name: 'radar', down: true, ignored: false },

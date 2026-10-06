@@ -50,6 +50,13 @@ export interface WeatherNow {
   humidityPct: number | null;
   precipitationMm: number | null;
   weatherCode: number | null;
+  /** Surface (10 m) wind. Direction is where the wind comes FROM, degrees clockwise from north. Optional: older cached responses lack it. */
+  windSpeedKmh?: number | null;
+  windFromDeg?: number | null;
+  windGustKmh?: number | null;
+  /** Wind at 700 hPa (~3 km), which steers most rain clouds: a rough guide to where radar echoes are drifting. */
+  cloudWindSpeedKmh?: number | null;
+  cloudWindFromDeg?: number | null;
 }
 
 export interface CctvCamera {

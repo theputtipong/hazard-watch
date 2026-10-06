@@ -297,6 +297,7 @@ export function Dashboard({ lang, initialArea }: { lang: Lang; initialArea?: str
             radarId={radarId}
             radarFocus={radarFocus}
             radarTime={radarFrame?.time ?? null}
+            weather={weather}
             floodPoints={view.floodPoints}
             pmStations={view.pmStations}
             cameras={view.cameras}

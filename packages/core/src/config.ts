@@ -16,6 +16,7 @@ export interface AlertConfig {
     precipitation: string;
     humidity: string;
     distance: string;
+    windSpeed: string;
   };
   pm25: {
     /** Upper bound (in `units.pm25`) of each display band. Defaults: WHO 2021 guideline + interim targets. */
@@ -100,6 +101,7 @@ export const DEFAULT_CONFIG: AlertConfig = {
     precipitation: 'mm',
     humidity: '%',
     distance: 'km',
+    windSpeed: 'km/h',
   },
   pm25: {
     bands: { ok: 15, watch: 37.5, warn: 75 },

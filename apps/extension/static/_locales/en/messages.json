@@ -1,0 +1,4 @@
+{
+  "name": { "message": "HazardWatch" },
+  "description": { "message": "Alerts for flooding, rain, river levels, PM2.5 and earthquakes, with a summary for where you are." }
+}

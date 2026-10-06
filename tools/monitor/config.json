@@ -11,7 +11,8 @@
     "runner": { "maxStaleMinutes": 360 }
   },
   "feeds": {
-    "$comment": "Per-feed overrides of the group default, e.g. \"radar\": { \"maxStaleMinutes\": 180 }."
+    "$comment": "Per-feed overrides of the group default, e.g. \"radar\": { \"maxStaleMinutes\": 180 }. cctv is fetched once a day on purpose (INGEST.runnerFeedEveryHours.cctv = 24), so allow 24 h + the same 6 h runner lag.",
+    "cctv": { "maxStaleMinutes": 1800 }
   },
   "$ignoreComment": "flood (bma-flood) and rain (bma-rain) are known blocked: BMA answers 403 to both Cloudflare and GitHub Actions IPs. Remove them from ignore once a working fetch path exists.",
   "ignore": ["flood", "rain"]

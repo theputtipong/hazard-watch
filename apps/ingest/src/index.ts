@@ -9,6 +9,7 @@ import { cleanPrefs, type IncomingPrefs } from './push/prefs';
 import { DISTRICT_IDS, messageFor, notifierFor, sendAlerts, type PushEnv } from './push/run';
 import { deleteSubscription, getSubscription, recentlySent, markSent, subscriptionId, upsertSubscription } from './push/store';
 import { KEYS, readGroup, unpackRadar, writeGroup, type FeedMap } from './store';
+import { buildSummary } from './summary';
 
 export interface Env extends PushEnv {
   SNAPSHOTS: KVNamespace;
@@ -75,6 +76,13 @@ app.get('/v1/snapshot', async (c) => {
   const [edge, runner] = await Promise.all([readGroup(c.env.SNAPSHOTS, KEYS.edge), readGroup(c.env.SNAPSHOTS, KEYS.runner)]);
   c.header('cache-control', `public, max-age=${INGEST.cacheSeconds.snapshot}`);
   return c.json({ edge, runner });
+});
+
+/** Headline numbers only, for embeds on other sites (see ALLOWED_ORIGINS). */
+app.get('/v1/summary', async (c) => {
+  const [edge, runner] = await Promise.all([readGroup(c.env.SNAPSHOTS, KEYS.edge), readGroup(c.env.SNAPSHOTS, KEYS.runner)]);
+  c.header('cache-control', `public, max-age=${INGEST.cacheSeconds.snapshot}`);
+  return c.json(buildSummary(edge, runner));
 });
 
 app.get('/v1/weather', async (c) => {

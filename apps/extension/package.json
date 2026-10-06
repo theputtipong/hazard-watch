@@ -1,0 +1,21 @@
+{
+  "name": "@hw/extension",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "dev": "node build.mjs --watch",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@hw/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.1.0",
+    "esbuild": "^0.25.4",
+    "typescript": "^5.9.0",
+    "vitest": "^4.0.0"
+  }
+}

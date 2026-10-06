@@ -7,6 +7,7 @@ import {
   DEFAULT_CONFIG,
   bmaFloodSeverity,
   distanceKm,
+  compassPoint,
   mergeConfig,
   pm25Severity,
   pm25ShouldPush,
@@ -280,5 +281,11 @@ describe('quake place names', () => {
     expect(quakePlace(tmd, 'th', 100)).toBe('ประเทศลาว');
     expect(quakePlace(tmd, 'en', 100)).toBe('Laos');
     expect(quakePlaceHasDistance(tmd, 'th')).toBe(false);
+  });
+});
+
+describe('compassPoint', () => {
+  it('rounds a bearing to the nearest of 8 points', () => {
+    expect([0, 22, 23, 87, 180, 250, 337.6, 360, -45].map(compassPoint)).toEqual(['N', 'N', 'NE', 'E', 'S', 'W', 'N', 'N', 'NW']);
   });
 });

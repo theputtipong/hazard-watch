@@ -92,7 +92,28 @@ describe('open-meteo', () => {
       { current: { time: '2026-10-03T21:45', temperature_2m: 28.5, relative_humidity_2m: 85, precipitation: 0, weather_code: 3 } },
       { lat: 13.75, lng: 100.5 },
     );
-    expect(w).toMatchObject({ temperatureC: 28.5, observedAt: '2026-10-03T14:45:00.000Z' });
+    expect(w).toMatchObject({ temperatureC: 28.5, observedAt: '2026-10-03T14:45:00.000Z', windFromDeg: null });
+  });
+
+  it('reads surface and cloud-level wind', () => {
+    const w = parseOpenMeteo(
+      {
+        current: {
+          time: '2026-10-06T15:00',
+          temperature_2m: 30.2,
+          relative_humidity_2m: 70,
+          precipitation: 0,
+          weather_code: 2,
+          wind_speed_10m: 4,
+          wind_direction_10m: 39,
+          wind_gusts_10m: 19.8,
+          wind_speed_700hPa: 11.2,
+          wind_direction_700hPa: 87,
+        },
+      },
+      { lat: 13.75, lng: 100.5 },
+    );
+    expect(w).toMatchObject({ windSpeedKmh: 4, windFromDeg: 39, windGustKmh: 19.8, cloudWindSpeedKmh: 11.2, cloudWindFromDeg: 87 });
   });
 });
 

@@ -4,7 +4,7 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { CircleMarker, GeoJSON, ImageOverlay, MapContainer, Marker, Popup, TileLayer, Tooltip, useMap, useMapEvents } from 'react-leaflet';
-import { DEFAULT_CONFIG, isStale, RADARS, regionFor, type CctvCamera, type LatLng, type Observation, type Severity, type ZoneFeature } from '@hw/core';
+import { DEFAULT_CONFIG, isStale, RADARS, regionFor, type CctvCamera, type LatLng, type Observation, type Severity, type WeatherNow, type ZoneFeature } from '@hw/core';
 import { t, type Lang } from '@hw/core/i18n';
 import { WEB } from '@/config';
 import { radarImageUrl } from '@/lib/api';
@@ -12,6 +12,7 @@ import type { Layers } from '@/lib/layers';
 import { openCamera } from '@/lib/openCamera';
 import type { MapPalette } from '@/lib/prefs';
 import type { ZoneView } from '@/lib/useZones';
+import { RadarDrift } from './Wind';
 import { cctvIcon, floodIcon, LEGEND_GLYPH, pm25Icon, waterIcon, youIcon } from './mapIcons';
 import { zoneLabel } from '@/lib/zoneText';
 import type { VectorBaseMap } from '@/lib/vectorBaseMap';
@@ -28,6 +29,8 @@ interface Props {
   radarTime: string | null;
   /** Changes when the user picks a radar: the map then flies to that radar's area. */
   radarFocus: number;
+  /** Weather at the user's location; its cloud-level wind shows which way radar echoes drift. */
+  weather: WeatherNow | null;
   floodPoints: Observation[];
   pmStations: Observation[];
   cameras: CctvCamera[];
@@ -45,7 +48,7 @@ const FLOOD_RANK: Record<Severity, number> = { ok: 0, watch: 1, warn: 2, danger:
 /** Readings older than `staleAfterMinutes` are drawn faded so they don't read as current. */
 const fade = (o: Observation) => (isStale(o.observedAt, DEFAULT_CONFIG) ? WEB.map.staleOpacity : 1);
 
-export default function MapView({ lang, center, located, onLocate, layers, radarId, radarTime, radarFocus, floodPoints, pmStations, cameras, waterStations, zones, palette, dark }: Props) {
+export default function MapView({ lang, center, located, onLocate, layers, radarId, radarTime, radarFocus, weather, floodPoints, pmStations, cameras, waterStations, zones, palette, dark }: Props) {
   const bounds = RADARS[radarId]?.bounds;
   const startZoom = regionFor(center).zoom;
   const [zoom, setZoom] = useState(startZoom);
@@ -171,6 +174,7 @@ export default function MapView({ lang, center, located, onLocate, layers, radar
       </MapContainer>
       {map && <MapButtons map={map} lang={lang} center={center} located={located} onLocate={onLocate} />}
       <Legend lang={lang} layers={layers} palette={palette} />
+      {layers.radar && <RadarDrift lang={lang} weather={weather} />}
       {layers.cctv && !showCams && (
         <p className="pointer-events-none absolute bottom-6 left-1/2 z-[1000] -translate-x-1/2 rounded-full bg-ink/85 px-3 py-1 text-caption text-panel">
           {t('map.zoomForCctv', lang)}

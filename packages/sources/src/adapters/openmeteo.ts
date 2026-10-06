@@ -9,6 +9,11 @@ interface OpenMeteoResponse {
     relative_humidity_2m: number | null;
     precipitation: number | null;
     weather_code: number | null;
+    wind_speed_10m?: number | null;
+    wind_direction_10m?: number | null;
+    wind_gusts_10m?: number | null;
+    wind_speed_700hPa?: number | null;
+    wind_direction_700hPa?: number | null;
   };
 }
 
@@ -23,6 +28,11 @@ export function parseOpenMeteo(body: OpenMeteoResponse, location: LatLng): Weath
     humidityPct: c.relative_humidity_2m,
     precipitationMm: c.precipitation,
     weatherCode: c.weather_code,
+    windSpeedKmh: c.wind_speed_10m ?? null,
+    windFromDeg: c.wind_direction_10m ?? null,
+    windGustKmh: c.wind_gusts_10m ?? null,
+    cloudWindSpeedKmh: c.wind_speed_700hPa ?? null,
+    cloudWindFromDeg: c.wind_direction_700hPa ?? null,
   };
 }
 
@@ -32,6 +42,9 @@ export async function fetchWeather(ctx: AdapterContext, location: LatLng): Promi
   const lng = location.lng.toFixed(REQUEST.weatherCoordDecimals);
   const url =
     `${ENDPOINTS.openMeteo}?latitude=${lat}&longitude=${lng}` +
-    '&current=temperature_2m,relative_humidity_2m,precipitation,weather_code&timezone=Asia%2FBangkok';
+    '&current=temperature_2m,relative_humidity_2m,precipitation,weather_code' +
+    // km/h and degrees are Open-Meteo's defaults; 700 hPa is the usual steering level for rain cells.
+    ',wind_speed_10m,wind_direction_10m,wind_gusts_10m,wind_speed_700hPa,wind_direction_700hPa' +
+    '&timezone=Asia%2FBangkok';
   return parseOpenMeteo(await getJson(ctx, url), { lat: Number(lat), lng: Number(lng) });
 }
