@@ -38,7 +38,7 @@ export function ShareButton({ lang, zone, summary }: { lang: Lang; zone: ZoneFea
     }
   };
 
-  const item = 'inline-flex min-h-11 items-center rounded-full border border-chip-line bg-panel px-4 text-body font-medium';
+  const item = 'inline-flex min-h-11 items-center rounded-full border border-line-control bg-surface px-4 text-body font-medium';
   return (
     <div className="relative">
       <button
@@ -46,7 +46,7 @@ export function ShareButton({ lang, zone, summary }: { lang: Lang; zone: ZoneFea
         onClick={onShare}
         aria-expanded={open}
         aria-label={t('share.label', lang, { area: zoneLabel(zone, lang) })}
-        className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-chip-line bg-panel px-4 text-body font-semibold"
+        className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-line-control bg-surface px-4 text-body font-semibold"
       >
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
           <circle cx="18" cy="5" r="2.5" />

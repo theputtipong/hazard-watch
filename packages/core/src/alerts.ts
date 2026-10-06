@@ -20,10 +20,8 @@ export interface Alert {
   value?: number;
 }
 
-const both = (key: Parameters<typeof t>[0], vars: Record<string, string | number>) => ({
-  th: t(key, 'th', vars),
-  en: t(key, 'en', vars),
-});
+/** Level word that opens every alert title ("ระวังมาก: …"), per the design system's alert format. */
+const level = (s: Severity, lang: Lang) => t(`severity.${s}`, lang);
 
 const zoneName = (z: ZoneFeature) => ({ th: z.properties.name_th, en: z.properties.name_en });
 
@@ -54,8 +52,14 @@ export function districtAlerts(
         kind,
         severity,
         zoneId: id,
-        title: { th: t(title, 'th', { ...vars, area: area('th') }), en: t(title, 'en', { ...vars, area: area('en') }) },
-        body: both(body, vars),
+        title: {
+          th: t(title, 'th', { ...vars, area: area('th'), level: level(severity, 'th') }),
+          en: t(title, 'en', { ...vars, area: area('en'), level: level(severity, 'en') }),
+        },
+        body: {
+          th: t(body, 'th', { ...vars, note: t(`note.pm25.${severity}`, 'th') }),
+          en: t(body, 'en', { ...vars, note: t(`note.pm25.${severity}`, 'en') }),
+        },
       });
     };
 
@@ -83,10 +87,13 @@ export function districtAlerts(
         kind: 'water',
         severity: top.severity,
         zoneId: id,
-        title: { th: t('alert.water.title', 'th', { area: area('th') }), en: t('alert.water.title', 'en', { area: area('en') }) },
+        title: {
+          th: t('alert.water.title', 'th', { area: area('th'), level: level(top.severity, 'th') }),
+          en: t('alert.water.title', 'en', { area: area('en'), level: level(top.severity, 'en') }),
+        },
         body: {
-          th: t('alert.water.body', 'th', { station: top.name.th, v: Math.round(top.value ?? 0) }),
-          en: t('alert.water.body', 'en', { station: top.name.en, v: Math.round(top.value ?? 0) }),
+          th: t('alert.water.body', 'th', { station: top.name.th, v: Math.round(top.value ?? 0), state: t(`gauge.state.${top.severity}`, 'th') }),
+          en: t('alert.water.body', 'en', { station: top.name.en, v: Math.round(top.value ?? 0), state: t(`gauge.state.${top.severity}`, 'en') }),
         },
       });
     }
@@ -175,7 +182,10 @@ export function quakeAlerts(quakes: Earthquake[], district: ZoneFeature, cfg: Al
         kind: 'quake' as const,
         severity: severity === 'ok' ? ('watch' as const) : severity,
         zoneId: null,
-        title: both('alert.quake.title', { mag: q.magnitude.toFixed(1) }),
+        title: {
+          th: t('alert.quake.title', 'th', { mag: q.magnitude.toFixed(1), level: level(severity === 'ok' ? 'watch' : severity, 'th') }),
+          en: t('alert.quake.title', 'en', { mag: q.magnitude.toFixed(1), level: level(severity === 'ok' ? 'watch' : severity, 'en') }),
+        },
         body: { th: t('alert.quake.body', 'th', { place: quakePlace(q, 'th'), km }), en: t('alert.quake.body', 'en', { place: q.place.en, km }) },
         value: q.magnitude,
       };

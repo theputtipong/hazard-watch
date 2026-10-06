@@ -64,8 +64,8 @@ export function AlertsCard({ lang, district, subdistrict }: { lang: Lang; distri
 
   return (
     <Card title={t('push.title', lang)}>
-      {support === 'unsupported' && <p className="text-body text-muted">{t('push.unsupported', lang)}</p>}
-      {support === 'ios-needs-install' && <p className="rounded-control bg-sunken px-3 py-2 text-body">{t('push.ios', lang)}</p>}
+      {support === 'unsupported' && <p className="text-body text-ink-muted">{t('push.unsupported', lang)}</p>}
+      {support === 'ios-needs-install' && <p className="rounded-control bg-surface-sunken px-3 py-2 text-body">{t('push.ios', lang)}</p>}
       {support === 'ok' && (
         <>
           <p className="text-body">
@@ -76,7 +76,7 @@ export function AlertsCard({ lang, district, subdistrict }: { lang: Lang; distri
                 : t('push.pickArea', lang)}
           </p>
           <fieldset className="flex flex-col gap-1.5">
-            <legend className="mb-1 text-caption text-muted">{t('push.kinds', lang)}</legend>
+            <legend className="mb-1 text-caption text-ink-muted">{t('push.kinds', lang)}</legend>
             {DEFAULT_CONFIG.push.kinds.map((k) => (
               <label key={k} className="flex min-h-11 items-center gap-2 text-body">
                 <input type="checkbox" className="size-5 accent-[var(--color-accent)]" checked={prefs.kinds.includes(k)} onChange={() => toggleKind(k)} />
@@ -90,7 +90,7 @@ export function AlertsCard({ lang, district, subdistrict }: { lang: Lang; distri
               <select
                 value={prefs.pm25At}
                 onChange={(e) => setPrefs((p) => ({ ...p, pm25At: Number(e.target.value) }))}
-                className="min-h-11 rounded-control border border-chip-line bg-panel px-2 text-ink"
+                className="min-h-11 rounded-control border border-line-control bg-surface px-2 text-ink"
               >
                 {WEB.push.pm25Choices.map((v) => (
                   <option key={v} value={v}>
@@ -107,7 +107,7 @@ export function AlertsCard({ lang, district, subdistrict }: { lang: Lang; distri
                 <select
                   value={prefs.quakeMinMag}
                   onChange={(e) => setPrefs((p) => ({ ...p, quakeMinMag: Number(e.target.value) }))}
-                  className="min-h-11 rounded-control border border-chip-line bg-panel px-2 text-ink"
+                  className="min-h-11 rounded-control border border-line-control bg-surface px-2 text-ink"
                 >
                   {WEB.push.quakeMagnitudeChoices.map((v) => (
                     <option key={v} value={v}>
@@ -121,7 +121,7 @@ export function AlertsCard({ lang, district, subdistrict }: { lang: Lang; distri
                 <select
                   value={prefs.quakeMaxKm}
                   onChange={(e) => setPrefs((p) => ({ ...p, quakeMaxKm: Number(e.target.value) }))}
-                  className="min-h-11 rounded-control border border-chip-line bg-panel px-2 text-ink"
+                  className="min-h-11 rounded-control border border-line-control bg-surface px-2 text-ink"
                 >
                   {WEB.push.quakeDistanceChoices.map((v) => (
                     <option key={v} value={v}>
@@ -138,7 +138,7 @@ export function AlertsCard({ lang, district, subdistrict }: { lang: Lang; distri
                 type="button"
                 onClick={save}
                 disabled={!district || status === 'busy' || status === 'loading' || !prefs.kinds.length}
-                className="min-h-11 rounded-full bg-accent px-4 text-body font-semibold text-panel disabled:opacity-50"
+                className="min-h-11 rounded-control bg-ink px-4 text-label text-on-ink hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-45"
               >
                 {t('push.enable', lang)}
               </button>
@@ -148,21 +148,21 @@ export function AlertsCard({ lang, district, subdistrict }: { lang: Lang; distri
                   type="button"
                   onClick={save}
                   disabled={!district || status !== 'on' || !prefs.kinds.length}
-                  className="min-h-11 rounded-full bg-accent px-4 text-body font-semibold text-panel disabled:opacity-50"
+                  className="min-h-11 rounded-control bg-ink px-4 text-label text-on-ink hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-45"
                 >
                   {t('push.update', lang)}
                 </button>
                 <button
                   type="button"
                   onClick={() => run(sendTest, 'on', null)}
-                  className="min-h-11 rounded-full border border-chip-line px-4 text-body font-medium"
+                  className="min-h-11 rounded-full border border-line-control px-4 text-body font-medium"
                 >
                   {t('push.test', lang)}
                 </button>
                 <button
                   type="button"
                   onClick={() => run(unsubscribe, 'off', null)}
-                  className="min-h-11 rounded-full border border-chip-line px-4 text-body font-medium"
+                  className="min-h-11 rounded-full border border-line-control px-4 text-body font-medium"
                 >
                   {t('push.disable', lang)}
                 </button>
@@ -170,7 +170,7 @@ export function AlertsCard({ lang, district, subdistrict }: { lang: Lang; distri
             )}
           </div>
           {message && (
-            <p role="status" className="text-body text-muted">
+            <p role="status" className="text-body text-ink-muted">
               {message}
             </p>
           )}

@@ -83,6 +83,9 @@ needs its own adapters in `packages/sources`.
 
 - `pnpm --filter @hw/extension build` → load `apps/extension/dist` unpacked (`chrome://extensions`, Developer mode).
   `API_BASE=http://localhost:8787` builds against a local ingest.
+- Store upload (Chrome Web Store / Edge Add-ons): `pnpm --filter @hw/extension run zip` → upload
+  `apps/extension/hazardwatch-extension-<version>.zip` only (manifest.json at its root). Bump `version` in
+  `apps/extension/package.json` for each upload. Icons: `node tools/icons/make-icons.mjs`.
 - No server state: every `pollMinutes` (15, `apps/extension/src/config.ts`) the service worker reads `/v1/snapshot`,
   builds the same alerts as Web Push for the chosen district (`localAlerts` → core `districtAlerts` / `quakeAlerts`),
   shows new ones as notifications (repeat after `push.cooldownHours`) and sets the toolbar badge.
@@ -106,8 +109,12 @@ needs its own adapters in `packages/sources`.
 
 ## Design tokens
 
-Colours, the type scale (`text-caption … text-figure`) and corner radii (`rounded-tiny … rounded-card`) are defined
-once in `apps/web/src/app/globals.css`; components use only these names.
+Follows the HazardWatch design system (tokens.json): colours (`bg`, `surface`, `ink`, `ink-muted`, `line`, `accent`,
+`sev-*` / `sev-*-ink` / `sev-*-soft`), the type scale (`text-caption`, `text-label`, `text-body`, `text-title`, `text-heading`,
+`text-figure-sm`, `text-figure`) and radii (`rounded-tiny … rounded-card`) are defined once in
+`apps/web/src/app/globals.css`; the extension popup mirrors them in `apps/extension/static/popup.css`. `sev-*` colours
+mean risk only (never buttons or data freshness). Level words: ปกติ / ระวัง / ระวังมาก / อันตราย. Icons come from the design
+system SVGs in `tools/icons/source` (`node tools/icons/make-icons.mjs`), never redrawn.
 
 ## Tuning alerts
 

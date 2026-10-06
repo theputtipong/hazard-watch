@@ -71,28 +71,32 @@ export const WEB = {
     markerRadius: { floodNormal: 4 },
     iconSize: { you: 34, floodWatch: 26, floodWarn: 30, floodDanger: 34, pm25: 30, water: 30, cctv: 24 },
     /** Colour of the "you are here" person marker. */
-    youColor: '#1f5fbf',
+    youColor: '#2457d6', // accent
     /** Zoom used when jumping to the user's location with the locate button. */
     locateZoom: 14,
     /** Legend starts open on screens at least this wide (px); collapsed on phones. */
     legendOpenMinWidth: 640,
     /** CCTV icons appear only at this zoom or closer, so hundreds of cameras don't bury the hazards. */
     cctvMinZoom: 13,
-    cctvColor: '#0f1b2d',
+    cctvColor: '#0f1b2e', // ink
   },
 
   /** Marker/dot colours per severity (fills for cards are CSS tokens in app/globals.css). */
-  severityColor: { ok: '#2e9e6a', watch: '#d9a400', warn: '#e2632b', danger: '#b4171e' } satisfies Record<Severity, string>,
-  /** Same, for the colour-blind mode (Paul Tol "muted": blue / sand / rose / wine — also differ in lightness). */
-  severityColorCvd: { ok: '#4477aa', watch: '#ddcc77', warn: '#cc6677', danger: '#882255' } satisfies Record<Severity, string>,
-  /** Colour of flood points that are normal (kept grey so alerts stand out). */
-  floodNormalColor: '#6b7787',
+  // Design system sev-* solid colours (same values as app/globals.css). Normal is grey: no colour when nothing is wrong.
+  severityColor: {
+    light: { ok: '#8a93a3', watch: '#b07f00', warn: '#e0640a', danger: '#c81e1e' },
+    dark: { ok: '#5d6b84', watch: '#f5c542', warn: '#ff9440', danger: '#ff6464' },
+  } satisfies Record<'light' | 'dark', Record<Severity, string>>,
+  /** Same, for the colour-blind mode (Paul Tol "muted": sand / rose / wine — also differ in lightness). */
+  severityColorCvd: { ok: '#8a93a3', watch: '#ddcc77', warn: '#cc6677', danger: '#882255' } satisfies Record<Severity, string>,
+  /** Colour of flood points that are normal (sev-normal, so alerts stand out). */
+  floodNormalColor: '#8a93a3',
 
   /** Zone (province/district/subdistrict) shading. Status comes from packages/core config `zones`. */
   zones: {
     /** Fill opacity per status; zones with no sensors are left unfilled. */
     fillOpacity: { ok: 0.1, watch: 0.28, warn: 0.32, danger: 0.36 } satisfies Record<Severity, number>,
-    borderColor: '#4a5668',
+    borderColor: '#566072', // ink-muted
     borderWeight: 1.2,
     selectedWeight: 4,
     /** Padding (px) around an area when the map zooms to it. */

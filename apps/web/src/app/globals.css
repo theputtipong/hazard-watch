@@ -1,131 +1,182 @@
 @import "tailwindcss";
 
 /*
- * Colour tokens. Components only use these (bg-panel, text-ink, bg-danger …), never raw hex,
- * so themes are just variable overrides below:
+ * Design tokens from the HazardWatch design system (tokens.json). Components only use these names
+ * (bg-surface, text-ink-muted, bg-sev-danger-soft …), never raw hex, so themes are variable overrides below:
  *   [data-theme="dark"]  dark mode
- *   [data-cvd="on"]      colour-vision-deficiency palette (Paul Tol "muted"; safe for red/green colour blindness)
- * The map's marker/zone colours live in src/config.ts (WEB.severityColor / severityColorCvd).
+ *   [data-cvd="on"]      colour-vision-deficiency palette (Paul Tol "muted"), applied to the sev-* tokens only
+ * Severity colours mean risk only: never use sev-* for decoration, buttons or system status.
+ * The map's solid marker/zone colours live in src/config.ts (WEB.severityColor) with the same values.
  */
 @theme {
-  --font-sans: var(--font-plex-thai), system-ui, sans-serif;
-  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+  --font-sans: var(--font-plex-thai), "Noto Sans Thai", system-ui, sans-serif;
 
-  --color-ink: #0f1b2d;
-  --color-ink-2: #2b3647;
-  --color-muted: #4a5668;
-  --color-faint: #6b7787;
-  --color-line: #d9dee5;
-  --color-line-soft: #e6eaf0;
-  --color-chip-line: #c9d1db;
-  --color-ground: #f4f6f8;
-  --color-panel: #ffffff;
-  --color-sunken: #eef1f4;
-  --color-seg: #e8ecf1;
-  --color-map-bg: #eaf0f5;
-  --color-accent: #1f5fbf;
+  --color-bg: #f6f7f9;
+  --color-surface: #ffffff;
+  --color-surface-sunken: #eef0f3;
+  --color-line: #e2e5ea;
+  --color-line-control: #8a93a3;
+  --color-ink: #0f1b2e;
+  --color-ink-muted: #566072;
+  --color-on-ink: #ffffff;
+  --color-brand: #0f1b2e;
+  --color-accent: #2457d6;
+  --color-on-accent: #ffffff;
+  --color-water: #3d7bff;
 
-  /* Header logo: a dark tile on light pages, a brighter blue tile on dark pages so it never blends in. */
-  --color-logo-bg: #0f1b2d;
-  --color-logo-line: #0f1b2d;
-  --color-logo-mark: #ffffff;
-  --color-logo-rain: #7fb2ff;
+  /* Severity: solid (map, meter, gauge) · ink (text) · soft (badge, banner background). Normal has no colour. */
+  --color-sev-normal: #8a93a3;
+  --color-sev-watch: #b07f00;
+  --color-sev-watch-ink: #7a5500;
+  --color-sev-watch-soft: #fdf3d3;
+  --color-sev-warning: #e0640a;
+  --color-sev-warning-ink: #9c4006;
+  --color-sev-warning-soft: #fde8d6;
+  --color-sev-danger: #c81e1e;
+  --color-sev-danger-ink: #a3171b;
+  --color-sev-danger-soft: #fbe1e1;
+  --color-on-sev: #0f1b2e;
+  --color-on-sev-danger: #ffffff;
 
-  /*
-   * Type scale — use only these sizes (text-caption … text-figure). Line heights are a little taller
-   * than usual so Thai vowels and tone marks never clip.
-   */
-  --text-caption: 0.75rem; /* 12px: sources, notes, legend */
-  --text-caption--line-height: 1.5;
-  --text-body: 0.875rem; /* 14px: general text, buttons, lists */
-  --text-body--line-height: 1.55;
-  --text-title: 1rem; /* 16px: card titles, summary sentences */
-  --text-title--line-height: 1.5;
-  --text-heading: 1.125rem; /* 18px: app name */
-  --text-heading--line-height: 1.35;
-  --text-display: 1.5rem; /* 24px: page headings */
-  --text-display--line-height: 1.3;
-  --text-figure: 2.5rem; /* 40px: big numbers */
-  --text-figure--line-height: 1;
+  /* Type scale — use only these. Thai needs line-height of at least 1.5× so vowels and tone marks never clip. */
+  --text-caption: 12px; /* sources, update times, units */
+  --text-caption--line-height: 18px;
+  --text-label: 13px; /* labels, buttons, badges */
+  --text-label--line-height: 20px;
+  --text-label--font-weight: 500;
+  --text-body: 15px;
+  --text-body--line-height: 24px;
+  --text-title: 17px; /* card and banner titles */
+  --text-title--line-height: 26px;
+  --text-title--font-weight: 600;
+  --text-heading: 22px; /* page headings, chosen area name */
+  --text-heading--line-height: 32px;
+  --text-heading--font-weight: 600;
+  --text-figure-sm: 24px; /* figures in small cards and map popups */
+  --text-figure-sm--line-height: 28px;
+  --text-figure-sm--letter-spacing: -0.01em;
+  --text-figure: 36px; /* main reading figures */
+  --text-figure--line-height: 40px;
+  --text-figure--letter-spacing: -0.02em;
 
-  /* Corner radii — use only these (plus rounded-full for pills). */
-  --radius-tiny: 4px; /* small legend symbols */
-  --radius-control: 8px; /* selects, small badges, segmented controls */
-  --radius-box: 12px; /* boxes inside cards, list buttons, banners */
-  --radius-card: 16px; /* cards and main panels */
+  /* Radii by element size (plus rounded-full for pills, dots and gauge tracks). */
+  --radius-tiny: 4px; /* meter bars, gauge ticks */
+  --radius-small: 6px; /* badges, segmented buttons */
+  --radius-control: 8px; /* buttons, inputs, segmented controls */
+  --radius-card: 12px; /* cards, banners, map popups */
 
-  /* Severity: fills for pills/cards and strong text on them. */
-  --color-ok: #ddf1e7;
-  --color-ok-strong: #155c40;
-  --color-watch: #fff0cc;
-  --color-watch-strong: #704800;
-  --color-warn: #fde3d6;
-  --color-warn-strong: #9a3409;
-  --color-danger: #fbe0e5;
-  --color-danger-strong: #8c0f28;
+  --shadow-raised: 0 1px 2px rgba(15, 27, 46, 0.06);
+  --shadow-overlay: 0 8px 24px rgba(15, 27, 46, 0.14);
 }
 
 :root[data-theme='dark'] {
   color-scheme: dark;
-  --color-ink: #e6ebf2;
-  --color-ink-2: #c9d1dc;
-  --color-muted: #a3aebd;
-  --color-faint: #7d8898;
-  --color-line: #2c3644;
-  --color-line-soft: #26303d;
-  --color-chip-line: #3a4656;
-  --color-ground: #0e141c;
-  --color-panel: #161e29;
-  --color-sunken: #1f2935;
-  --color-seg: #1f2935;
-  --color-map-bg: #1a222d;
-  --color-accent: #8ab8ff;
-  --color-logo-bg: #2f6fd6;
-  --color-logo-line: #8ab8ff;
-  --color-logo-mark: #ffffff;
-  --color-logo-rain: #d6e6ff;
-  --color-ok: #123a2a;
-  --color-ok-strong: #8fe0b8;
-  --color-watch: #3d2f08;
-  --color-watch-strong: #f5cf6b;
-  --color-warn: #44200f;
-  --color-warn-strong: #ffab7d;
-  --color-danger: #4a1220;
-  --color-danger-strong: #ff9db0;
+  --color-bg: #0a111e;
+  --color-surface: #111b2c;
+  --color-surface-sunken: #1a263a;
+  --color-line: #1f2b40;
+  --color-line-control: #5d6b84;
+  --color-ink: #e6ebf3;
+  --color-ink-muted: #94a1b8;
+  --color-on-ink: #0a111e;
+  --color-brand: #1e3254;
+  --color-accent: #8dbbff;
+  --color-on-accent: #0a111e;
+  --color-sev-normal: #5d6b84;
+  --color-sev-watch: #f5c542;
+  --color-sev-watch-ink: #f5c542;
+  --color-sev-watch-soft: #2e2610;
+  --color-sev-warning: #ff9440;
+  --color-sev-warning-ink: #ff9440;
+  --color-sev-warning-soft: #35200f;
+  --color-sev-danger: #ff6464;
+  --color-sev-danger-ink: #ff7a7a;
+  --color-sev-danger-soft: #3a1519;
+  --color-on-sev: #0a111e;
+  --color-on-sev-danger: #0a111e;
+  --shadow-raised: none;
+  --shadow-overlay: 0 8px 24px rgba(0, 0, 0, 0.55);
 }
 
 :root[data-cvd='on'] {
-  --color-ok: #dbe6f3;
-  --color-ok-strong: #224466;
-  --color-watch: #f6f0d6;
-  --color-watch-strong: #5c4f10;
-  --color-warn: #f5dde2;
-  --color-warn-strong: #7a2f3f;
-  --color-danger: #ecd3df;
-  --color-danger-strong: #5a0f33;
+  --color-sev-watch: #ddcc77;
+  --color-sev-watch-ink: #5c4f10;
+  --color-sev-watch-soft: #f6f0d6;
+  --color-sev-warning: #cc6677;
+  --color-sev-warning-ink: #7a2f3f;
+  --color-sev-warning-soft: #f5dde2;
+  --color-sev-danger: #882255;
+  --color-sev-danger-ink: #5a0f33;
+  --color-sev-danger-soft: #ecd3df;
+  --color-on-sev-danger: #ffffff;
 }
 
 :root[data-theme='dark'][data-cvd='on'] {
-  --color-ok: #1b2d45;
-  --color-ok-strong: #9cc1ea;
-  --color-watch: #3a3519;
-  --color-watch-strong: #eadf9e;
-  --color-warn: #42232b;
-  --color-warn-strong: #f0a9b6;
-  --color-danger: #3a1427;
-  --color-danger-strong: #e59ac0;
+  --color-sev-watch-ink: #eadf9e;
+  --color-sev-watch-soft: #3a3519;
+  --color-sev-warning-ink: #f0a9b6;
+  --color-sev-warning-soft: #42232b;
+  --color-sev-danger: #e59ac0;
+  --color-sev-danger-ink: #e59ac0;
+  --color-sev-danger-soft: #3a1427;
+  --color-on-sev-danger: #0a111e;
 }
 
 body {
-  background: var(--color-ground);
+  background: var(--color-bg);
   color: var(--color-ink);
+  -webkit-font-smoothing: antialiased;
 }
 
+/* Figures: tabular so numbers don't jump when values change (design system hw-num). */
 .num {
-  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
   font-weight: 600;
-  letter-spacing: -0.02em;
 }
+
+/* One focus ring for everything interactive: solid accent, 2px, 2px away. */
+:where(a, button, input, select, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* The only motion: fresh data fades in. */
+@media (prefers-reduced-motion: no-preference) {
+  .hw-fade-in {
+    animation: hw-fade-in 150ms ease-out;
+  }
+}
+@keyframes hw-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* Severity meter: three rising bars, the level is the number of filled bars (readable without colour). */
+.hw-meter {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 12px;
+}
+.hw-meter i {
+  display: block;
+  width: 3px;
+  border-radius: var(--radius-tiny);
+  background: currentColor;
+  opacity: 0.28;
+}
+.hw-meter i:nth-child(1) { height: 6px; }
+.hw-meter i:nth-child(2) { height: 9px; }
+.hw-meter i:nth-child(3) { height: 12px; }
+.hw-meter[data-level='1'] i:nth-child(-n + 1),
+.hw-meter[data-level='2'] i:nth-child(-n + 2),
+.hw-meter[data-level='3'] i { opacity: 1; }
+.hw-meter--lg { height: 20px; gap: 3px; }
+.hw-meter--lg i { width: 5px; }
+.hw-meter--lg i:nth-child(1) { height: 10px; }
+.hw-meter--lg i:nth-child(2) { height: 15px; }
+.hw-meter--lg i:nth-child(3) { height: 20px; }
 
 /* Dark map: the default provider (OpenFreeMap) has its own dark style, so no filter. Only
    the OSM raster fallback (WEB.map.osm), which has no dark style, gets its light tiles inverted. */
@@ -133,19 +184,19 @@ body {
   filter: invert(1) hue-rotate(180deg) brightness(0.92) contrast(0.88);
 }
 :root[data-theme='dark'] .leaflet-container {
-  background: var(--color-map-bg);
+  background: var(--color-surface-sunken);
 }
 :root[data-theme='dark'] .leaflet-popup-content-wrapper,
 :root[data-theme='dark'] .leaflet-popup-tip,
 :root[data-theme='dark'] .leaflet-tooltip,
 :root[data-theme='dark'] .leaflet-bar a {
-  background: var(--color-panel);
+  background: var(--color-surface);
   color: var(--color-ink);
   border-color: var(--color-line);
 }
 :root[data-theme='dark'] .leaflet-control-attribution {
-  background: rgb(22 30 41 / 0.8);
-  color: var(--color-muted);
+  background: rgb(17 27 44 / 0.8);
+  color: var(--color-ink-muted);
 }
 :root[data-theme='dark'] .leaflet-control-attribution a {
   color: var(--color-accent);

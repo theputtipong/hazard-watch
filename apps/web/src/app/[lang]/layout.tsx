@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { notFound } from 'next/navigation';
-import { IBM_Plex_Mono, IBM_Plex_Sans_Thai } from 'next/font/google';
+import { IBM_Plex_Sans_Thai } from 'next/font/google';
 import { LANGS, isLang, t } from '@hw/core/i18n';
 import { WEB } from '@/config';
 import { PREFS_SCRIPT } from '@/lib/prefsScript';
@@ -11,7 +11,6 @@ const plexThai = IBM_Plex_Sans_Thai({
   weight: ['400', '500', '600', '700'],
   variable: '--font-plex-thai',
 });
-const plexMono = IBM_Plex_Mono({ subsets: ['latin'], weight: ['500', '600'], variable: '--font-plex-mono' });
 
 export function generateStaticParams() {
   return LANGS.map((lang) => ({ lang }));
@@ -41,14 +40,14 @@ export async function generateMetadata({ params }: LayoutProps<'/[lang]'>): Prom
   };
 }
 
-export const viewport: Viewport = { themeColor: '#0f1b2d' };
+export const viewport: Viewport = { themeColor: '#0f1b2e' };
 
 export default async function LangLayout({ children, params }: LayoutProps<'/[lang]'>) {
   const { lang } = await params;
   if (!isLang(lang)) notFound();
   return (
     // data-theme/data-cvd are set by the inline script before paint, so the server value may differ.
-    <html lang={lang} className={`${plexThai.variable} ${plexMono.variable}`} data-theme="light" data-cvd="off" suppressHydrationWarning>
+    <html lang={lang} className={plexThai.variable} data-theme="light" data-cvd="off" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: PREFS_SCRIPT }} />
       </head>

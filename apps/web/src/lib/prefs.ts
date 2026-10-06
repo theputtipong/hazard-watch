@@ -85,7 +85,7 @@ export interface MapPalette {
 
 export function mapPalette(p: Prefs): MapPalette {
   return {
-    severity: p.cvd ? WEB.severityColorCvd : WEB.severityColor,
-    selected: p.dark ? '#ffffff' : '#0f1b2d',
+    severity: p.cvd ? WEB.severityColorCvd : WEB.severityColor[p.dark ? 'dark' : 'light'],
+    selected: p.dark ? '#e6ebf3' : '#0f1b2e',
   };
 }

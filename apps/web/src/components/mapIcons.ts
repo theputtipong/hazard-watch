@@ -17,6 +17,19 @@ const alertBadge = (color: string) =>
 
 const cache = new Map<string, L.DivIcon>();
 
+/** Text on a solid severity fill: ink or white, whichever contrasts more (design system on-sev / on-sev-danger). */
+function onFill(hex: string) {
+  const lum = (h: string) => {
+    const [r, g, b] = [1, 3, 5].map((i) => {
+      const c = parseInt(h.slice(i, i + 2), 16) / 255;
+      return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+    }) as [number, number, number];
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  };
+  const l = lum(hex);
+  return (l + 0.05) / (lum('#0f1b2e') + 0.05) >= 1.05 / (l + 0.05) ? '#0f1b2e' : '#ffffff';
+}
+
 function round(key: string, size: number, background: string, inner: string, badge = '') {
   const hit = cache.get(key);
   if (hit) return hit;
@@ -27,7 +40,7 @@ function round(key: string, size: number, background: string, inner: string, bad
     tooltipAnchor: [size / 2, 0],
     html:
       `<div style="position:relative;width:${size}px;height:${size}px;border-radius:50%;background:${background};` +
-      `border:2.5px solid #fff;box-shadow:0 1px 4px rgba(15,27,45,.45);display:grid;place-items:center;box-sizing:border-box">` +
+      `border:1.5px solid #fff;box-shadow:0 1px 4px rgba(15,27,45,.45);display:grid;place-items:center;box-sizing:border-box">` +
       `${inner}${badge}</div>`,
   });
   cache.set(key, icon);
@@ -49,7 +62,7 @@ export function floodIcon(severity: Exclude<Severity, 'ok'>, colors: Record<Seve
 
 export function pm25Icon(value: number, severity: Severity, colors: Record<Severity, string>) {
   const s = WEB.map.iconSize.pm25;
-  const text = `<span style="color:#fff;font:700 ${value >= 100 ? 10 : 11}px/1 system-ui">${Math.round(value)}</span>`;
+  const text = `<span style="color:${onFill(colors[severity])};font:700 ${value >= 100 ? 10 : 11}px/1 system-ui">${Math.round(value)}</span>`;
   const c = colors[severity];
   return round(`pm-${Math.round(value)}-${c}`, s, c, text, severity === 'danger' ? alertBadge(colors.danger) : '');
 }
@@ -67,8 +80,8 @@ export function waterIcon(pct: number, severity: Severity, colors: Record<Severi
     tooltipAnchor: [s / 2, 0],
     html:
       `<div style="position:relative;width:${s}px;height:${s}px;border-radius:var(--radius-control);background:${colors[severity]};` +
-      `border:2.5px solid #fff;box-shadow:0 1px 4px rgba(15,27,45,.45);display:grid;place-items:center;box-sizing:border-box;` +
-      `color:#fff;font:700 ${pct >= 100 ? 9 : 10}px/1 system-ui">${Math.round(pct)}%` +
+      `border:1.5px solid #fff;box-shadow:0 1px 4px rgba(15,27,45,.45);display:grid;place-items:center;box-sizing:border-box;` +
+      `color:${onFill(colors[severity])};font:700 ${pct >= 100 ? 9 : 10}px/1 system-ui">${Math.round(pct)}%` +
       `${severity === 'danger' ? alertBadge(colors.danger) : ''}</div>`,
   });
   cache.set(key, icon);

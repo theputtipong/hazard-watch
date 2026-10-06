@@ -25,7 +25,7 @@ export function SurfaceWind({ lang, weather }: { lang: Lang; weather: WeatherNow
         <span>
           {t('weather.windFrom', lang, { dir: t(`compass.${compassPoint(from)}`, lang) })} · <span className="num">{kmh(speed)}</span>
           {gust != null && gust > speed && (
-            <span className="text-muted">
+            <span className="text-ink-muted">
               {' '}
               · {t('weather.gust', lang, { speed: kmh(gust) })}
             </span>
@@ -45,7 +45,7 @@ export function RadarDrift({ lang, weather }: { lang: Lang; weather: WeatherNow 
   const note = t('radar.driftNote', lang);
   return (
     <div
-      className="pointer-events-auto absolute right-2.5 bottom-8 z-[1000] flex max-w-[230px] items-center gap-2 rounded-box border border-line bg-panel/95 px-2.5 py-1.5 text-caption text-ink shadow-sm"
+      className="pointer-events-auto absolute right-2.5 bottom-8 z-[1000] flex max-w-[230px] items-center gap-2 rounded-card border border-line bg-surface/95 px-2.5 py-1.5 text-caption text-ink shadow-sm"
       title={note}
     >
       {!calm && <WindArrow fromDeg={from} size={26} />}

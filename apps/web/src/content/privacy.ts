@@ -6,13 +6,13 @@ import type { Lang } from '@hw/core/i18n';
  */
 export const privacy: Record<Lang, { updated: string; sections: { heading: string; body: string[] }[] }> = {
   th: {
-    updated: 'ปรับปรุงล่าสุด 5 ตุลาคม 2569',
+    updated: 'ปรับปรุงล่าสุด 6 ตุลาคม 2569',
     sections: [
       {
         heading: 'สรุปสั้น ๆ',
         body: [
           'เราไม่เก็บชื่อ อีเมล เบอร์โทร หรือพิกัดที่อยู่ของคุณ',
-          'ตำแหน่ง GPS ใช้คำนวณบนเครื่องของคุณเท่านั้น และไม่ถูกส่งออกจากเครื่อง',
+          'ตำแหน่ง GPS ใช้หาเขต/อำเภอบนเครื่องของคุณ เพื่อดูสภาพอากาศเราส่งพิกัดแบบปัดเศษ (ประมาณ 1 กม.) ไปที่ API ของเรา ซึ่งส่งต่อให้ Open-Meteo และไม่ถูกบันทึกไว้',
           'ถ้าเปิดการแจ้งเตือน เราเก็บเพียง "เขต/อำเภอ" ที่คุณต้องการรับแจ้งเตือน เพื่อส่งข่าวภัยของพื้นที่นั้นให้คุณ',
         ],
       },
@@ -35,6 +35,7 @@ export const privacy: Record<Lang, { updated: string; sections: { heading: strin
         heading: 'ผู้ที่เกี่ยวข้องกับข้อมูล',
         body: [
           'ระบบทำงานบน Cloudflare (เก็บข้อมูลการแจ้งเตือน)',
+          'ข้อมูลสภาพอากาศและลมมาจาก Open-Meteo ซึ่งได้รับพิกัดแบบปัดเศษ (ประมาณ 1 กม.) และหมายเลข IP ของเซิร์ฟเวอร์เรา ไม่ใช่ของคุณ',
           'แผนที่พื้นหลังโหลดจาก OpenFreeMap (บริการสาธารณะ) ซึ่งจะเห็นหมายเลข IP ของคุณและบริเวณแผนที่ที่คุณเปิดดู (ซึ่งอาจอยู่ใกล้ที่ที่คุณอยู่) แต่ไม่ได้รับพิกัด GPS ของคุณ และไม่ใช้คุกกี้',
           'การแจ้งเตือนถูกส่งผ่านบริการของผู้ผลิตเบราว์เซอร์ เช่น Google, Apple, Mozilla, Microsoft',
           'เราไม่ขายหรือแบ่งปันข้อมูลเพื่อการโฆษณา และไม่มีตัวติดตาม (tracker)',
@@ -47,17 +48,25 @@ export const privacy: Record<Lang, { updated: string; sections: { heading: strin
           'กด "ปิดการแจ้งเตือน" ในหน้าหลักเพื่อลบข้อมูลของคุณทันที',
         ],
       },
-      { heading: 'ติดต่อ', body: ['[ช่องทางติดต่อ — รอกำหนด]'] },
+      {
+        heading: 'ส่วนขยายเบราว์เซอร์ (Chrome/Edge)',
+        body: [
+          'การตั้งค่า เขต/อำเภอที่เลือก และตำแหน่งโดยประมาณ เก็บไว้ในพื้นที่จัดเก็บของส่วนขยายบนเครื่องของคุณเท่านั้น',
+          'ส่วนขยายอ่านข้อมูลสาธารณะจาก API ของเราทุก 15 นาที และส่งพิกัดแบบปัดเศษ (ประมาณ 1 กม.) เฉพาะเพื่อดูสภาพอากาศ',
+          'ไม่มีบัญชีผู้ใช้ และเราไม่เก็บข้อมูลใดของผู้ใช้ส่วนขยายไว้ที่เซิร์ฟเวอร์ การถอนการติดตั้งส่วนขยายจะลบข้อมูลทั้งหมด',
+        ],
+      },
+      { heading: 'ติดต่อ', body: ['อีเมล support.pdouvch@gmail.com'] },
     ],
   },
   en: {
-    updated: 'Last updated 5 October 2026',
+    updated: 'Last updated 6 October 2026',
     sections: [
       {
         heading: 'In short',
         body: [
           'We do not collect your name, email, phone number or your coordinates.',
-          'Your GPS position is used on your device only and never leaves it.',
+          'Your GPS position is used on your device to find your district. For weather we send coordinates rounded to about 1 km to our API, which passes them to Open-Meteo; they are not stored.',
           'If you turn on alerts we keep only the district you want alerts for, so we can send you hazards for that area.',
         ],
       },
@@ -80,6 +89,7 @@ export const privacy: Record<Lang, { updated: string; sections: { heading: strin
         heading: 'Who handles the data',
         body: [
           'The service runs on Cloudflare (stores alert subscriptions).',
+          'Weather and wind come from Open-Meteo, which receives coordinates rounded to about 1 km and our server’s IP address, not yours.',
           'The background map is loaded from OpenFreeMap (a public service), which sees your IP address and the map area you view (which may be near where you are), but not your GPS coordinates, and sets no cookies.',
           'Notifications are delivered through browser vendors’ push services, e.g. Google, Apple, Mozilla, Microsoft.',
           'We do not sell or share data for advertising and use no trackers.',
@@ -92,7 +102,15 @@ export const privacy: Record<Lang, { updated: string; sections: { heading: strin
           'Tap "Turn off alerts" on the main page to delete your data immediately.',
         ],
       },
-      { heading: 'Contact', body: ['[Contact — to be decided]'] },
+      {
+        heading: 'Browser extension (Chrome/Edge)',
+        body: [
+          'Your settings, chosen district and approximate location stay in the extension’s storage on your device.',
+          'The extension reads public data from our API every 15 minutes and sends coordinates rounded to about 1 km only to look up the weather.',
+          'There is no account, and we store nothing about extension users on our server. Uninstalling the extension deletes everything.',
+        ],
+      },
+      { heading: 'Contact', body: ['Email support.pdouvch@gmail.com'] },
     ],
   },
 };

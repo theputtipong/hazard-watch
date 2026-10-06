@@ -2,6 +2,7 @@ import { DEFAULT_CONFIG, pm25Severity, quakeAlertFloor, quakePlace, quakePlaceHa
 import { t, type Lang } from '@hw/core/i18n';
 import { NoData } from '@/lib/loadState';
 import { Card } from './Card';
+import { RiverGauge } from './RiverGauge';
 import { SeverityPill } from './Severity';
 import { SurfaceWind } from './Wind';
 
@@ -19,7 +20,7 @@ export function WeatherCard({ lang, weather }: { lang: Lang; weather: WeatherNow
             {fmt(weather.temperatureC)}
             {u.temperature}
           </span>
-          <dl className="grid grid-cols-2 gap-2 text-caption text-muted">
+          <dl className="grid grid-cols-2 gap-2 text-caption text-ink-muted">
             <div>
               <dt>{t('weather.humidity', lang)}</dt>
               <dd className="num text-title text-ink">
@@ -30,7 +31,7 @@ export function WeatherCard({ lang, weather }: { lang: Lang; weather: WeatherNow
             <div>
               <dt>{t('weather.rainNow', lang)}</dt>
               <dd className="num text-title text-ink">
-                {fmt(weather.precipitationMm)} {u.precipitation}
+                {fmt(weather.precipitationMm)} {t('unit.mm', lang)}
               </dd>
             </div>
             <SurfaceWind lang={lang} weather={weather} />
@@ -55,15 +56,17 @@ export function Pm25Card({ lang, station, note }: { lang: Lang; station: (Observ
       {station && value !== null ? (
         <>
           <div className="flex items-baseline gap-2">
-            <span className="num text-figure leading-none">{fmt(value)}</span>
-            <span className="text-body text-muted">{station.unit || u.pm25}</span>
+            <span className="num text-figure">{fmt(value)}</span>
+            <span className="text-label text-ink-muted">{station.unit || u.pm25}</span>
           </div>
-          <p className="text-body text-ink-2">
+          {/* What the number means, from the same level as the badge. */}
+          <p className="text-label text-ink">{t(`note.pm25.${pm25Severity(value, cfg)}`, lang)}</p>
+          <p className="text-caption text-ink-muted">
             {t('pm25.nearest', lang, { name: placeName(station, lang) })} · <span className="num">
               {fmt(station.km)} {u.distance}
             </span>
           </p>
-          <p className="flex flex-wrap justify-between gap-2 text-caption text-muted">
+          <p className="flex flex-wrap justify-between gap-2 text-caption text-ink-muted">
             <span>{t('pm25.who', lang, { value: cfg.pm25.bands.ok })}</span>
             <span>{t('pm25.pushAt', lang, { value: cfg.pm25.pushAt })}</span>
           </p>
@@ -100,12 +103,12 @@ export function FloodCard({
       {available ? (
         <>
           <div className="grid grid-cols-3 gap-2">
-            <Stat value={counts.flooded} label={t('flood.flooded', lang)} className="bg-danger text-danger-strong" />
-            <Stat value={counts.minor} label={t('flood.minor', lang)} className="bg-watch text-watch-strong" />
-            <Stat value={counts.normal} label={t('flood.normal', lang)} className="bg-sunken text-ink" />
+            <Stat value={counts.flooded} label={t('flood.flooded', lang)} className="bg-sev-warning-soft text-sev-warning-ink" />
+            <Stat value={counts.minor} label={t('flood.minor', lang)} className="bg-sev-watch-soft text-sev-watch-ink" />
+            <Stat value={counts.normal} label={t('flood.normal', lang)} className="bg-surface-sunken text-ink" />
           </div>
           {nearestFlooded && (
-            <p className="flex justify-between gap-2 text-body text-ink-2">
+            <p className="flex justify-between gap-2 text-body text-ink">
               <span>
                 {t('flood.nearest', lang)}: {placeName(nearestFlooded, lang)}
               </span>
@@ -124,8 +127,8 @@ export function FloodCard({
 
 function Stat({ value, label, className }: { value: number; label: string; className: string }) {
   return (
-    <div className={`rounded-box px-2.5 py-2 ${className}`}>
-      <span className="num text-display">{value}</span>
+    <div className={`rounded-control px-2.5 py-2 ${className}`}>
+      <span className="num text-figure-sm">{value}</span>
       <br />
       <span className="text-caption">{label}</span>
     </div>
@@ -172,7 +175,7 @@ export function QuakeCard({
         </p>
       )}
       {latest && (
-        <p className="flex justify-between gap-2 border-t border-sunken pt-2 text-body text-muted">
+        <p className="flex justify-between gap-2 border-t border-surface-sunken pt-2 text-body text-ink-muted">
           <span>
             {t('quake.latest', lang)}: {quakePlace(latest.quake, lang, latest.km)}
           </span>
@@ -198,6 +201,7 @@ export function WaterLevelCard({
   note?: string;
 }) {
   const severity = worst(high.map((o) => o.severity));
+  const others = high.filter((o) => o.id !== nearest?.id && o.value !== null).slice(0, 3);
   return (
     <Card
       title={t('card.water', lang)}
@@ -205,38 +209,27 @@ export function WaterLevelCard({
       source={t('source.water', lang)}
       note={note}
     >
-      {nearest ? (
+      {nearest && nearest.value !== null ? (
         <>
-          <div className="flex items-baseline gap-2">
-            <span className="num text-figure leading-none">{fmt(nearest.value, 0)}</span>
-            <span className="text-body text-muted">
-              {nearest.unit} {t('water.ofBank', lang)}
-            </span>
-          </div>
-          <p className="text-body text-ink-2">
+          <p className="text-label text-ink-muted">{t('gauge.intro', lang)}</p>
+          <RiverGauge lang={lang} name={placeName(nearest, lang)} pct={nearest.value} severity={nearest.severity} scale />
+          <p className="text-caption text-ink-muted">
             {t('water.nearest', lang, { name: placeName(nearest, lang) })} ·{' '}
             <span className="num">
               {fmt(nearest.km)} {u.distance}
             </span>
           </p>
-          <div className="border-t border-sunken pt-2 text-body">
-            <p className="mb-1 text-muted">{t('water.high', lang, { pct: cfg.waterLevel.watchPct })}</p>
-            {high.length ? (
-              <ul className="flex flex-col gap-1">
-                {high.slice(0, 3).map((o) => (
-                  <li key={o.id} className="flex justify-between gap-2">
-                    <span>{placeName(o, lang)}</span>
-                    <span className="num">
-                      {fmt(o.value, 0)}
-                      {o.unit}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p>{t('water.none', lang)}</p>
-            )}
-          </div>
+          {others.length > 0 ? (
+            <div className="flex flex-col gap-3 border-t border-line pt-3">
+              <p className="text-label text-ink-muted">{t('water.high', lang, { pct: cfg.waterLevel.watchPct })}</p>
+              {/* Closest to overflowing first. */}
+              {others.map((o) => (
+                <RiverGauge key={o.id} lang={lang} name={placeName(o, lang)} pct={o.value!} severity={o.severity} />
+              ))}
+            </div>
+          ) : (
+            !high.length && <p className="border-t border-line pt-3 text-body">{t('water.none', lang)}</p>
+          )}
         </>
       ) : (
         <NoData lang={lang} />

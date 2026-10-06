@@ -15,7 +15,7 @@ interface Props {
 }
 
 const btn =
-  'inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-full border border-chip-line bg-panel px-3 text-body font-medium text-ink-2 hover:border-ink-2';
+  'inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-full border border-line-control bg-surface px-3 text-body font-medium text-ink hover:border-ink';
 
 function ThemeIcon({ theme }: { theme: ThemePref }) {
   if (theme === 'light')
@@ -55,7 +55,7 @@ export function A11yControls({ lang, theme, cvd, onTheme, onCvd, speech, onListe
       </button>
       <button
         type="button"
-        className={`${btn} ${cvd ? 'border-ink bg-ink text-panel' : ''}`}
+        className={`${btn} ${cvd ? 'border-ink bg-ink text-on-ink' : ''}`}
         onClick={onCvd}
         aria-pressed={cvd}
         aria-label={t('a11y.cvd', lang)}
@@ -85,11 +85,11 @@ export function A11yControls({ lang, theme, cvd, onTheme, onCvd, speech, onListe
         <span className="hidden sm:inline">{listenLabel}</span>
       </button>
       {voiceNote && tried && (
-        <div role="status" className="flex basis-full flex-col text-caption text-muted">
+        <div role="status" className="flex basis-full flex-col text-caption text-ink-muted">
           <span>{voiceNote}</span>
           {/* Free fix: install the system's Thai voice (no server speech). Thai page only, as the steps are for Thai. */}
           {speech.supported && lang === 'th' && (
-            <details className="text-ink-2">
+            <details className="text-ink">
               <summary className="inline-flex min-h-11 cursor-pointer items-center font-semibold text-accent underline underline-offset-4">
                 {t('a11y.voiceHow', lang)}
               </summary>

@@ -12,7 +12,7 @@ export const LoadStateContext = createContext<LoadState>('ready');
 export function NoData({ lang }: { lang: Lang }) {
   const state = useContext(LoadStateContext);
   return (
-    <p className="text-sm text-muted" aria-live="polite">
+    <p className="text-sm text-ink-muted" aria-live="polite">
       {state === 'loading' ? t('common.loading', lang) : t('common.noData', lang)}
     </p>
   );

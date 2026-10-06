@@ -14,24 +14,15 @@ export function Header({ lang, updatedAt, children }: { lang: Lang; updatedAt: s
     ? new Date(updatedAt).toLocaleTimeString(lang === 'th' ? 'th-TH' : 'en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok' })
     : '—';
   return (
-    <header className="border-b border-line bg-panel">
+    <header className="border-b border-line bg-surface">
       <div className="mx-auto flex max-w-[1360px] flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2.5 sm:px-6">
         <div className="flex min-w-0 flex-[1_1_280px] items-center gap-2.5">
-          {/* Colours are theme tokens (globals.css --color-logo-*), so the tile stays visible in dark mode. */}
-          <svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true" className="shrink-0">
-            <rect x="0.5" y="0.5" width="31" height="31" rx="8" fill="var(--color-logo-bg)" stroke="var(--color-logo-line)" />
-            <path
-              d="M9 19a5 5 0 0 1 1-9.9A6 6 0 0 1 21.5 10 4.5 4.5 0 0 1 22 19z"
-              fill="none"
-              stroke="var(--color-logo-mark)"
-              strokeWidth="1.8"
-              strokeLinejoin="round"
-            />
-            <path d="M12 22l-1 3M17 22l-1 3M22 22l-1 3" stroke="var(--color-logo-rain)" strokeWidth="1.8" strokeLinecap="round" />
-          </svg>
+          {/* Design system icon, fixed colours in both themes; the small variant (no rain lines) is for 32px and below. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/icons/hazardwatch-icon-small.svg" width={32} height={32} alt="" className="shrink-0" />
           <div className="flex min-w-0 flex-col">
-            <strong className="text-heading leading-tight">{t('app.name', lang)}</strong>
-            <span className="text-caption text-muted">
+            <strong className="text-title leading-tight">{t('app.name', lang)}</strong>
+            <span className="text-caption text-ink-muted">
               {t('app.tagline', lang)} · {t('common.updated', lang)} <span className="num">{time}</span>
             </span>
           </div>
@@ -39,15 +30,15 @@ export function Header({ lang, updatedAt, children }: { lang: Lang; updatedAt: s
         {/* One row of controls on phones too, so the header stays short. */}
         <div className="flex flex-wrap items-center gap-1.5">
         {children}
-        <nav aria-label={t('common.language', lang)} className="flex gap-0.5 rounded-box bg-seg p-[3px]">
+        <nav aria-label={t('common.language', lang)} className="flex gap-0.5 rounded-control bg-surface-sunken p-[3px]">
           {LANGS.map((l) => (
             <Link
               key={l}
               href={`/${l}`}
               onClick={() => setLangCookie(l)}
               aria-current={l === lang ? 'page' : undefined}
-              className={`grid min-h-10 min-w-11 place-items-center rounded-control text-body font-semibold ${
-                l === lang ? 'bg-panel text-ink shadow-sm' : 'text-muted'
+              className={`grid min-h-10 min-w-11 place-items-center rounded-small text-label ${
+                l === lang ? 'bg-surface text-ink shadow-raised outline outline-1 outline-line' : 'text-ink-muted'
               }`}
             >
               {l.toUpperCase()}

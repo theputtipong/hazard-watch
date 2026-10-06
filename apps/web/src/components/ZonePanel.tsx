@@ -10,7 +10,7 @@ import { ShareButton } from './ShareButton';
 
 function Status({ s, lang }: { s: ZoneSummary | undefined; lang: Lang }) {
   if (!s || s.severity === null) {
-    return <span className="inline-flex rounded-full bg-sunken px-2.5 py-0.5 text-caption font-semibold text-muted">{t('zone.noData', lang)}</span>;
+    return <span className="inline-flex rounded-full bg-surface-sunken px-2.5 py-0.5 text-caption font-semibold text-ink-muted">{t('zone.noData', lang)}</span>;
   }
   return <SeverityPill severity={s.severity} lang={lang} />;
 }
@@ -30,10 +30,10 @@ export function ZonePanel({ lang, zones }: { lang: Lang; zones: ZoneView }) {
   const crumbs = [{ label: regionName, depth: 0 }, ...zones.path.map((z, i) => ({ label: zoneLabel(z, lang), depth: i + 1 }))];
 
   return (
-    <div className="flex flex-col gap-3 border-t border-line-soft px-3.5 py-3">
+    <div className="flex flex-col gap-3 border-t border-line px-3.5 py-3">
       {(zones.path.length > 0 || zones.selected) && (
       <div className="flex flex-wrap items-center gap-2">
-        <button type="button" onClick={zones.back} className="min-h-10 rounded-full border border-chip-line bg-panel px-3.5 text-body font-medium">
+        <button type="button" onClick={zones.back} className="min-h-10 rounded-full border border-line-control bg-surface px-3.5 text-body font-medium">
           ‹ {t('common.back', lang)}
         </button>
         <nav aria-label={t('area.nav', lang)} className="flex flex-wrap items-center gap-1 text-title">
@@ -41,7 +41,7 @@ export function ZonePanel({ lang, zones }: { lang: Lang; zones: ZoneView }) {
             const last = i === crumbs.length - 1 && !zones.selected;
             return (
               <span key={c.depth} className="flex items-center gap-1">
-                {i > 0 && <span aria-hidden="true" className="text-faint">›</span>}
+                {i > 0 && <span aria-hidden="true" className="text-ink-muted">›</span>}
                 {last ? (
                   <span aria-current="page" className="font-bold">
                     {c.label}
@@ -56,7 +56,7 @@ export function ZonePanel({ lang, zones }: { lang: Lang; zones: ZoneView }) {
           })}
           {zones.selected && (
             <span className="flex items-center gap-1">
-              <span aria-hidden="true" className="text-faint">›</span>
+              <span aria-hidden="true" className="text-ink-muted">›</span>
               <span aria-current="page" className="font-bold">
                 {zoneLabel(zones.selected, lang)}
               </span>
@@ -66,7 +66,7 @@ export function ZonePanel({ lang, zones }: { lang: Lang; zones: ZoneView }) {
       </div>
       )}
 
-      <div className="flex flex-col gap-1 rounded-box bg-ground px-3.5 py-2.5">
+      <div className="flex flex-col gap-1 rounded-card bg-bg px-3.5 py-2.5">
         <div className="flex flex-wrap items-center gap-2">
           <strong className="text-title">{focus ? zoneLabel(focus, lang) : regionName}</strong>
           <Status s={zones.focusSummary} lang={lang} />
@@ -79,7 +79,7 @@ export function ZonePanel({ lang, zones }: { lang: Lang; zones: ZoneView }) {
         <div>
           <div className="mb-2 flex flex-wrap items-baseline gap-2">
             <h3 className="text-body font-semibold">{t('zone.list', lang, { level: levelName(childLevel, bangkok, lang) })}</h3>
-            <span className="text-caption text-muted">
+            <span className="text-caption text-ink-muted">
               {t('area.sortNote', lang)} · {t('zone.tapHint', lang)}
             </span>
           </div>
@@ -93,7 +93,7 @@ export function ZonePanel({ lang, zones }: { lang: Lang; zones: ZoneView }) {
                     type="button"
                     onClick={() => zones.open(z.properties.id)}
                     aria-current={current || undefined}
-                    className={`flex min-h-13 w-full items-center gap-2 rounded-box border bg-panel px-3 py-1.5 text-left text-body ${
+                    className={`flex min-h-13 w-full items-center gap-2 rounded-card border bg-surface px-3 py-1.5 text-left text-body ${
                       current ? 'border-ink shadow-[inset_0_0_0_1px_var(--color-ink)]' : 'border-line'
                     }`}
                   >
@@ -104,7 +104,7 @@ export function ZonePanel({ lang, zones }: { lang: Lang; zones: ZoneView }) {
                       </span>
                     </span>
                     {zones.hasChildren(z.properties.id) && (
-                      <span aria-hidden="true" className="text-heading text-muted">
+                      <span aria-hidden="true" className="text-title text-ink-muted">
                         ›
                       </span>
                     )}
@@ -115,7 +115,7 @@ export function ZonePanel({ lang, zones }: { lang: Lang; zones: ZoneView }) {
           </ul>
         </div>
       ) : (
-        <p className="text-body text-muted">{t('zone.noChildren', lang, { level: levelName(childLevel, bangkok, lang) })}</p>
+        <p className="text-body text-ink-muted">{t('zone.noChildren', lang, { level: levelName(childLevel, bangkok, lang) })}</p>
       )}
     </div>
   );

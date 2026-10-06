@@ -9,8 +9,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: t('app.tagline', DEFAULT_LANG),
     start_url: `/${DEFAULT_LANG}`,
     display: 'standalone',
-    background_color: '#0f1b2d',
-    theme_color: '#0f1b2d',
+    background_color: '#0f1b2e',
+    theme_color: '#0f1b2e',
     lang: DEFAULT_LANG,
     icons: [
       { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },

@@ -86,7 +86,7 @@ export default function MapView({ lang, center, located, onLocate, layers, radar
                   >
                     {t('cctv.viewLive', lang)} ↗
                   </a>
-                  <span className="text-caption text-muted">{t('cctv.opening', lang)}</span>
+                  <span className="text-caption text-ink-muted">{t('cctv.opening', lang)}</span>
                 </PopupBody>
               </Popup>
             </Marker>
@@ -176,7 +176,7 @@ export default function MapView({ lang, center, located, onLocate, layers, radar
       <Legend lang={lang} layers={layers} palette={palette} />
       {layers.radar && <RadarDrift lang={lang} weather={weather} />}
       {layers.cctv && !showCams && (
-        <p className="pointer-events-none absolute bottom-6 left-1/2 z-[1000] -translate-x-1/2 rounded-full bg-ink/85 px-3 py-1 text-caption text-panel">
+        <p className="pointer-events-none absolute bottom-6 left-1/2 z-[1000] -translate-x-1/2 rounded-full bg-ink/85 px-3 py-1 text-caption text-on-ink">
           {t('map.zoomForCctv', lang)}
         </p>
       )}
@@ -372,11 +372,11 @@ function MapButtons({
   };
 
   const btn =
-    'grid size-11 place-items-center rounded-control border border-line bg-panel text-ink shadow-sm hover:bg-ground disabled:opacity-60';
+    'grid size-11 place-items-center rounded-control border border-line bg-surface text-ink shadow-sm hover:bg-bg disabled:opacity-60';
   return (
     // Higher on phones, where the map credits wrap onto two lines.
     <div className="absolute bottom-12 left-2.5 z-[1000] sm:bottom-8 flex flex-col items-start gap-2">
-      {hint && <p className="max-w-[220px] rounded-control bg-ink/90 px-2.5 py-1.5 text-caption text-panel">{hint}</p>}
+      {hint && <p className="max-w-[220px] rounded-control bg-ink/90 px-2.5 py-1.5 text-caption text-on-ink">{hint}</p>}
       <button type="button" className={btn} onClick={goToMe} disabled={busy} aria-label={busy ? t('map.locating', lang) : t('map.locate', lang)} title={t('map.locate', lang)}>
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={WEB.map.youColor} strokeWidth="2" aria-hidden="true" className={busy ? 'animate-pulse' : ''}>
           <circle cx="12" cy="12" r="7" />
@@ -411,7 +411,7 @@ function TimeLine({ lang, iso }: { lang: Lang; iso: string }) {
     timeZone: 'Asia/Bangkok',
   });
   return (
-    <span className="text-caption text-muted">
+    <span className="text-caption text-ink-muted">
       {t('popup.time', lang)} {time}
     </span>
   );
@@ -435,7 +435,7 @@ function Legend({ lang, layers, palette }: { lang: Lang; layers: Layers; palette
   const c = palette.severity;
   const row = 'flex items-center gap-2';
   return (
-    <div className="absolute top-3 right-3 z-[1000] flex max-w-[210px] flex-col gap-1.5 rounded-box border border-line bg-panel/95 px-3 py-2 text-caption text-ink-2 shadow-sm">
+    <div className="absolute top-3 right-3 z-[1000] flex max-w-[210px] flex-col gap-1.5 rounded-card border border-line bg-surface/95 px-3 py-2 text-caption text-ink shadow-sm">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}

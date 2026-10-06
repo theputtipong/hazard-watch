@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { DashboardSnapshot, Observation } from '@hw/core';
-import { districtAt, districtById, feedStatuses, floodInDistrict, localAlerts, nearestLive, wantedAlerts } from '../src/status';
+import { districtAt, districtById, floodInDistrict, localAlerts, nearestLive, wantedAlerts } from '../src/status';
 
 const now = new Date('2026-10-06T08:00:00Z');
 const minsAgo = (m: number) => new Date(now.getTime() - m * 60_000).toISOString();
@@ -64,20 +64,5 @@ describe('readings near me', () => {
     const far = obs({ id: 'far', location: { lat: 13.9, lng: 100.6 } });
     const offline = obs({ id: 'off', location: siam, offline: true });
     expect(nearestLive([far, near, offline], siam, undefined, now)?.id).toBe('near');
-  });
-});
-
-describe('feed status', () => {
-  it('flags failing and stale feeds, skipping the daily CCTV list', () => {
-    const snap = snapshot({
-      runnerFeeds: {
-        rain: feed([], { ok: false, error: '403', lastOkAt: minsAgo(2000) }),
-        radar: feed([], { fetchedAt: minsAgo(400), lastOkAt: minsAgo(400) }),
-        cctv: feed([], { fetchedAt: minsAgo(1000) }),
-      },
-    });
-    const byKey = Object.fromEntries(feedStatuses(snap, now).map((f) => [f.key, f.state]));
-    expect(byKey).toMatchObject({ rain: 'failed', radar: 'stale', pm25: 'ok', flood: 'ok' });
-    expect(byKey).not.toHaveProperty('cctv');
   });
 });

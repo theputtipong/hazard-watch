@@ -37,12 +37,16 @@ chrome.notifications.onClicked.addListener(async (id) => {
 async function setBadge(alerts: Alert[] | null) {
   if (!alerts) {
     await chrome.action.setBadgeText({ text: '?' });
-    await chrome.action.setBadgeBackgroundColor({ color: '#5b6573' });
+    await chrome.action.setBadgeBackgroundColor({ color: '#566072' });
+    await chrome.action.setBadgeTextColor({ color: '#ffffff' });
     return;
   }
   const sev = alertSeverity(alerts);
   await chrome.action.setBadgeText({ text: sev === 'ok' ? '' : String(alerts.length) });
-  if (sev !== 'ok') await chrome.action.setBadgeBackgroundColor({ color: EXT.badgeColor[sev] });
+  if (sev !== 'ok') {
+    await chrome.action.setBadgeBackgroundColor({ color: EXT.badgeColor[sev] });
+    await chrome.action.setBadgeTextColor({ color: EXT.badgeText[sev] });
+  }
 }
 
 async function check(now = new Date()) {
@@ -62,7 +66,7 @@ async function check(now = new Date()) {
   for (const a of fresh) {
     await chrome.notifications.create(`${district.properties.id}|${a.key}`, {
       type: 'basic',
-      iconUrl: 'icons/icon-192.png',
+      iconUrl: 'icons/icon-128.png',
       title: a.title[settings.lang],
       message: a.body[settings.lang],
       priority: a.severity === 'danger' ? 2 : 1,

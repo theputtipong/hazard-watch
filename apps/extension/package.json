@@ -1,11 +1,12 @@
 {
   "name": "@hw/extension",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "scripts": {
     "build": "node build.mjs",
     "dev": "node build.mjs --watch",
+    "zip": "node build.mjs --zip",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },

@@ -9,17 +9,14 @@ export const EXT = {
   siteUrl: typeof __SITE_URL__ === 'string' ? __SITE_URL__ : 'https://hazard.pdouvch.com',
   /** How often the background worker checks for new alerts (Chrome allows 1 min at the least). */
   pollMinutes: 15,
-  /** Feeds listed under "Data status", in this order. */
-  feeds: ['flood', 'rain', 'waterlevel', 'radar', 'pm25', 'quakesTmd', 'quakesUsgs'] as const,
-  /** A feed whose last good fetch is older than this (minutes) reads "not updating". Same limits as tools/monitor/config.json. */
-  feedMaxAgeMinutes: { edge: 60, runner: 360 },
   /** Notification defaults (same as web push): every hazard, PM2.5 from the national standard. */
   defaultKinds: DEFAULT_CONFIG.push.kinds as PushKind[],
   pm25Choices: [25, 37.5, 50, 75],
   /** Same as WEB.map.driftCalmKmh: slower cloud-level wind reads as "rain barely moving". */
   driftCalmKmh: 5,
-  /** Toolbar badge colours per severity (the web palette's strong tones). */
-  badgeColor: { watch: '#704800', warn: '#9a3409', danger: '#8c0f28' },
+  /** Toolbar badge: design system solid sev-* colours, with on-sev / on-sev-danger text. */
+  badgeColor: { watch: '#b07f00', warn: '#e0640a', danger: '#c81e1e' },
+  badgeText: { watch: '#0f1b2e', warn: '#0f1b2e', danger: '#ffffff' },
+  /** Alert banners shown at once in the popup; the rest fold into "see all". */
+  maxBanners: 3,
 } as const;
-
-export type FeedKey = (typeof EXT.feeds)[number];

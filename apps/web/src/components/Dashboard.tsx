@@ -23,11 +23,12 @@ import { ZonePanel } from './ZonePanel';
 import { SummaryBanner } from './SummaryBanner';
 import { LoadStateContext, type LoadState } from '@/lib/loadState';
 import { CctvList } from './CctvList';
+import { FeedStatus } from './FeedStatus';
 import { FloodCard, Pm25Card, QuakeCard, WaterLevelCard, WeatherCard } from './HazardCards';
 import { Header } from './Header';
 import type { LayerKey, Layers } from '@/lib/layers';
 
-const MapView = dynamic(() => import('./MapView'), { ssr: false, loading: () => <div className="h-[420px] bg-map-bg sm:h-[520px]" /> });
+const MapView = dynamic(() => import('./MapView'), { ssr: false, loading: () => <div className="h-[420px] bg-surface-sunken sm:h-[520px]" /> });
 
 const LAYER_LABEL: Record<LayerKey, MessageKey> = { zones: 'zone.layer', radar: 'layer.radar', flood: 'layer.flood', water: 'layer.water', pm25: 'layer.pm25', cctv: 'layer.cctv' };
 
@@ -208,7 +209,7 @@ export function Dashboard({ lang, initialArea }: { lang: Lang; initialArea?: str
     <LoadStateContext.Provider value={snapshot ? 'ready' : loadState}>
       <a
         href="#summary"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[2000] focus:rounded-control focus:bg-panel focus:px-3 focus:py-2"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[2000] focus:rounded-control focus:bg-surface focus:px-3 focus:py-2"
       >
         {t('a11y.skip', lang)}
       </a>
@@ -230,12 +231,12 @@ export function Dashboard({ lang, initialArea }: { lang: Lang; initialArea?: str
           <p>{spoken}</p>
         </section>
         {loadState === 'error' && (
-          <div role="alert" className="flex basis-full flex-wrap items-center gap-3 rounded-box bg-danger max-lg:order-first px-4 py-2.5 text-body text-danger-strong">
+          <div role="alert" className="flex basis-full flex-wrap items-center gap-3 rounded-card border border-line-control bg-surface-sunken max-lg:order-first px-4 py-2.5 text-body text-ink">
             <span className="flex-1">{t('common.offline', lang)}</span>
             <button
               type="button"
               onClick={() => setRetry((n) => n + 1)}
-              className="min-h-11 rounded-full border border-danger-strong px-4 font-semibold"
+              className="min-h-11 rounded-control border border-line-control bg-surface px-4 text-label hover:bg-surface-sunken"
             >
               {t('common.retry', lang)}
             </button>
@@ -244,35 +245,35 @@ export function Dashboard({ lang, initialArea }: { lang: Lang; initialArea?: str
         {/* Only with data: without a snapshot it would wrongly read as "no sensors". */}
         {snapshot && <SummaryBanner lang={lang} lines={summaryLines} />}
         {(status === 'denied' || status === 'unsupported') && (
-          <div className="flex basis-full flex-wrap items-center gap-2 rounded-box bg-sunken px-4 py-2.5 text-body max-lg:order-first">
+          <div className="flex basis-full flex-wrap items-center gap-2 rounded-card bg-surface-sunken px-4 py-2.5 text-body max-lg:order-first">
             <span className="flex flex-[1_1_260px] flex-col">
               {pickedZone ? (
                 <strong className="text-title">{t('location.picked', lang, { area: zoneLabel(pickedZone, lang) })}</strong>
               ) : (
                 <>
                   <span>{t('location.denied', lang)}</span>
-                  <span className="text-caption text-muted">{t('location.pickHint', lang)}</span>
+                  <span className="text-caption text-ink-muted">{t('location.pickHint', lang)}</span>
                 </>
               )}
             </span>
             <a
               href="#zones"
               className={`inline-flex min-h-11 items-center rounded-full px-4 font-semibold ${
-                pickedZone ? 'border border-chip-line bg-panel' : 'bg-accent text-panel'
+                pickedZone ? 'border border-line-control bg-surface' : 'bg-accent text-on-accent'
               }`}
             >
               {t(pickedZone ? 'location.pickChange' : 'location.pick', lang)}
             </a>
             {status === 'denied' && (
-              <button type="button" onClick={() => void locate()} className="min-h-11 rounded-full border border-chip-line bg-panel px-4 font-medium">
+              <button type="button" onClick={() => void locate()} className="min-h-11 rounded-full border border-line-control bg-surface px-4 font-medium">
                 {t('location.useMine', lang)}
               </button>
             )}
           </div>
         )}
 
-        <section aria-label={t('map.title', lang)} className="min-w-0 flex-[999_1_560px] overflow-hidden rounded-card border border-line bg-panel">
-          <div className="flex flex-wrap items-center gap-2 border-b border-line-soft px-3.5 py-3">
+        <section aria-label={t('map.title', lang)} className="min-w-0 flex-[999_1_560px] overflow-hidden rounded-card border border-line bg-surface">
+          <div className="flex flex-wrap items-center gap-2 border-b border-line px-3.5 py-3">
             <strong className="mr-1.5 text-title">{t('map.layers', lang)}</strong>
             {(Object.keys(LAYER_LABEL) as LayerKey[]).map((key) => (
               <button
@@ -281,7 +282,7 @@ export function Dashboard({ lang, initialArea }: { lang: Lang; initialArea?: str
                 aria-pressed={layers[key]}
                 onClick={() => toggle(key)}
                 className={`min-h-11 rounded-full border px-3.5 text-body font-medium ${
-                  layers[key] ? 'border-ink bg-ink text-panel' : 'border-chip-line bg-panel text-ink-2'
+                  layers[key] ? 'border-ink bg-ink text-on-ink' : 'border-line-control bg-surface text-ink'
                 }`}
               >
                 {t(LAYER_LABEL[key], lang)}
@@ -307,8 +308,8 @@ export function Dashboard({ lang, initialArea }: { lang: Lang; initialArea?: str
             dark={prefs.dark}
           />
           {layers.radar && (
-            <div className="flex flex-wrap items-center gap-2 border-t border-line-soft px-3.5 py-2.5 text-body">
-              <label htmlFor="radar-src" className="text-muted">
+            <div className="flex flex-wrap items-center gap-2 border-t border-line px-3.5 py-2.5 text-body">
+              <label htmlFor="radar-src" className="text-ink-muted">
                 {t('radar.source', lang)}
               </label>
               <select
@@ -318,7 +319,7 @@ export function Dashboard({ lang, initialArea }: { lang: Lang; initialArea?: str
                   setRadarChoice(e.target.value);
                   setRadarFocus((n) => n + 1);
                 }}
-                className="min-h-11 rounded-control border border-chip-line bg-panel px-2.5 text-ink"
+                className="min-h-11 rounded-control border border-line-control bg-surface px-2.5 text-ink"
               >
                 {radarGroups(radarIds, lang).map((g) => (
                   <optgroup key={g.agency} label={t(`radar.agency.${g.agency}`, lang)}>
@@ -330,13 +331,13 @@ export function Dashboard({ lang, initialArea }: { lang: Lang; initialArea?: str
                   </optgroup>
                 ))}
               </select>
-              <span className={radarOld ? 'rounded-control bg-watch px-2 py-0.5 text-caption text-watch-strong' : 'text-caption text-muted'}>
+              <span className={radarOld ? 'rounded-control bg-surface-sunken px-2 py-0.5 text-caption text-ink' : 'text-caption text-ink-muted'}>
                 {radarFrame
                   ? t(radarOld ? 'radar.old' : 'radar.frame', lang, { time: clock(radarFrame.time) })
                   : t('radar.none', lang)}
               </span>
               {radarFrame?.echoPixels !== undefined && radarFrame.echoPixels < WEB.map.radarMinEchoPixels && (
-                <span className="rounded-control bg-ok px-2 py-0.5 text-caption text-ok-strong">{t('radar.clear', lang)}</span>
+                <span className="rounded-control bg-surface-sunken px-2 py-0.5 text-caption text-ink-muted">{t('radar.clear', lang)}</span>
               )}
             </div>
           )}
@@ -357,8 +358,13 @@ export function Dashboard({ lang, initialArea }: { lang: Lang; initialArea?: str
         <div className="basis-full">
           <CctvList lang={lang} cameras={view.nearCams} />
         </div>
+        {snapshot && (
+          <div className="basis-full">
+            <FeedStatus lang={lang} snapshot={snapshot} />
+          </div>
+        )}
       </main>
-      <footer className="mx-auto flex max-w-[1360px] flex-wrap items-center justify-between gap-4 px-4 pb-8 text-caption text-muted sm:px-6">
+      <footer className="mx-auto flex max-w-[1360px] flex-wrap items-center justify-between gap-4 px-4 pb-8 text-caption text-ink-muted sm:px-6">
         <span className="flex flex-[1_1_520px] flex-col gap-1">
           <span>{t('app.coverage', lang, { regions: activeRegions().map((r) => r.name[lang]).join(', ') })}</span>
           <span>{t('footer.credits', lang)}</span>
@@ -367,7 +373,7 @@ export function Dashboard({ lang, initialArea }: { lang: Lang; initialArea?: str
           href={WEB.donateUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex min-h-11 items-center rounded-full bg-[#ffdd00] px-3.5 font-semibold text-[#0f1b2d]"
+          className="inline-flex min-h-11 items-center rounded-full bg-[#ffdd00] px-3.5 font-semibold text-[#0f1b2e]"
         >
           {t('footer.coffee', lang)}
         </a>

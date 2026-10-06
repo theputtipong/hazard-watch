@@ -8,6 +8,9 @@ import {
   bmaFloodSeverity,
   distanceKm,
   compassPoint,
+  clockText,
+  feedAgeText,
+  feedStatuses,
   mergeConfig,
   pm25Severity,
   pm25ShouldPush,
@@ -121,7 +124,7 @@ describe('i18n', () => {
     }
   });
   it('fills placeholders', () => {
-    expect(t('quake.none', 'en', { mag: 6, km: 1500, days: 7 })).toBe('No M6+ within 1500 km in the past 7 days');
+    expect(t('quake.none', 'en', { mag: 6, km: 1500, days: 7 })).toBe('No magnitude 6+ earthquake within 1500 km in the past 7 days');
   });
 });
 
@@ -186,7 +189,7 @@ describe('push alerts', () => {
       cfg,
     ).get('TH1001')!;
     expect(alerts.map((a) => a.kind).sort()).toEqual(['flood', 'pm25', 'rain', 'water']);
-    expect(alerts.find((a) => a.kind === 'flood')!.title.th).toBe('น้ำท่วมขังในพระนคร');
+    expect(alerts.find((a) => a.kind === 'flood')!.title.th).toBe('ระวังมาก: น้ำท่วมบนถนนที่พระนคร');
     expect(alerts.find((a) => a.kind === 'pm25')).toMatchObject({ key: 'pm25:TH1001', value: 40 });
   });
   it('ignores stale readings and values under the thresholds', () => {
@@ -243,7 +246,7 @@ describe('push alerts', () => {
   it('names USGS quakes in Thai in the push body', () => {
     const q = { id: 'usgs:y', source: 'usgs' as const, magnitude: 7.7, depthKm: 10, location: { lat: 22.01, lng: 95.92 }, place: { th: '16 km NNW of Sagaing, Myanmar', en: '16 km NNW of Sagaing, Myanmar' }, occurredAt: new Date().toISOString() };
     const [a] = quakeAlerts([q], district, cfg);
-    expect(a!.body.th).toMatch(/^ประเทศเมียนมา · ห่าง \d+ กม\.$/);
+    expect(a!.body.th).toMatch(/^ประเทศเมียนมา ห่าง \d+ กม\.$/);
     expect(a!.body.en).toContain('16 km NNW of Sagaing, Myanmar');
   });
 });
@@ -287,5 +290,28 @@ describe('quake place names', () => {
 describe('compassPoint', () => {
   it('rounds a bearing to the nearest of 8 points', () => {
     expect([0, 22, 23, 87, 180, 250, 337.6, 360, -45].map(compassPoint)).toEqual(['N', 'N', 'NE', 'E', 'S', 'W', 'N', 'N', 'NW']);
+  });
+});
+
+describe('feedStatuses', () => {
+  const now = new Date('2026-10-06T08:00:00Z');
+  const ago = (m: number) => new Date(now.getTime() - m * 60_000).toISOString();
+  const r = (over: object) => ({ source: 'x', fetchedAt: ago(5), ok: true, items: [], ...over }) as never;
+  const snap = {
+    edge: { updatedAt: ago(5), feeds: { pm25: r({}), quakesTmd: r({ ok: false, failingSince: ago(30), lastOkAt: ago(200) }), quakesUsgs: r({}) } },
+    runner: { updatedAt: ago(5), feeds: { rain: r({ ok: false, failingSince: ago(110) }), radar: r({ fetchedAt: ago(400), lastOkAt: ago(400) }), cctv: r({}) } },
+  } as never;
+
+  it('rates each topic, counting both quake sources as one', () => {
+    const byTopic = Object.fromEntries(feedStatuses(snap, now).map((f) => [f.topic, f.state]));
+    expect(byTopic).toEqual({ rain: 'down', radar: 'stale', pm25: 'live', quakes: 'live' });
+  });
+
+  it('words the age line like the design system', () => {
+    const [rain, radar, pm25] = feedStatuses(snap, now);
+    expect(feedAgeText(rain!, 'th', now)).toBe('แหล่งข้อมูลมีปัญหา ตั้งแต่ 13:10\u00a0น.')
+    expect(clockText('2026-10-05T14:40:00Z', 'th', now)).toBe('5\u00a0ต.ค.\u00a021:40\u00a0น.');
+    expect(feedAgeText(radar!, 'th', now)).toBe('ไม่มีข้อมูลใหม่มา 7 ชม.');
+    expect(feedAgeText(pm25!, 'th', now)).toBe('5 นาทีที่แล้ว');
   });
 });

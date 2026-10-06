@@ -15,12 +15,10 @@ import {
   type Observation,
   type PushKind,
   type Severity,
-  type SourceResult,
   type ZoneFeature,
 } from '@hw/core';
 // District polygons built by tools/boundaries/build.py (shared with the web app and the push sender).
 import districtsFile from '../../web/public/geo/districts.json';
-import { EXT, type FeedKey } from './config';
 
 export const DISTRICTS = (districtsFile as unknown as { features: ZoneFeature[] }).features;
 
@@ -59,27 +57,6 @@ export function wantedAlerts(alerts: Alert[], prefs: AlertPrefs): Alert[] {
 }
 
 export const alertSeverity = (alerts: Alert[]): Severity => worst(alerts.map((a) => a.severity));
-
-export interface FeedStatus {
-  key: FeedKey;
-  state: 'ok' | 'stale' | 'failed';
-  /** Last successful fetch, if known. */
-  lastOkAt: string | null;
-}
-
-/** Health of each feed, judged like tools/monitor: by the age of its last successful fetch. */
-export function feedStatuses(snapshot: DashboardSnapshot, now = new Date()): FeedStatus[] {
-  const all = { ...snapshot.edge?.feeds, ...snapshot.runner?.feeds } as Partial<Record<FeedKey, SourceResult<unknown>>>;
-  const group = (key: FeedKey) => (key in (snapshot.edge?.feeds ?? {}) ? 'edge' : 'runner');
-  return EXT.feeds
-    .filter((key) => all[key])
-    .map((key) => {
-      const r = all[key]!;
-      const lastOkAt = r.lastOkAt ?? (r.ok ? r.fetchedAt : null);
-      const tooOld = !lastOkAt || now.getTime() - Date.parse(lastOkAt) > EXT.feedMaxAgeMinutes[group(key)] * 60_000;
-      return { key, lastOkAt, state: !r.ok ? 'failed' : tooOld ? 'stale' : 'ok' };
-    });
-}
 
 /** Nearest live reading of a kind (offline, empty and stale readings are skipped). */
 export function nearestLive(items: Observation[] | undefined, from: LatLng, cfg: AlertConfig = DEFAULT_CONFIG, now = new Date()) {
