@@ -72,12 +72,18 @@ app.get('/', (c) => c.text('hw-ingest ok'));
 async function edgeCached(c: Context<{ Bindings: Env }>, key: string, seconds: number, build: () => Promise<Response>) {
   const cache = caches.default;
   const hit = await cache.match(key);
-  if (hit) return new Response(hit.body, hit);
+  if (hit) return withMaxAge(new Response(hit.body, hit), seconds);
   const res = await build();
   if (res.ok) {
     res.headers.set('cache-control', `public, max-age=${seconds}`);
     c.executionCtx.waitUntil(cache.put(key, res.clone()));
   }
+  return res;
+}
+
+// The zone's Browser Cache TTL (4 h) rewrites cache-control on stored copies; reset it so browsers refetch on time.
+function withMaxAge(res: Response, seconds: number) {
+  res.headers.set('cache-control', `public, max-age=${seconds}`);
   return res;
 }
 
@@ -121,7 +127,7 @@ app.get('/v1/radar/:id', async (c) => {
   // Edge-cached per URL (?t=<frame time>) so the bundle is read from KV once per frame.
   const cache = caches.default;
   const hit = await cache.match(c.req.raw);
-  if (hit) return hit;
+  if (hit) return withMaxAge(new Response(hit.body, hit), INGEST.cacheSeconds.radar);
   const bundle = await c.env.SNAPSHOTS.get(KEYS.radarBundle, 'arrayBuffer');
   const found = bundle ? unpackRadar(bundle, id) : null;
   if (!found) return c.json({ error: 'no image yet' }, 404);
