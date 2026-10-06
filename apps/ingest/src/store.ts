@@ -1,7 +1,7 @@
 import type { SourceResult } from '@hw/core';
 import type { FeedName } from '@hw/sources';
 
-// KV free plan allows 1,000 writes/day: one put per group per run (edge 144/day, runner + radar bundle ~100/day).
+// KV free plan allows 1,000 writes/day: one put per group per run (edge 144/day, runner + radar bundle ~90/day).
 export const KEYS = {
   edge: 'snapshot:edge',
   runner: 'snapshot:runner',

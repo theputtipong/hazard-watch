@@ -1,12 +1,12 @@
 {
-  "$comment": "Read by tools/monitor/check.mjs (hourly). A feed is down when its last successful fetch is older than maxStaleMinutes.",
+  "$comment": "Read by tools/monitor/check.mjs (every 2 h). A feed is down when its last successful fetch is older than maxStaleMinutes.",
   "snapshotUrl": "https://api.hazard.pdouvch.com/v1/snapshot",
   "requestTimeoutMs": 20000,
   "label": "outage",
   "titlePrefix": "แหล่งข้อมูลล่ม: ",
   "apiIssueName": "api",
   "groups": {
-    "$comment": "edge: Cloudflare cron every 10 min. runner: GitHub Actions every 30 min, but schedules can lag 2-3 h, so 6 h. Keep in sync with FEED_MAX_AGE_MINUTES in packages/core/src/feeds.ts.",
+    "$comment": "edge: Cloudflare cron every 10 min. runner: dispatched every 40 min (GitHub fallback schedule every 3 h, can lag 2-3 h), so 6 h. Keep in sync with FEED_MAX_AGE_MINUTES in packages/core/src/feeds.ts.",
     "edge": { "maxStaleMinutes": 60 },
     "runner": { "maxStaleMinutes": 360 }
   },

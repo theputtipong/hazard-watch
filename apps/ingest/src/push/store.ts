@@ -72,12 +72,12 @@ export async function subscriptionsIn(db: D1Database, districts: string[] | 'all
   return (await db.prepare(`SELECT * FROM subscriptions WHERE district IN (${marks})`).bind(...districts).all<SubscriptionRow>()).results;
 }
 
-export async function recentlySent(db: D1Database, id: string, since: Date): Promise<Set<string>> {
+export async function sentSince(db: D1Database, id: string, since: Date): Promise<Map<string, string>> {
   const rows = await db
-    .prepare('SELECT alert_key FROM sent WHERE subscription_id = ?1 AND sent_at >= ?2')
+    .prepare('SELECT alert_key, sent_at FROM sent WHERE subscription_id = ?1 AND sent_at >= ?2')
     .bind(id, since.toISOString())
-    .all<{ alert_key: string }>();
-  return new Set(rows.results.map((r) => r.alert_key));
+    .all<{ alert_key: string; sent_at: string }>();
+  return new Map(rows.results.map((r) => [r.alert_key, r.sent_at]));
 }
 
 export function markSent(db: D1Database, id: string, key: string, now: Date) {

@@ -7,7 +7,9 @@ import {
   DEFAULT_CONFIG,
   bmaFloodSeverity,
   distanceKm,
+  alertsDue,
   compassPoint,
+  sentRetentionMs,
   clockText,
   feedAgeText,
   feedStatuses,
@@ -313,5 +315,25 @@ describe('feedStatuses', () => {
     expect(clockText('2026-10-05T14:40:00Z', 'th', now)).toBe('5\u00a0ต.ค.\u00a021:40\u00a0น.');
     expect(feedAgeText(radar!, 'th', now)).toBe('ไม่มีข้อมูลใหม่มา 7 ชม.');
     expect(feedAgeText(pm25!, 'th', now)).toBe('5 นาทีที่แล้ว');
+  });
+});
+
+describe('alertsDue', () => {
+  const now = new Date('2026-10-06T12:00:00Z');
+  const hoursAgo = (h: number) => new Date(now.getTime() - h * 3_600_000).toISOString();
+  const quake = { kind: 'quake' as const, key: 'quake:us1' };
+  const flood = { kind: 'flood' as const, key: 'flood:TH1007' };
+
+  it('sends a quake once while it is listed, but repeats ongoing hazards after the cooldown', () => {
+    const sent = new Map([
+      [quake.key, hoursAgo(5)],
+      [flood.key, hoursAgo(5)],
+    ]);
+    expect(alertsDue([quake, flood], sent, DEFAULT_CONFIG, now)).toEqual([flood]);
+    expect(alertsDue([quake, flood], new Map([[flood.key, hoursAgo(1)]]), DEFAULT_CONFIG, now)).toEqual([quake]);
+  });
+
+  it('keeps sent records at least as long as a quake stays listed', () => {
+    expect(sentRetentionMs(DEFAULT_CONFIG)).toBe(DEFAULT_CONFIG.quake.lookbackHours * 3_600_000);
   });
 });

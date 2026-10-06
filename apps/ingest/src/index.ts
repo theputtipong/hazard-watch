@@ -1,13 +1,13 @@
 import { RADARS, type DashboardSnapshot } from '@hw/core';
 import { t } from '@hw/core/i18n';
-import { defaultContext, fetchWeather, FEEDS, type EdgeFeed, type RunnerFeed } from '@hw/sources';
-import { Hono } from 'hono';
+import { defaultContext, fetchWeather, FEEDS, REQUEST, type EdgeFeed, type RunnerFeed } from '@hw/sources';
+import { Hono, type Context } from 'hono';
 import { cors } from 'hono/cors';
 import { INGEST } from './config';
 import { isPushEndpoint } from './push/notifier';
 import { cleanPrefs, type IncomingPrefs } from './push/prefs';
 import { DISTRICT_IDS, messageFor, notifierFor, sendAlerts, type PushEnv } from './push/run';
-import { deleteSubscription, getSubscription, recentlySent, markSent, subscriptionId, upsertSubscription } from './push/store';
+import { deleteSubscription, getSubscription, markSent, sentSince, subscriptionId, upsertSubscription } from './push/store';
 import { KEYS, readGroup, unpackRadar, writeGroup, type FeedMap } from './store';
 import { buildSummary } from './summary';
 
@@ -18,6 +18,7 @@ export interface Env extends PushEnv {
   GITHUB_DISPATCH_TOKEN?: string;
   INGEST_TOKEN: string;
   ALLOWED_ORIGINS: string;
+  WEATHER_LIMITER?: RateLimit;
 }
 
 const RUNNER_FEEDS = Object.keys(FEEDS.runner) as RunnerFeed[];
@@ -67,16 +68,33 @@ app.use('/v1/*', async (c, next) =>
 
 app.get('/', (c) => c.text('hw-ingest ok'));
 
-app.get('/v1/snapshot', async (c) => {
-  const [edge, runner] = await Promise.all([readGroup(c.env.SNAPSHOTS, KEYS.edge), readGroup(c.env.SNAPSHOTS, KEYS.runner)]);
-  c.header('cache-control', `public, max-age=${INGEST.cacheSeconds.snapshot}`);
-  return c.json({ edge, runner });
-});
+/** Serves from the edge cache; `build` runs only on a miss. Cached copies are stored before CORS headers are added. */
+async function edgeCached(c: Context<{ Bindings: Env }>, key: string, seconds: number, build: () => Promise<Response>) {
+  const cache = caches.default;
+  const hit = await cache.match(key);
+  if (hit) return new Response(hit.body, hit);
+  const res = await build();
+  if (res.ok) {
+    res.headers.set('cache-control', `public, max-age=${seconds}`);
+    c.executionCtx.waitUntil(cache.put(key, res.clone()));
+  }
+  return res;
+}
+
+const cacheKey = (c: Context, path: string) => `${new URL(c.req.url).origin}${path}`;
+
+app.get('/v1/snapshot', (c) =>
+  edgeCached(c, cacheKey(c, '/v1/snapshot'), INGEST.cacheSeconds.snapshot, async () => {
+    const [edge, runner] = await Promise.all([readGroup(c.env.SNAPSHOTS, KEYS.edge), readGroup(c.env.SNAPSHOTS, KEYS.runner)]);
+    return Response.json({ edge, runner });
+  }),
+);
 
 app.get('/v1/summary', async (c) => {
-  const [edge, runner] = await Promise.all([readGroup(c.env.SNAPSHOTS, KEYS.edge), readGroup(c.env.SNAPSHOTS, KEYS.runner)]);
-  c.header('cache-control', `public, max-age=${INGEST.cacheSeconds.snapshot}`);
-  return c.json(buildSummary(edge, runner));
+  return edgeCached(c, cacheKey(c, '/v1/summary'), INGEST.cacheSeconds.snapshot, async () => {
+    const [edge, runner] = await Promise.all([readGroup(c.env.SNAPSHOTS, KEYS.edge), readGroup(c.env.SNAPSHOTS, KEYS.runner)]);
+    return Response.json(buildSummary(edge, runner));
+  });
 });
 
 app.get('/v1/weather', async (c) => {
@@ -85,9 +103,16 @@ app.get('/v1/weather', async (c) => {
   if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) {
     return c.json({ error: 'lat and lng are required' }, 400);
   }
-  const weather = await fetchWeather(defaultContext(), { lat, lng });
-  c.header('cache-control', `public, max-age=${INGEST.cacheSeconds.weather}`);
-  return c.json(weather);
+  // One cache entry per ~1 km cell, and a per-IP limit on misses, so the Open-Meteo daily quota can't be drained.
+  const d = REQUEST.weatherCoordDecimals;
+  const cell = { lat: Number(lat.toFixed(d)), lng: Number(lng.toFixed(d)) };
+  return edgeCached(c, cacheKey(c, `/v1/weather?lat=${cell.lat}&lng=${cell.lng}`), INGEST.cacheSeconds.weather, async () => {
+    const ip = c.req.header('cf-connecting-ip') ?? 'unknown';
+    if (c.env.WEATHER_LIMITER && !(await c.env.WEATHER_LIMITER.limit({ key: ip })).success) {
+      return Response.json({ error: 'too many requests' }, { status: 429 });
+    }
+    return Response.json(await fetchWeather(defaultContext(), cell));
+  });
 });
 
 app.get('/v1/radar/:id', async (c) => {
@@ -163,7 +188,7 @@ app.post('/v1/push/test', async (c) => {
   const sub = await getSubscription(c.env.PUSH_DB, await subscriptionId(body.endpoint));
   if (!sub) return c.json({ error: 'not subscribed' }, 404);
   const now = new Date();
-  if ((await recentlySent(c.env.PUSH_DB, sub.id, new Date(now.getTime() - 60_000))).has('test')) {
+  if ((await sentSince(c.env.PUSH_DB, sub.id, new Date(now.getTime() - 60_000))).has('test')) {
     return c.json({ error: 'try again in a minute' }, 429);
   }
   const alert = {

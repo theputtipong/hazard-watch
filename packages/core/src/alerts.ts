@@ -175,3 +175,19 @@ export function quakeAlerts(quakes: Earthquake[], district: ZoneFeature, cfg: Al
       };
     });
 }
+
+/** A quake is a single event: alert once while it is still listed. Ongoing hazards remind after the cooldown. */
+export function repeatAfterMs(alert: Pick<Alert, 'kind'>, cfg: AlertConfig): number {
+  return (alert.kind === 'quake' ? cfg.quake.lookbackHours : cfg.push.cooldownHours) * 3_600_000;
+}
+
+/** How long a "sent" record must be kept so repeatAfterMs can be honoured. */
+export const sentRetentionMs = (cfg: AlertConfig) => Math.max(cfg.quake.lookbackHours, cfg.push.cooldownHours) * 3_600_000;
+
+/** Alerts not sent recently enough to repeat; `sent` maps alert key → ISO time it was last sent. */
+export function alertsDue<T extends Pick<Alert, 'kind' | 'key'>>(alerts: T[], sent: ReadonlyMap<string, string>, cfg: AlertConfig, now = new Date()): T[] {
+  return alerts.filter((a) => {
+    const at = sent.get(a.key);
+    return !at || now.getTime() - Date.parse(at) >= repeatAfterMs(a, cfg);
+  });
+}

@@ -77,7 +77,7 @@ packages/
   sources/  One adapter per data source; parses into the shared types. Tested against fixtures.
 .github/workflows/
   ingest-runner.yml  Fetches feeds that block Cloudflare IPs (BMA, ThaiWater) and pushes them to ingest.
-  ci.yml             Typecheck + tests.
+  ci.yml             Typecheck, lint, tests; on main also deploys what changed (see Deploy).
   monitor.yml        Source-outage check every 2 h; opens/closes `outage` issues (tools/monitor).
 ```
 
@@ -111,12 +111,28 @@ cp apps/web/.env.example apps/web/.env.local
 pnpm --filter @hw/ingest dev        # http://localhost:8787 (curl /__scheduled to run the cron)
 INGEST_URL=http://localhost:8787 INGEST_TOKEN=dev-token-change-me pnpm --filter @hw/ingest runner
 pnpm --filter @hw/web dev           # http://localhost:3000
-# deploy order: D1 migrations (--remote) → git push → ingest deploy → web deploy
-# web: NEXT_PUBLIC_API_BASE=https://api.hazard.pdouvch.com pnpm --filter @hw/web run deploy
-#      add NEXT_PUBLIC_TILE_PROVIDER=osm to fall back to OSM raster tiles (emergency/dev only)
+# manual deploy (normally done by CI, see Deploy): pnpm --filter @hw/ingest run deploy, then pnpm --filter @hw/web run deploy
+#      NEXT_PUBLIC_TILE_PROVIDER=osm falls back to OSM raster tiles (emergency/dev only)
 # a fresh checkout needs `pnpm --filter @hw/web exec next typegen` before typecheck
 pnpm test && pnpm typecheck
 ```
+
+## Deploy
+
+Pushing to `main` runs `.github/workflows/ci.yml`: checks first, then only the parts that changed are deployed.
+
+| Job | Runs when | Does |
+|---|---|---|
+| `deploy-ingest` | `apps/ingest`, `packages`, district polygons or the lockfile changed | `wrangler d1 migrations apply hw-push --remote`, then `wrangler deploy` |
+| `deploy-web` | `apps/web`, `packages` or the lockfile changed (after ingest, which goes first) | OpenNext build + deploy with `NEXT_PUBLIC_API_BASE=https://api.hazard.pdouvch.com` |
+| `extension` | `apps/extension`, `packages` or geo files changed | builds the store zip as a run artifact (store upload stays manual) |
+
+*Run workflow* → `deploy_all` redeploys both without a change. Needs, in the GitHub repo settings:
+- secret `CLOUDFLARE_API_TOKEN`: Cloudflare token from the "Edit Cloudflare Workers" template plus *D1: Edit*
+  (account `Puttipong.dou@gmail.com's Account`, zone `pdouvch.com`);
+- variable `CLOUDFLARE_ACCOUNT_ID`.
+
+Worker secrets (`VAPID_PRIVATE_KEY`, `INGEST_TOKEN`, `GITHUB_DISPATCH_TOKEN`) live in Cloudflare and are kept across deploys.
 
 ## Adding coverage
 

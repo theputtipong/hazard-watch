@@ -1,4 +1,4 @@
-import { DEFAULT_CONFIG, type Alert } from '@hw/core';
+import { alertsDue, DEFAULT_CONFIG, sentRetentionMs, type Alert } from '@hw/core';
 import { fetchSnapshot, siteLink } from './api';
 import { EXT } from './config';
 import { alertSeverity, districtById, localAlerts, wantedAlerts } from './status';
@@ -54,10 +54,10 @@ async function check(now = new Date()) {
   await setBadge(alerts);
   if (!settings.notify) return;
 
-  const cooldownMs = DEFAULT_CONFIG.push.cooldownHours * 3_600_000;
   const sent = await getSent();
-  for (const [key, at] of Object.entries(sent)) if (now.getTime() - Date.parse(at) > 2 * cooldownMs) delete sent[key];
-  const fresh = alerts.filter((a) => !sent[a.key] || now.getTime() - Date.parse(sent[a.key]!) > cooldownMs);
+  const keep = sentRetentionMs(DEFAULT_CONFIG);
+  for (const [key, at] of Object.entries(sent)) if (now.getTime() - Date.parse(at) > keep) delete sent[key];
+  const fresh = alertsDue(alerts, new Map(Object.entries(sent)), DEFAULT_CONFIG, now);
   for (const a of fresh) {
     await chrome.notifications.create(`${district.properties.id}|${a.key}`, {
       type: 'basic',

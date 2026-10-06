@@ -1,9 +1,11 @@
 import {
+  alertsDue,
   DEFAULT_CONFIG,
   districtAlerts,
   loosestQuakeLimit,
   mergeQuakes,
   quakeAlerts,
+  sentRetentionMs,
   type Alert,
   type DashboardSnapshot,
   type Earthquake,
@@ -13,7 +15,7 @@ import {
 import districtsFile from '../../../web/public/geo/districts.json';
 import { webPushNotifier, type OutgoingMessage } from './notifier';
 import { quakeLimitFor } from './prefs';
-import { deleteSubscription, forgetOldSends, markSent, recentlySent, subscriptionsIn, type SubscriptionPrefs, type SubscriptionRow } from './store';
+import { deleteSubscription, forgetOldSends, markSent, sentSince, subscriptionsIn, type SubscriptionPrefs, type SubscriptionRow } from './store';
 
 export const DISTRICTS = (districtsFile as unknown as { features: ZoneFeature[] }).features;
 export const DISTRICT_IDS = new Set(DISTRICTS.map((d) => d.properties.id));
@@ -56,7 +58,7 @@ export async function sendAlerts(env: PushEnv, snapshot: DashboardSnapshot, now 
   const withAlerts = [...byDistrict].filter(([, list]) => list.length).map(([id]) => id);
   const subs = await subscriptionsIn(env.PUSH_DB, quakeCandidates.length ? 'all' : withAlerts);
   const notifier = notifierFor(env);
-  const since = new Date(now.getTime() - cfg.push.cooldownHours * 3_600_000);
+  const since = new Date(now.getTime() - sentRetentionMs(cfg));
   const stats = { subscribers: subs.length, sent: 0, gone: 0, failed: 0 };
 
   for (const sub of subs) {
@@ -65,8 +67,7 @@ export async function sendAlerts(env: PushEnv, snapshot: DashboardSnapshot, now 
     const prefs = JSON.parse(sub.prefs || '{}') as SubscriptionPrefs;
     const candidates = wanted([...(byDistrict.get(sub.district) ?? []), ...(district ? quakeAlerts(quakes, district, cfg, now, quakeLimitFor(sub, cfg)) : [])], prefs);
     if (!candidates.length) continue;
-    const already = await recentlySent(env.PUSH_DB, sub.id, since);
-    const fresh = candidates.filter((a) => !already.has(a.key));
+    const fresh = alertsDue(candidates, await sentSince(env.PUSH_DB, sub.id, since), cfg, now);
     const writes = [];
     for (const alert of fresh) {
       const result = await notifier.send(sub, messageFor(alert, sub, env.SITE_URL), cfg.push.ttlSeconds);
@@ -82,6 +83,6 @@ export async function sendAlerts(env: PushEnv, snapshot: DashboardSnapshot, now 
     }
     if (writes.length) await env.PUSH_DB.batch(writes);
   }
-  await forgetOldSends(env.PUSH_DB, new Date(now.getTime() - 2 * cfg.push.cooldownHours * 3_600_000));
+  await forgetOldSends(env.PUSH_DB, since);
   return stats;
 }

@@ -26,7 +26,7 @@ export async function getSettings(): Promise<Settings> {
 
 export const saveSettings = (patch: Partial<Settings>) => chrome.storage.local.set(patch);
 
-/** Alert key → last shown, so a hazard isn't repeated within push.cooldownHours. */
+/** Alert key → last shown; see alertsDue for when an alert may repeat. */
 export async function getSent(): Promise<Record<string, string>> {
   return ((await chrome.storage.local.get('sent')).sent as Record<string, string> | undefined) ?? {};
 }

@@ -3,8 +3,8 @@ name: ingest-runner
 
 on:
   schedule:
-    # Private repos get ~2,000 free Actions min/month; every 10 min would need ~4,300.
-    - cron: '*/30 * * * *'
+    # Fallback only: the ingest cron dispatches this every 40 min. Both together must stay under ~2,000 free min/month.
+    - cron: '23 */3 * * *'
   workflow_dispatch:
 
 concurrency:

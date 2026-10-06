@@ -4,6 +4,12 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
+    inputs:
+      deploy_all:
+        description: Deploy ingest and web even if they did not change
+        type: boolean
+        default: false
 
 jobs:
   check:
@@ -20,3 +26,90 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm lint
       - run: pnpm test
+
+  changes:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    outputs:
+      ingest: ${{ steps.filter.outputs.ingest == 'true' || inputs.deploy_all == true }}
+      web: ${{ steps.filter.outputs.web == 'true' || inputs.deploy_all == true }}
+      extension: ${{ steps.filter.outputs.extension }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            ingest:
+              - 'apps/ingest/**'
+              - 'packages/**'
+              - 'apps/web/public/geo/districts.json'
+              - 'pnpm-lock.yaml'
+            web:
+              - 'apps/web/**'
+              - 'packages/**'
+              - 'pnpm-lock.yaml'
+            extension:
+              - 'apps/extension/**'
+              - 'packages/**'
+              - 'apps/web/public/geo/**'
+
+  # API first: the web reads fields (e.g. wind) that only a new ingest returns.
+  deploy-ingest:
+    needs: [check, changes]
+    if: github.ref == 'refs/heads/main' && needs.changes.outputs.ingest == 'true'
+    runs-on: ubuntu-latest
+    concurrency: { group: deploy-ingest, cancel-in-progress: false }
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --filter @hw/ingest...
+      - run: pnpm --filter @hw/ingest exec wrangler d1 migrations apply hw-push --remote
+      - run: pnpm --filter @hw/ingest run deploy
+
+  deploy-web:
+    needs: [check, changes, deploy-ingest]
+    if: >-
+      always() && github.ref == 'refs/heads/main' && needs.check.result == 'success'
+      && needs.changes.outputs.web == 'true' && needs.deploy-ingest.result != 'failure'
+    runs-on: ubuntu-latest
+    concurrency: { group: deploy-web, cancel-in-progress: false }
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+      NEXT_PUBLIC_API_BASE: https://api.hazard.pdouvch.com
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --filter @hw/web...
+      - run: pnpm --filter @hw/web run deploy
+
+  # Store uploads stay manual: download the zip from the run's artifacts.
+  extension:
+    needs: [check, changes]
+    if: github.ref == 'refs/heads/main' && needs.changes.outputs.extension == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --filter @hw/extension...
+      - run: pnpm --filter @hw/extension run zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hazardwatch-extension
+          path: apps/extension/hazardwatch-extension-*.zip

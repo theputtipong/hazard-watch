@@ -60,6 +60,12 @@ function urlBase64ToBytes(base64: string): Uint8Array<ArrayBuffer> {
   return out;
 }
 
+function sameKey(a: ArrayBuffer | null, b: Uint8Array) {
+  if (!a || a.byteLength !== b.byteLength) return false;
+  const x = new Uint8Array(a);
+  return x.every((v, i) => v === b[i]);
+}
+
 async function post(path: string, body: unknown) {
   const res = await fetch(`${API_BASE}${path}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
   if (!res.ok) throw new Error(`${res.status}`);
@@ -71,9 +77,15 @@ export async function subscribe(input: { lang: Lang; district: string; subdistri
   const reg = await navigator.serviceWorker.register('/sw.js');
   await navigator.serviceWorker.ready;
   const { publicKey } = (await (await fetch(`${API_BASE}/v1/push/key`)).json()) as { publicKey: string };
-  const sub =
-    (await reg.pushManager.getSubscription()) ??
-    (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToBytes(publicKey) }));
+  const key = urlBase64ToBytes(publicKey);
+  let sub = await reg.pushManager.getSubscription();
+  // A subscription made with an older VAPID key can never receive pushes again: replace it.
+  if (sub && !sameKey(sub.options.applicationServerKey, key)) {
+    await post('/v1/push/unsubscribe', { endpoint: sub.endpoint }).catch(() => {});
+    await sub.unsubscribe();
+    sub = null;
+  }
+  sub ??= await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key });
   await post('/v1/push/subscribe', { subscription: sub.toJSON(), lang: input.lang, district: input.district, subdistrict: input.subdistrict, prefs: input.prefs });
   try {
     localStorage.setItem(PREFS_KEY, JSON.stringify({ prefs: input.prefs, district: input.district, subdistrict: input.subdistrict }));
