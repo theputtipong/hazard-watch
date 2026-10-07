@@ -77,11 +77,16 @@ importers:
         specifier: ^4.147.0
         version: 4.147.0(@cloudflare/workers-types@5.20261003.1)(@types/node@22.20.5)
 
+  apps/mobile: {}
+
   apps/web:
     dependencies:
       '@hw/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@hw/tokens':
+        specifier: workspace:*
+        version: link:../../packages/tokens
       '@maplibre/maplibre-gl-leaflet':
         specifier: ^0.1.4
         version: 0.1.4(@types/leaflet@1.9.22)(leaflet@1.9.4)(maplibre-gl@5.24.0)
@@ -159,6 +164,8 @@ importers:
       vitest:
         specifier: ^4.0.0
         version: 4.1.11(@types/node@22.20.5)(vite@8.3.2(@types/node@22.20.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.16.9)(tsx@4.23.15)(yaml@2.9.1))
+
+  packages/tokens: {}
 
 packages:
 

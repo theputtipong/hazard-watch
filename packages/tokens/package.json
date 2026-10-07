@@ -1,0 +1,14 @@
+{
+  "name": "@hw/tokens",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./generated/tokens.ts",
+    "./theme.css": "./generated/theme.css"
+  },
+  "scripts": {
+    "generate": "node scripts/generate.mjs",
+    "test": "node scripts/generate.mjs --check"
+  }
+}

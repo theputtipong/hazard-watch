@@ -1,5 +1,14 @@
 import { DEFAULT_CONFIG, type Severity } from '@hw/core';
+import { palettes, type Palette } from '@hw/tokens';
 import type { LayerKey } from './lib/layers';
+
+/** Leaflet and inline SVG need real colour values, so these come from the same tokens as the CSS sev-* variables. */
+const severityOf = (p: Palette): Record<Severity, string> => ({
+  ok: p.sevNormal,
+  watch: p.sevWatch,
+  warn: p.sevWarning,
+  danger: p.sevDanger,
+});
 
 export type TileProvider = 'openfreemap' | 'osm';
 
@@ -53,26 +62,23 @@ export const WEB = {
     /** Normal flood points stay small dots so problems stand out. */
     markerRadius: { floodNormal: 4 },
     iconSize: { you: 34, floodWatch: 26, floodWarn: 30, floodDanger: 34, pm25: 30, water: 30, cctv: 24 },
-    youColor: '#2457d6', // accent
+    youColor: palettes.light.accent,
     locateZoom: 14,
     legendOpenMinWidth: 640,
     /** Hidden below this zoom so hundreds of cameras don't bury the hazards. */
     cctvMinZoom: 13,
-    cctvColor: '#0f1b2e', // ink
+    cctvColor: palettes.light.ink,
   },
 
-  /** Same values as the sev-* tokens in app/globals.css; normal is grey so only problems get colour. */
-  severityColor: {
-    light: { ok: '#8a93a3', watch: '#b07f00', warn: '#e0640a', danger: '#c81e1e' },
-    dark: { ok: '#5d6b84', watch: '#f5c542', warn: '#ff9440', danger: '#ff6464' },
-  } satisfies Record<'light' | 'dark', Record<Severity, string>>,
+  /** Normal is grey so only problems get colour. */
+  severityColor: { light: severityOf(palettes.light), dark: severityOf(palettes.dark) },
   /** Paul Tol "muted" palette for colour-blind mode (hues also differ in lightness). */
-  severityColorCvd: { ok: '#8a93a3', watch: '#ddcc77', warn: '#cc6677', danger: '#882255' } satisfies Record<Severity, string>,
-  floodNormalColor: '#8a93a3', // sev-normal
+  severityColorCvd: severityOf(palettes.lightCvd),
+  floodNormalColor: palettes.light.sevNormal,
 
   zones: {
     fillOpacity: { ok: 0.1, watch: 0.28, warn: 0.32, danger: 0.36 } satisfies Record<Severity, number>,
-    borderColor: '#566072', // ink-muted
+    borderColor: palettes.light.inkMuted,
     borderWeight: 1.2,
     selectedWeight: 4,
     fitPadding: 24,

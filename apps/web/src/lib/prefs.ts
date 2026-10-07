@@ -2,6 +2,7 @@
 
 import { useEffect, useSyncExternalStore } from 'react';
 import type { Severity } from '@hw/core';
+import { palettes } from '@hw/tokens';
 import { WEB } from '@/config';
 import { PREF_KEYS } from './prefsScript';
 
@@ -82,6 +83,6 @@ export interface MapPalette {
 export function mapPalette(p: Prefs): MapPalette {
   return {
     severity: p.cvd ? WEB.severityColorCvd : WEB.severityColor[p.dark ? 'dark' : 'light'],
-    selected: p.dark ? '#e6ebf3' : '#0f1b2e',
+    selected: palettes[p.dark ? 'dark' : 'light'].ink,
   };
 }

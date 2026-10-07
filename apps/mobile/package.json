@@ -1,0 +1,10 @@
+{
+  "name": "@hw/mobile",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "generate": "node tool/gen_l10n.mjs",
+    "test": "node tool/gen_l10n.mjs --check"
+  }
+}

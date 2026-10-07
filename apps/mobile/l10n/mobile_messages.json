@@ -1,0 +1,18 @@
+{
+  "$comment": "Strings only the app needs, or where the mobile design system's wording differs from the web. Same key as packages/core/src/i18n/messages.ts overrides it; a new key adds one. Run `pnpm --filter @hw/mobile generate` after editing.",
+  "level.semantics": { "th": "ระดับ {level}", "en": "Level: {level}" },
+  "home.allClear": { "th": "แถวนี้ตอนนี้ปกติดี", "en": "All normal around here right now" },
+  "common.offlineAt": { "th": "ไม่มีอินเทอร์เน็ต กำลังแสดงข้อมูลเมื่อ {time}", "en": "No internet. Showing data from {time}" },
+  "permission.location": {
+    "th": "ใช้ตำแหน่งเพื่อหาว่าคุณอยู่เขตไหนเท่านั้น ไม่มีการเก็บไว้",
+    "en": "Your location is only used to find your district. It is not stored."
+  },
+  "permission.notifications": {
+    "th": "เปิดไว้ แล้วเราจะบอกเมื่อแถวบ้านมีเรื่องต้องระวัง",
+    "en": "Turn this on and we'll tell you when something near home needs care."
+  },
+  "nav.home": { "th": "หน้าแรก", "en": "Home" },
+  "nav.map": { "th": "แผนที่", "en": "Map" },
+  "nav.alerts": { "th": "แจ้งเตือน", "en": "Alerts" },
+  "nav.settings": { "th": "ตั้งค่า", "en": "Settings" }
+}

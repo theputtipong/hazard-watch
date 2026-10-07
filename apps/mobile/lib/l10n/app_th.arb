@@ -1,0 +1,1546 @@
+{
+  "@@locale": "th",
+  "@@x-generated": "From packages/core/src/i18n/messages.ts + l10n/mobile_messages.json by tool/gen_l10n.mjs. Do not edit.",
+  "appName": "เฝ้าระวังภัย",
+  "@appName": {
+    "description": "app.name"
+  },
+  "appTagline": "เตือนภัยอากาศ น้ำท่วม ฝุ่น แผ่นดินไหว ตามตำแหน่งของคุณ",
+  "@appTagline": {
+    "description": "app.tagline"
+  },
+  "appCoverage": "พื้นที่ที่ให้บริการตอนนี้: {regions}",
+  "@appCoverage": {
+    "description": "app.coverage",
+    "placeholders": {
+      "regions": {
+        "type": "String"
+      }
+    }
+  },
+  "commonUpdated": "อัปเดต",
+  "@commonUpdated": {
+    "description": "common.updated"
+  },
+  "commonBack": "ย้อนกลับ",
+  "@commonBack": {
+    "description": "common.back"
+  },
+  "commonLanguage": "ภาษา",
+  "@commonLanguage": {
+    "description": "common.language"
+  },
+  "commonSource": "ข้อมูลจาก",
+  "@commonSource": {
+    "description": "common.source"
+  },
+  "commonStale": "ไม่มีข้อมูลใหม่",
+  "@commonStale": {
+    "description": "common.stale"
+  },
+  "commonNoData": "ไม่มีข้อมูล",
+  "@commonNoData": {
+    "description": "common.noData"
+  },
+  "commonLoading": "กำลังโหลดข้อมูล…",
+  "@commonLoading": {
+    "description": "common.loading"
+  },
+  "commonRetry": "ลองใหม่",
+  "@commonRetry": {
+    "description": "common.retry"
+  },
+  "commonOffline": "ต่อระบบข้อมูลไม่ได้ ตัวเลขที่เห็นอาจเป็นของเก่า",
+  "@commonOffline": {
+    "description": "common.offline"
+  },
+  "commonHome": "กลับหน้าหลัก",
+  "@commonHome": {
+    "description": "common.home"
+  },
+  "notFoundTitle": "ไม่พบหน้านี้",
+  "@notFoundTitle": {
+    "description": "notFound.title"
+  },
+  "notFoundBody": "ลิงก์อาจผิดหรือหน้านี้ถูกย้ายไปแล้ว",
+  "@notFoundBody": {
+    "description": "notFound.body"
+  },
+  "commonViewAtSource": "ดูที่ต้นทาง",
+  "@commonViewAtSource": {
+    "description": "common.viewAtSource"
+  },
+  "cctvViewLive": "ดูภาพสด",
+  "@cctvViewLive": {
+    "description": "cctv.viewLive"
+  },
+  "cctvOpening": "เปิดผ่านเว็บไซต์ กทม. ใช้เวลาประมาณ 3 วินาที",
+  "@cctvOpening": {
+    "description": "cctv.opening"
+  },
+  "severityOk": "ปกติ",
+  "@severityOk": {
+    "description": "severity.ok"
+  },
+  "severityWatch": "ระวัง",
+  "@severityWatch": {
+    "description": "severity.watch"
+  },
+  "severityWarn": "ระวังมาก",
+  "@severityWarn": {
+    "description": "severity.warn"
+  },
+  "severityDanger": "อันตราย",
+  "@severityDanger": {
+    "description": "severity.danger"
+  },
+  "locationChange": "เปลี่ยนตำแหน่ง",
+  "@locationChange": {
+    "description": "location.change"
+  },
+  "locationUseMine": "ใช้ตำแหน่งของฉัน",
+  "@locationUseMine": {
+    "description": "location.useMine"
+  },
+  "locationDenied": "ไม่ได้ใช้ตำแหน่งของคุณ เลือกพื้นที่ของคุณเองได้ แล้วข้อมูลและการแจ้งเตือนจะแสดงตามพื้นที่นั้น",
+  "@locationDenied": {
+    "description": "location.denied"
+  },
+  "locationPick": "เลือกพื้นที่",
+  "@locationPick": {
+    "description": "location.pick"
+  },
+  "locationPicked": "พื้นที่ของคุณ: {area}",
+  "@locationPicked": {
+    "description": "location.picked",
+    "placeholders": {
+      "area": {
+        "type": "String"
+      }
+    }
+  },
+  "locationPickChange": "เปลี่ยนพื้นที่",
+  "@locationPickChange": {
+    "description": "location.pickChange"
+  },
+  "locationPickHint": "เลือกจังหวัด แล้วเลือกเขต/อำเภอ และแขวง/ตำบลได้จากรายการใต้แผนที่",
+  "@locationPickHint": {
+    "description": "location.pickHint"
+  },
+  "areaPicked": "พื้นที่ที่เลือก",
+  "@areaPicked": {
+    "description": "area.picked"
+  },
+  "areaNav": "ระดับพื้นที่",
+  "@areaNav": {
+    "description": "area.nav"
+  },
+  "zoneLayer": "โซนพื้นที่",
+  "@zoneLayer": {
+    "description": "zone.layer"
+  },
+  "zoneLevel1": "จังหวัด",
+  "@zoneLevel1": {
+    "description": "zone.level1"
+  },
+  "zoneLevel2": "อำเภอ",
+  "@zoneLevel2": {
+    "description": "zone.level2"
+  },
+  "zoneLevel2Bkk": "เขต",
+  "@zoneLevel2Bkk": {
+    "description": "zone.level2.bkk"
+  },
+  "zoneLevel3": "ตำบล",
+  "@zoneLevel3": {
+    "description": "zone.level3"
+  },
+  "zoneLevel3Bkk": "แขวง",
+  "@zoneLevel3Bkk": {
+    "description": "zone.level3.bkk"
+  },
+  "zonePrefix2": "อำเภอ",
+  "@zonePrefix2": {
+    "description": "zone.prefix2"
+  },
+  "zonePrefix2Bkk": "เขต",
+  "@zonePrefix2Bkk": {
+    "description": "zone.prefix2.bkk"
+  },
+  "zonePrefix3": "ตำบล",
+  "@zonePrefix3": {
+    "description": "zone.prefix3"
+  },
+  "zonePrefix3Bkk": "แขวง",
+  "@zonePrefix3Bkk": {
+    "description": "zone.prefix3.bkk"
+  },
+  "zoneTapHint": "แตะพื้นที่บนแผนที่หรือในรายการเพื่อดูรายละเอียด",
+  "@zoneTapHint": {
+    "description": "zone.tapHint"
+  },
+  "zoneNoData": "ไม่มีจุดวัด",
+  "@zoneNoData": {
+    "description": "zone.noData"
+  },
+  "zoneNoChildren": "ยังไม่มีขอบเขตระดับ{level}ของพื้นที่นี้",
+  "@zoneNoChildren": {
+    "description": "zone.noChildren",
+    "placeholders": {
+      "level": {
+        "type": "String"
+      }
+    }
+  },
+  "zoneSumFlooded": "น้ำท่วมบนถนน {n} จุด",
+  "@zoneSumFlooded": {
+    "description": "zone.sum.flooded",
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "zoneSumMinor": "น้ำขังเล็กน้อย {n} จุด",
+  "@zoneSumMinor": {
+    "description": "zone.sum.minor",
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "zoneSumPm25": "ฝุ่นสูงสุด {v} {u}",
+  "@zoneSumPm25": {
+    "description": "zone.sum.pm25",
+    "placeholders": {
+      "v": {
+        "type": "String"
+      },
+      "u": {
+        "type": "String"
+      }
+    }
+  },
+  "zoneSumRain": "ฝนสูงสุด {v} {u}",
+  "@zoneSumRain": {
+    "description": "zone.sum.rain",
+    "placeholders": {
+      "v": {
+        "type": "String"
+      },
+      "u": {
+        "type": "String"
+      }
+    }
+  },
+  "zoneSumWater": "น้ำในคลองสูงสุด {v}{u} ของตลิ่ง",
+  "@zoneSumWater": {
+    "description": "zone.sum.water",
+    "placeholders": {
+      "v": {
+        "type": "String"
+      },
+      "u": {
+        "type": "String"
+      }
+    }
+  },
+  "zoneSumCalm": "แถวนี้ตอนนี้ปกติดี",
+  "@zoneSumCalm": {
+    "description": "zone.sum.calm"
+  },
+  "zoneSumNone": "ไม่มีจุดวัดในพื้นที่นี้ เลยยังบอกไม่ได้",
+  "@zoneSumNone": {
+    "description": "zone.sum.none"
+  },
+  "zoneList": "{level}ในพื้นที่นี้",
+  "@zoneList": {
+    "description": "zone.list",
+    "placeholders": {
+      "level": {
+        "type": "String"
+      }
+    }
+  },
+  "areaHintProvince": "แตะจังหวัดเพื่อดูรายเขต/อำเภอ",
+  "@areaHintProvince": {
+    "description": "area.hint.province"
+  },
+  "areaHintDistrict": "แตะเพื่อดูรายแขวง/ตำบล",
+  "@areaHintDistrict": {
+    "description": "area.hint.district"
+  },
+  "areaHintSubdistrict": "แตะเพื่อดูสรุปของพื้นที่นั้น",
+  "@areaHintSubdistrict": {
+    "description": "area.hint.subdistrict"
+  },
+  "areaSortNote": "เรียงจากรุนแรงที่สุด",
+  "@areaSortNote": {
+    "description": "area.sortNote"
+  },
+  "areaOverview": "ภาพรวม",
+  "@areaOverview": {
+    "description": "area.overview"
+  },
+  "areaNearYou": "ใกล้คุณ",
+  "@areaNearYou": {
+    "description": "area.nearYou"
+  },
+  "areaNow": "ภาพรวมตอนนี้",
+  "@areaNow": {
+    "description": "area.now"
+  },
+  "areaSituation": "สถานการณ์",
+  "@areaSituation": {
+    "description": "area.situation"
+  },
+  "mapTitle": "แผนที่",
+  "@mapTitle": {
+    "description": "map.title"
+  },
+  "mapLayers": "ชั้นข้อมูล",
+  "@mapLayers": {
+    "description": "map.layers"
+  },
+  "mapLegend": "สัญลักษณ์",
+  "@mapLegend": {
+    "description": "map.legend"
+  },
+  "mapYou": "ตำแหน่งของคุณ",
+  "@mapYou": {
+    "description": "map.you"
+  },
+  "layerRadar": "เรดาร์ฝน",
+  "@layerRadar": {
+    "description": "layer.radar"
+  },
+  "layerFlood": "น้ำท่วมบนถนน",
+  "@layerFlood": {
+    "description": "layer.flood"
+  },
+  "layerPm25": "ฝุ่น PM2.5",
+  "@layerPm25": {
+    "description": "layer.pm25"
+  },
+  "layerCctv": "กล้อง CCTV",
+  "@layerCctv": {
+    "description": "layer.cctv"
+  },
+  "mapLocate": "กลับไปที่ตำแหน่งของฉัน",
+  "@mapLocate": {
+    "description": "map.locate"
+  },
+  "mapFitRegion": "ดูทั้งพื้นที่",
+  "@mapFitRegion": {
+    "description": "map.fitRegion"
+  },
+  "mapLocating": "กำลังหาตำแหน่ง…",
+  "@mapLocating": {
+    "description": "map.locating"
+  },
+  "mapLocationOff": "เปิดสิทธิ์ตำแหน่งในเบราว์เซอร์ก่อน แล้วกดอีกครั้ง",
+  "@mapLocationOff": {
+    "description": "map.locationOff"
+  },
+  "mapShowLegend": "แสดงสัญลักษณ์",
+  "@mapShowLegend": {
+    "description": "map.showLegend"
+  },
+  "mapHideLegend": "ซ่อนสัญลักษณ์",
+  "@mapHideLegend": {
+    "description": "map.hideLegend"
+  },
+  "popupDepth": "ความลึก",
+  "@popupDepth": {
+    "description": "popup.depth"
+  },
+  "popupTime": "เวลาวัด",
+  "@popupTime": {
+    "description": "popup.time"
+  },
+  "mapZoomForCctv": "ซูมเข้าเพื่อดูกล้อง CCTV",
+  "@mapZoomForCctv": {
+    "description": "map.zoomForCctv"
+  },
+  "radarSource": "แหล่งเรดาร์",
+  "@radarSource": {
+    "description": "radar.source"
+  },
+  "radarLatest": "ล่าสุด",
+  "@radarLatest": {
+    "description": "radar.latest"
+  },
+  "radarHeavy": "ฝนหนัก",
+  "@radarHeavy": {
+    "description": "radar.heavy"
+  },
+  "cardWeather": "สภาพอากาศ",
+  "@cardWeather": {
+    "description": "card.weather"
+  },
+  "cardPm25": "ฝุ่น PM2.5",
+  "@cardPm25": {
+    "description": "card.pm25"
+  },
+  "cardFlood": "น้ำท่วมบนถนน",
+  "@cardFlood": {
+    "description": "card.flood"
+  },
+  "cardQuake": "แผ่นดินไหว",
+  "@cardQuake": {
+    "description": "card.quake"
+  },
+  "cardWater": "น้ำในคลองและแม่น้ำ",
+  "@cardWater": {
+    "description": "card.water"
+  },
+  "waterNearest": "จุดวัดใกล้คุณ: {name}",
+  "@waterNearest": {
+    "description": "water.nearest",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "waterOfBank": "ของตลิ่ง",
+  "@waterOfBank": {
+    "description": "water.ofBank"
+  },
+  "waterHigh": "จุดที่น้ำเริ่มสูง (ตั้งแต่ {pct}%)",
+  "@waterHigh": {
+    "description": "water.high",
+    "placeholders": {
+      "pct": {
+        "type": "String"
+      }
+    }
+  },
+  "waterNone": "ไม่มีจุดที่น้ำสูง",
+  "@waterNone": {
+    "description": "water.none"
+  },
+  "sourceWater": "ข้อมูลจาก ThaiWater",
+  "@sourceWater": {
+    "description": "source.water"
+  },
+  "layerWater": "น้ำในคลอง",
+  "@layerWater": {
+    "description": "layer.water"
+  },
+  "freshStale": "ยังไม่มีค่าใหม่ ค่าล่าสุดเมื่อ {time}",
+  "@freshStale": {
+    "description": "fresh.stale",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "freshFailedNoData": "แหล่งข้อมูลมีปัญหา ยังไม่มีข้อมูลให้ดู",
+  "@freshFailedNoData": {
+    "description": "fresh.failedNoData"
+  },
+  "freshFailed": "แหล่งข้อมูลมีปัญหา ที่เห็นเป็นค่าเมื่อ {time}",
+  "@freshFailed": {
+    "description": "fresh.failed",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "cardCctv": "กล้อง CCTV ใกล้คุณ",
+  "@cardCctv": {
+    "description": "card.cctv"
+  },
+  "weatherHumidity": "ความชื้น",
+  "@weatherHumidity": {
+    "description": "weather.humidity"
+  },
+  "weatherRainNow": "ฝนตอนนี้",
+  "@weatherRainNow": {
+    "description": "weather.rainNow"
+  },
+  "weatherWind": "ลม",
+  "@weatherWind": {
+    "description": "weather.wind"
+  },
+  "weatherWindFrom": "พัดมาจาก{dir}",
+  "@weatherWindFrom": {
+    "description": "weather.windFrom",
+    "placeholders": {
+      "dir": {
+        "type": "String"
+      }
+    }
+  },
+  "weatherGust": "กระโชก {speed}",
+  "@weatherGust": {
+    "description": "weather.gust",
+    "placeholders": {
+      "speed": {
+        "type": "String"
+      }
+    }
+  },
+  "compassN": "ทิศเหนือ",
+  "@compassN": {
+    "description": "compass.N"
+  },
+  "compassNE": "ทิศตะวันออกเฉียงเหนือ",
+  "@compassNE": {
+    "description": "compass.NE"
+  },
+  "compassE": "ทิศตะวันออก",
+  "@compassE": {
+    "description": "compass.E"
+  },
+  "compassSE": "ทิศตะวันออกเฉียงใต้",
+  "@compassSE": {
+    "description": "compass.SE"
+  },
+  "compassS": "ทิศใต้",
+  "@compassS": {
+    "description": "compass.S"
+  },
+  "compassSW": "ทิศตะวันตกเฉียงใต้",
+  "@compassSW": {
+    "description": "compass.SW"
+  },
+  "compassW": "ทิศตะวันตก",
+  "@compassW": {
+    "description": "compass.W"
+  },
+  "compassNW": "ทิศตะวันตกเฉียงเหนือ",
+  "@compassNW": {
+    "description": "compass.NW"
+  },
+  "radarDrift": "กลุ่มฝนอาจเคลื่อนไปทาง{dir} ราว {speed}",
+  "@radarDrift": {
+    "description": "radar.drift",
+    "placeholders": {
+      "dir": {
+        "type": "String"
+      },
+      "speed": {
+        "type": "String"
+      }
+    }
+  },
+  "radarDriftCalm": "ลมข้างบนอ่อน กลุ่มฝนแทบไม่ขยับ",
+  "@radarDriftCalm": {
+    "description": "radar.driftCalm"
+  },
+  "radarDriftNote": "ประมาณจากลมที่ความสูงราว 3 กม. ตรงตำแหน่งของคุณ (Open-Meteo) ไม่ได้ติดตามจากภาพเรดาร์",
+  "@radarDriftNote": {
+    "description": "radar.driftNote"
+  },
+  "pm25Nearest": "จุดวัดใกล้คุณ: {name}",
+  "@pm25Nearest": {
+    "description": "pm25.nearest",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "pm25Who": "ค่าแนะนำ WHO {value}",
+  "@pm25Who": {
+    "description": "pm25.who",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "pm25PushAt": "แจ้งเตือนเมื่อ ≥ {value}",
+  "@pm25PushAt": {
+    "description": "pm25.pushAt",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "floodFlooded": "น้ำท่วม",
+  "@floodFlooded": {
+    "description": "flood.flooded"
+  },
+  "floodMinor": "น้ำขังเล็กน้อย",
+  "@floodMinor": {
+    "description": "flood.minor"
+  },
+  "floodDeep": "น้ำท่วมลึก",
+  "@floodDeep": {
+    "description": "flood.deep"
+  },
+  "floodNormal": "ปกติ",
+  "@floodNormal": {
+    "description": "flood.normal"
+  },
+  "floodOffline": "จุดวัดเสีย",
+  "@floodOffline": {
+    "description": "flood.offline"
+  },
+  "floodNearest": "จุดน้ำท่วมใกล้คุณที่สุด",
+  "@floodNearest": {
+    "description": "flood.nearest"
+  },
+  "quakeNone": "ไม่มีแผ่นดินไหวขนาด {mag} ขึ้นไปในระยะ {km} กม. ช่วง {days} วันที่ผ่านมา",
+  "@quakeNone": {
+    "description": "quake.none",
+    "placeholders": {
+      "mag": {
+        "type": "String"
+      },
+      "km": {
+        "type": "String"
+      },
+      "days": {
+        "type": "String"
+      }
+    }
+  },
+  "quakeLatest": "ล่าสุดในภูมิภาค",
+  "@quakeLatest": {
+    "description": "quake.latest"
+  },
+  "quakeAway": "ห่าง {km} กม. จากตำแหน่งของคุณ",
+  "@quakeAway": {
+    "description": "quake.away",
+    "placeholders": {
+      "km": {
+        "type": "String"
+      }
+    }
+  },
+  "quakeCountry": "ประเทศ{name}",
+  "@quakeCountry": {
+    "description": "quake.country",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "quakeBorder": "ชายแดน{a}–{b}",
+  "@quakeBorder": {
+    "description": "quake.border",
+    "placeholders": {
+      "a": {
+        "type": "String"
+      },
+      "b": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsTitle": "ตั้งค่าการแจ้งเตือน",
+  "@settingsTitle": {
+    "description": "settings.title"
+  },
+  "settingsThresholds": "เกณฑ์การแจ้งเตือน",
+  "@settingsThresholds": {
+    "description": "settings.thresholds"
+  },
+  "settingsChannels": "ช่องทาง",
+  "@settingsChannels": {
+    "description": "settings.channels"
+  },
+  "settingsSoon": "เร็ว ๆ นี้",
+  "@settingsSoon": {
+    "description": "settings.soon"
+  },
+  "sourceWeather": "ข้อมูลจาก Open-Meteo",
+  "@sourceWeather": {
+    "description": "source.weather"
+  },
+  "sourcePm25": "ข้อมูลจาก กรมควบคุมมลพิษ",
+  "@sourcePm25": {
+    "description": "source.pm25"
+  },
+  "sourceFlood": "ข้อมูลจาก กทม.",
+  "@sourceFlood": {
+    "description": "source.flood"
+  },
+  "sourceQuake": "ข้อมูลจาก กรมอุตุฯ และ USGS",
+  "@sourceQuake": {
+    "description": "source.quake"
+  },
+  "radarFrame": "ภาพเรดาร์เวลา {time}",
+  "@radarFrame": {
+    "description": "radar.frame",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "radarOld": "ภาพเรดาร์ไม่มีใหม่ (ล่าสุด {time})",
+  "@radarOld": {
+    "description": "radar.old",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "radarNone": "ยังไม่มีภาพเรดาร์",
+  "@radarNone": {
+    "description": "radar.none"
+  },
+  "radarAgencyBma": "กรุงเทพมหานคร",
+  "@radarAgencyBma": {
+    "description": "radar.agency.bma"
+  },
+  "radarAgencyTmd": "กรมอุตุนิยมวิทยา",
+  "@radarAgencyTmd": {
+    "description": "radar.agency.tmd"
+  },
+  "radarAgencyDrraa": "กรมฝนหลวงและการบินเกษตร",
+  "@radarAgencyDrraa": {
+    "description": "radar.agency.drraa"
+  },
+  "radarClear": "ตอนนี้เรดาร์ไม่เห็นกลุ่มฝน",
+  "@radarClear": {
+    "description": "radar.clear"
+  },
+  "a11yDisplay": "การแสดงผลและการเข้าถึง",
+  "@a11yDisplay": {
+    "description": "a11y.display"
+  },
+  "a11yTheme": "ธีม: {mode}",
+  "@a11yTheme": {
+    "description": "a11y.theme",
+    "placeholders": {
+      "mode": {
+        "type": "String"
+      }
+    }
+  },
+  "a11yThemeSystem": "ตามระบบ",
+  "@a11yThemeSystem": {
+    "description": "a11y.theme.system"
+  },
+  "a11yThemeLight": "สว่าง",
+  "@a11yThemeLight": {
+    "description": "a11y.theme.light"
+  },
+  "a11yThemeDark": "มืด",
+  "@a11yThemeDark": {
+    "description": "a11y.theme.dark"
+  },
+  "a11yCvd": "สีสำหรับผู้ตาบอดสี",
+  "@a11yCvd": {
+    "description": "a11y.cvd"
+  },
+  "a11yListen": "ฟังสรุป",
+  "@a11yListen": {
+    "description": "a11y.listen"
+  },
+  "a11yStop": "หยุดอ่าน",
+  "@a11yStop": {
+    "description": "a11y.stop"
+  },
+  "a11yNoSpeech": "เบราว์เซอร์นี้อ่านออกเสียงไม่ได้",
+  "@a11yNoSpeech": {
+    "description": "a11y.noSpeech"
+  },
+  "a11yNoVoice": "เครื่องนี้ยังไม่มีเสียงอ่านภาษาไทย ติดตั้งเพิ่มได้ฟรี",
+  "@a11yNoVoice": {
+    "description": "a11y.noVoice"
+  },
+  "a11yVoiceHow": "วิธีติดตั้งเสียงภาษาไทย",
+  "@a11yVoiceHow": {
+    "description": "a11y.voiceHow"
+  },
+  "a11yVoiceAndroid": "Android: การตั้งค่า → ข้อความเป็นคำพูด (Text-to-speech) → บริการเสียงพูดของ Google → ติดตั้งข้อมูลเสียง → ไทย",
+  "@a11yVoiceAndroid": {
+    "description": "a11y.voiceAndroid"
+  },
+  "a11yVoiceWindows": "Windows: การตั้งค่า → เวลาและภาษา → คำพูด → เพิ่มเสียง → ไทย",
+  "@a11yVoiceWindows": {
+    "description": "a11y.voiceWindows"
+  },
+  "a11yVoiceApple": "iPhone, iPad และ Mac มีเสียงภาษาไทยในเครื่องแล้ว ลองใช้ Safari",
+  "@a11yVoiceApple": {
+    "description": "a11y.voiceApple"
+  },
+  "a11yVoiceReload": "ติดตั้งเสร็จแล้วให้ปิดแล้วเปิดหน้านี้ใหม่",
+  "@a11yVoiceReload": {
+    "description": "a11y.voiceReload"
+  },
+  "a11ySkip": "ข้ามไปที่สรุปสถานการณ์",
+  "@a11ySkip": {
+    "description": "a11y.skip"
+  },
+  "a11ySummary": "สรุปสถานการณ์",
+  "@a11ySummary": {
+    "description": "a11y.summary"
+  },
+  "speakIntro": "สรุปสถานการณ์ {area} ข้อมูลเวลา {time}",
+  "@speakIntro": {
+    "description": "speak.intro",
+    "placeholders": {
+      "area": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "speakWeather": "อุณหภูมิ {temp} องศา ความชื้น {hum} เปอร์เซ็นต์",
+  "@speakWeather": {
+    "description": "speak.weather",
+    "placeholders": {
+      "temp": {
+        "type": "String"
+      },
+      "hum": {
+        "type": "String"
+      }
+    }
+  },
+  "speakPm25": "ฝุ่น พีเอ็ม สองจุดห้า ที่{name} {value} ไมโครกรัมต่อลูกบาศก์เมตร ระดับ{status}",
+  "@speakPm25": {
+    "description": "speak.pm25",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "value": {
+        "type": "String"
+      },
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "speakFlood": "น้ำท่วมบนถนน {flooded} จุด น้ำขังเล็กน้อย {minor} จุด",
+  "@speakFlood": {
+    "description": "speak.flood",
+    "placeholders": {
+      "flooded": {
+        "type": "String"
+      },
+      "minor": {
+        "type": "String"
+      }
+    }
+  },
+  "speakFloodNearest": "จุดท่วมใกล้คุณที่สุดคือ {name} ห่าง {km} กิโลเมตร",
+  "@speakFloodNearest": {
+    "description": "speak.floodNearest",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "km": {
+        "type": "String"
+      }
+    }
+  },
+  "speakWater": "น้ำที่{name} {value} เปอร์เซ็นต์ของตลิ่ง ระดับ{status}",
+  "@speakWater": {
+    "description": "speak.water",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "value": {
+        "type": "String"
+      },
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "speakQuakeNone": "ไม่มีแผ่นดินไหวขนาด {mag} ขึ้นไป ในรัศมี {km} กิโลเมตร ช่วง {days} วันที่ผ่านมา",
+  "@speakQuakeNone": {
+    "description": "speak.quakeNone",
+    "placeholders": {
+      "mag": {
+        "type": "String"
+      },
+      "km": {
+        "type": "String"
+      },
+      "days": {
+        "type": "String"
+      }
+    }
+  },
+  "speakQuakeAlert": "แผ่นดินไหวขนาด {mag} ที่ {place} ห่าง {km} กิโลเมตร",
+  "@speakQuakeAlert": {
+    "description": "speak.quakeAlert",
+    "placeholders": {
+      "mag": {
+        "type": "String"
+      },
+      "place": {
+        "type": "String"
+      },
+      "km": {
+        "type": "String"
+      }
+    }
+  },
+  "speakArea": "พื้นที่ที่เลือก {name} สถานะ{status}",
+  "@speakArea": {
+    "description": "speak.area",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "speakNoData": "{topic} ไม่มีข้อมูล",
+  "@speakNoData": {
+    "description": "speak.noData",
+    "placeholders": {
+      "topic": {
+        "type": "String"
+      }
+    }
+  },
+  "pushTitle": "การแจ้งเตือน",
+  "@pushTitle": {
+    "description": "push.title"
+  },
+  "pushIntro": "รับแจ้งเตือนเมื่อมีภัยใน{area} แม้ปิดหน้าเว็บอยู่",
+  "@pushIntro": {
+    "description": "push.intro",
+    "placeholders": {
+      "area": {
+        "type": "String"
+      }
+    }
+  },
+  "pushPickArea": "ใช้ตำแหน่งของฉัน หรือเลือกเขต/อำเภอบนแผนที่ก่อน",
+  "@pushPickArea": {
+    "description": "push.pickArea"
+  },
+  "pushEnable": "เปิดการแจ้งเตือน",
+  "@pushEnable": {
+    "description": "push.enable"
+  },
+  "pushDisable": "ปิดการแจ้งเตือน",
+  "@pushDisable": {
+    "description": "push.disable"
+  },
+  "pushTest": "ทดสอบการแจ้งเตือน",
+  "@pushTest": {
+    "description": "push.test"
+  },
+  "pushOn": "เปิดอยู่ · แจ้งเตือนสำหรับ{area}",
+  "@pushOn": {
+    "description": "push.on",
+    "placeholders": {
+      "area": {
+        "type": "String"
+      }
+    }
+  },
+  "pushUpdate": "บันทึกการตั้งค่า",
+  "@pushUpdate": {
+    "description": "push.update"
+  },
+  "pushSaved": "บันทึกแล้ว",
+  "@pushSaved": {
+    "description": "push.saved"
+  },
+  "pushDenied": "เบราว์เซอร์ปิดสิทธิ์การแจ้งเตือนไว้ เปิดได้ในการตั้งค่าของเว็บไซต์",
+  "@pushDenied": {
+    "description": "push.denied"
+  },
+  "pushUnsupported": "เบราว์เซอร์นี้ไม่รองรับการแจ้งเตือน",
+  "@pushUnsupported": {
+    "description": "push.unsupported"
+  },
+  "pushIos": "บน iPhone/iPad: กด แชร์ → \"เพิ่มไปยังหน้าจอโฮม\" แล้วเปิดแอปจากหน้าจอโฮมเพื่อเปิดการแจ้งเตือน",
+  "@pushIos": {
+    "description": "push.ios"
+  },
+  "pushError": "เปิดการแจ้งเตือนไม่ได้ ลองอีกครั้ง",
+  "@pushError": {
+    "description": "push.error"
+  },
+  "pushKinds": "แจ้งเตือนเรื่อง",
+  "@pushKinds": {
+    "description": "push.kinds"
+  },
+  "pushKindFlood": "น้ำท่วมบนถนน",
+  "@pushKindFlood": {
+    "description": "push.kind.flood"
+  },
+  "pushKindRain": "ฝนตกหนัก",
+  "@pushKindRain": {
+    "description": "push.kind.rain"
+  },
+  "pushKindWater": "น้ำในคลองสูง",
+  "@pushKindWater": {
+    "description": "push.kind.water"
+  },
+  "pushKindPm25": "ฝุ่นเยอะ",
+  "@pushKindPm25": {
+    "description": "push.kind.pm25"
+  },
+  "pushKindQuake": "แผ่นดินไหว",
+  "@pushKindQuake": {
+    "description": "push.kind.quake"
+  },
+  "pushPmAt": "แจ้งฝุ่นเมื่อถึง",
+  "@pushPmAt": {
+    "description": "push.pmAt"
+  },
+  "pushQuakeMag": "แจ้งแผ่นดินไหวตั้งแต่ขนาด",
+  "@pushQuakeMag": {
+    "description": "push.quakeMag"
+  },
+  "pushQuakeKm": "ในระยะไม่เกิน",
+  "@pushQuakeKm": {
+    "description": "push.quakeKm"
+  },
+  "pushQuakeKmOption": "{km} กม.",
+  "@pushQuakeKmOption": {
+    "description": "push.quakeKmOption",
+    "placeholders": {
+      "km": {
+        "type": "String"
+      }
+    }
+  },
+  "pushPrivacy": "ข้อมูลที่เราเก็บและวิธีลบ",
+  "@pushPrivacy": {
+    "description": "push.privacy"
+  },
+  "alertFloodTitle": "{level}: น้ำท่วมบนถนนที่{area}",
+  "@alertFloodTitle": {
+    "description": "alert.flood.title",
+    "placeholders": {
+      "level": {
+        "type": "String"
+      },
+      "area": {
+        "type": "String"
+      }
+    }
+  },
+  "alertFloodBody": "น้ำท่วม {n} จุด ลึกสุด {depth} ซม. ถ้าไม่จำเป็นให้เลี่ยงถนนแถวนั้น",
+  "@alertFloodBody": {
+    "description": "alert.flood.body",
+    "placeholders": {
+      "n": {
+        "type": "String"
+      },
+      "depth": {
+        "type": "String"
+      }
+    }
+  },
+  "alertRainTitle": "{level}: ฝนตกหนักที่{area}",
+  "@alertRainTitle": {
+    "description": "alert.rain.title",
+    "placeholders": {
+      "level": {
+        "type": "String"
+      },
+      "area": {
+        "type": "String"
+      }
+    }
+  },
+  "alertRainBody": "ชั่วโมงที่แล้วฝนตก {v} มม. ถนนแถวนั้นอาจมีน้ำขัง",
+  "@alertRainBody": {
+    "description": "alert.rain.body",
+    "placeholders": {
+      "v": {
+        "type": "String"
+      }
+    }
+  },
+  "alertRainBody24h": "24 ชั่วโมงที่แล้วฝนตกรวม {v} มม. ถนนแถวนั้นอาจมีน้ำขัง",
+  "@alertRainBody24h": {
+    "description": "alert.rain.body24h",
+    "placeholders": {
+      "v": {
+        "type": "String"
+      }
+    }
+  },
+  "alertWaterTitle": "{level}: น้ำในคลองสูงที่{area}",
+  "@alertWaterTitle": {
+    "description": "alert.water.title",
+    "placeholders": {
+      "level": {
+        "type": "String"
+      },
+      "area": {
+        "type": "String"
+      }
+    }
+  },
+  "alertWaterBody": "{station} {state} ({v}% ของตลิ่ง)",
+  "@alertWaterBody": {
+    "description": "alert.water.body",
+    "placeholders": {
+      "station": {
+        "type": "String"
+      },
+      "state": {
+        "type": "String"
+      },
+      "v": {
+        "type": "String"
+      }
+    }
+  },
+  "alertPm25Title": "{level}: ฝุ่นเยอะที่{area}",
+  "@alertPm25Title": {
+    "description": "alert.pm25.title",
+    "placeholders": {
+      "level": {
+        "type": "String"
+      },
+      "area": {
+        "type": "String"
+      }
+    }
+  },
+  "alertPm25Body": "{v} µg/m³ · {note}",
+  "@alertPm25Body": {
+    "description": "alert.pm25.body",
+    "placeholders": {
+      "v": {
+        "type": "String"
+      },
+      "note": {
+        "type": "String"
+      }
+    }
+  },
+  "alertQuakeTitle": "{level}: แผ่นดินไหวขนาด {mag}",
+  "@alertQuakeTitle": {
+    "description": "alert.quake.title",
+    "placeholders": {
+      "level": {
+        "type": "String"
+      },
+      "mag": {
+        "type": "String"
+      }
+    }
+  },
+  "alertQuakeBody": "{place} ห่าง {km} กม.",
+  "@alertQuakeBody": {
+    "description": "alert.quake.body",
+    "placeholders": {
+      "place": {
+        "type": "String"
+      },
+      "km": {
+        "type": "String"
+      }
+    }
+  },
+  "alertTestTitle": "ทดสอบการแจ้งเตือน",
+  "@alertTestTitle": {
+    "description": "alert.test.title"
+  },
+  "alertTestBody": "การแจ้งเตือนของคุณทำงานแล้ว",
+  "@alertTestBody": {
+    "description": "alert.test.body"
+  },
+  "shareButton": "แชร์",
+  "@shareButton": {
+    "description": "share.button"
+  },
+  "shareLabel": "แชร์สถานการณ์ของ{area}",
+  "@shareLabel": {
+    "description": "share.label",
+    "placeholders": {
+      "area": {
+        "type": "String"
+      }
+    }
+  },
+  "shareCopy": "คัดลอกลิงก์",
+  "@shareCopy": {
+    "description": "share.copy"
+  },
+  "shareCopied": "คัดลอกลิงก์แล้ว",
+  "@shareCopied": {
+    "description": "share.copied"
+  },
+  "shareLine": "LINE",
+  "@shareLine": {
+    "description": "share.line"
+  },
+  "shareFacebook": "Facebook",
+  "@shareFacebook": {
+    "description": "share.facebook"
+  },
+  "shareX": "X",
+  "@shareX": {
+    "description": "share.x"
+  },
+  "shareClose": "ปิด",
+  "@shareClose": {
+    "description": "share.close"
+  },
+  "shareText": "{area}: {status} — {detail}",
+  "@shareText": {
+    "description": "share.text",
+    "placeholders": {
+      "area": {
+        "type": "String"
+      },
+      "status": {
+        "type": "String"
+      },
+      "detail": {
+        "type": "String"
+      }
+    }
+  },
+  "shareMetaTitle": "{area} · {app}",
+  "@shareMetaTitle": {
+    "description": "share.metaTitle",
+    "placeholders": {
+      "area": {
+        "type": "String"
+      },
+      "app": {
+        "type": "String"
+      }
+    }
+  },
+  "shareMetaDescription": "สถานการณ์น้ำท่วม ฝน ระดับน้ำ ฝุ่น และแผ่นดินไหวล่าสุดของ{area}",
+  "@shareMetaDescription": {
+    "description": "share.metaDescription",
+    "placeholders": {
+      "area": {
+        "type": "String"
+      }
+    }
+  },
+  "privacyTitle": "ความเป็นส่วนตัว",
+  "@privacyTitle": {
+    "description": "privacy.title"
+  },
+  "notePm25Ok": "อากาศดี",
+  "@notePm25Ok": {
+    "description": "note.pm25.ok"
+  },
+  "notePm25Watch": "ฝุ่นเริ่มเยอะ คนที่แพ้ง่ายควรใส่หน้ากาก",
+  "@notePm25Watch": {
+    "description": "note.pm25.watch"
+  },
+  "notePm25Warn": "ฝุ่นเยอะ ถ้าออกนอกบ้านควรใส่หน้ากาก",
+  "@notePm25Warn": {
+    "description": "note.pm25.warn"
+  },
+  "notePm25Danger": "ฝุ่นเยอะมาก อยู่ในบ้านถ้าทำได้",
+  "@notePm25Danger": {
+    "description": "note.pm25.danger"
+  },
+  "gaugeStateOk": "น้ำยังต่ำ",
+  "@gaugeStateOk": {
+    "description": "gauge.state.ok"
+  },
+  "gaugeStateWatch": "น้ำสูง ยังไม่ล้น",
+  "@gaugeStateWatch": {
+    "description": "gauge.state.watch"
+  },
+  "gaugeStateWarn": "ล้นตลิ่งแล้ว",
+  "@gaugeStateWarn": {
+    "description": "gauge.state.warn"
+  },
+  "gaugeStateDanger": "ล้นตลิ่งมาก",
+  "@gaugeStateDanger": {
+    "description": "gauge.state.danger"
+  },
+  "gaugeIntro": "100% คือน้ำเต็มตลิ่งพอดี",
+  "@gaugeIntro": {
+    "description": "gauge.intro"
+  },
+  "gaugeTickWatch": "เริ่มสูง",
+  "@gaugeTickWatch": {
+    "description": "gauge.tick.watch"
+  },
+  "gaugeTickWarn": "เต็มตลิ่ง",
+  "@gaugeTickWarn": {
+    "description": "gauge.tick.warn"
+  },
+  "gaugeTickDanger": "ล้นมาก",
+  "@gaugeTickDanger": {
+    "description": "gauge.tick.danger"
+  },
+  "gaugeAria": "{state} {v}% ของตลิ่ง",
+  "@gaugeAria": {
+    "description": "gauge.aria",
+    "placeholders": {
+      "state": {
+        "type": "String"
+      },
+      "v": {
+        "type": "String"
+      }
+    }
+  },
+  "feedsTitle": "ข้อมูลอัปเดตล่าสุดเมื่อไหร่",
+  "@feedsTitle": {
+    "description": "feeds.title"
+  },
+  "feedsStale": "ไม่มีข้อมูลใหม่มา {age}",
+  "@feedsStale": {
+    "description": "feeds.stale",
+    "placeholders": {
+      "age": {
+        "type": "String"
+      }
+    }
+  },
+  "feedsDown": "แหล่งข้อมูลมีปัญหา ตั้งแต่ {time}",
+  "@feedsDown": {
+    "description": "feeds.down",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "feedsDownNever": "แหล่งข้อมูลมีปัญหา",
+  "@feedsDownNever": {
+    "description": "feeds.downNever"
+  },
+  "feedsNamePm25": "ฝุ่น PM2.5",
+  "@feedsNamePm25": {
+    "description": "feeds.name.pm25"
+  },
+  "feedsNameFlood": "น้ำท่วมบนถนน",
+  "@feedsNameFlood": {
+    "description": "feeds.name.flood"
+  },
+  "feedsNameRain": "ฝน",
+  "@feedsNameRain": {
+    "description": "feeds.name.rain"
+  },
+  "feedsNameWaterlevel": "น้ำในคลอง",
+  "@feedsNameWaterlevel": {
+    "description": "feeds.name.waterlevel"
+  },
+  "feedsNameRadar": "เรดาร์ฝน",
+  "@feedsNameRadar": {
+    "description": "feeds.name.radar"
+  },
+  "feedsNameQuakes": "แผ่นดินไหว",
+  "@feedsNameQuakes": {
+    "description": "feeds.name.quakes"
+  },
+  "timeJustNow": "เมื่อสักครู่",
+  "@timeJustNow": {
+    "description": "time.justNow"
+  },
+  "timeMinAgo": "{n} นาทีที่แล้ว",
+  "@timeMinAgo": {
+    "description": "time.minAgo",
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "timeHourAgo": "{n} ชม.ที่แล้ว",
+  "@timeHourAgo": {
+    "description": "time.hourAgo",
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "timeMins": "{n} นาที",
+  "@timeMins": {
+    "description": "time.mins",
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "timeHours": "{n} ชม.",
+  "@timeHours": {
+    "description": "time.hours",
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "unitMm": "มม.",
+  "@unitMm": {
+    "description": "unit.mm"
+  },
+  "timeClock": "{time} น.",
+  "@timeClock": {
+    "description": "time.clock",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "extSeeAll": "ดูทั้งหมด ({n} เรื่อง)",
+  "@extSeeAll": {
+    "description": "ext.seeAll",
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "extPm25At": "ฝุ่น PM2.5 · {name}",
+  "@extPm25At": {
+    "description": "ext.pm25At",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "extLocating": "กำลังหาตำแหน่ง…",
+  "@extLocating": {
+    "description": "ext.locating"
+  },
+  "extPickDistrict": "หรือเลือกเขต/อำเภอ",
+  "@extPickDistrict": {
+    "description": "ext.pickDistrict"
+  },
+  "extGpsFailed": "หาตำแหน่งไม่ได้ เลือกเขต/อำเภอแทนได้",
+  "@extGpsFailed": {
+    "description": "ext.gpsFailed"
+  },
+  "extOutside": "ตำแหน่งของคุณอยู่นอกพื้นที่ที่เรามีข้อมูล เลือกเขต/อำเภอแทนได้",
+  "@extOutside": {
+    "description": "ext.outside"
+  },
+  "extAllClear": "แถวนี้ตอนนี้ปกติดี",
+  "@extAllClear": {
+    "description": "ext.allClear"
+  },
+  "extLoadFailed": "โหลดข้อมูลไม่ได้ ลองอีกครั้ง",
+  "@extLoadFailed": {
+    "description": "ext.loadFailed"
+  },
+  "extOpen": "เปิดแผนที่เต็ม",
+  "@extOpen": {
+    "description": "ext.open"
+  },
+  "extFlood": "น้ำท่วมบนถนนในเขตนี้",
+  "@extFlood": {
+    "description": "ext.flood"
+  },
+  "extFloodCount": "ท่วม {flooded} จุด · ปกติ {normal} จุด",
+  "@extFloodCount": {
+    "description": "ext.floodCount",
+    "placeholders": {
+      "flooded": {
+        "type": "String"
+      },
+      "normal": {
+        "type": "String"
+      }
+    }
+  },
+  "extKm": "{km} กม.",
+  "@extKm": {
+    "description": "ext.km",
+    "placeholders": {
+      "km": {
+        "type": "String"
+      }
+    }
+  },
+  "extNotify": "แจ้งเตือนบนเครื่องนี้",
+  "@extNotify": {
+    "description": "ext.notify"
+  },
+  "extNotifyNote": "ตรวจทุก {n} นาทีขณะเบราว์เซอร์เปิดอยู่",
+  "@extNotifyNote": {
+    "description": "ext.notifyNote",
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "extSettings": "ตั้งค่าการแจ้งเตือน",
+  "@extSettings": {
+    "description": "ext.settings"
+  },
+  "extOtherLang": "English",
+  "@extOtherLang": {
+    "description": "ext.otherLang"
+  },
+  "footerCoffee": "สนับสนุนค่ากาแฟ",
+  "@footerCoffee": {
+    "description": "footer.coffee"
+  },
+  "footerCredits": "ข้อมูลจาก กรมอุตุนิยมวิทยา · สำนักการระบายน้ำ กทม. · สสน. (ThaiWater) · กรมควบคุมมลพิษ · GISTDA · USGS · Open-Meteo · ขอบเขตพื้นที่: กรุงเทพมหานคร, geoBoundaries, OCHA/กรมแผนที่ทหาร · แผนที่ OpenFreeMap © OpenMapTiles ข้อมูลจากผู้ร่วมพัฒนา OpenStreetMap",
+  "@footerCredits": {
+    "description": "footer.credits"
+  },
+  "levelSemantics": "ระดับ {level}",
+  "@levelSemantics": {
+    "description": "level.semantics",
+    "placeholders": {
+      "level": {
+        "type": "String"
+      }
+    }
+  },
+  "homeAllClear": "แถวนี้ตอนนี้ปกติดี",
+  "@homeAllClear": {
+    "description": "home.allClear"
+  },
+  "commonOfflineAt": "ไม่มีอินเทอร์เน็ต กำลังแสดงข้อมูลเมื่อ {time}",
+  "@commonOfflineAt": {
+    "description": "common.offlineAt",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "permissionLocation": "ใช้ตำแหน่งเพื่อหาว่าคุณอยู่เขตไหนเท่านั้น ไม่มีการเก็บไว้",
+  "@permissionLocation": {
+    "description": "permission.location"
+  },
+  "permissionNotifications": "เปิดไว้ แล้วเราจะบอกเมื่อแถวบ้านมีเรื่องต้องระวัง",
+  "@permissionNotifications": {
+    "description": "permission.notifications"
+  },
+  "navHome": "หน้าแรก",
+  "@navHome": {
+    "description": "nav.home"
+  },
+  "navMap": "แผนที่",
+  "@navMap": {
+    "description": "nav.map"
+  },
+  "navAlerts": "แจ้งเตือน",
+  "@navAlerts": {
+    "description": "nav.alerts"
+  },
+  "navSettings": "ตั้งค่า",
+  "@navSettings": {
+    "description": "nav.settings"
+  }
+}

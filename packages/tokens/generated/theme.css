@@ -1,0 +1,150 @@
+/* GENERATED from packages/tokens/tokens.json by scripts/generate.mjs. Do not edit. */
+
+/* Components use these token names, never raw hex. sev-* means risk only: never for decoration, buttons or system status. */
+@theme {
+  --font-sans: var(--font-plex-thai), "Noto Sans Thai", system-ui, sans-serif;
+
+  --color-bg: #f6f7f9;
+  --color-surface: #ffffff;
+  --color-surface-sunken: #eef0f3;
+  --color-line: #e2e5ea;
+  --color-line-control: #8a93a3;
+  --color-ink: #0f1b2e;
+  --color-ink-muted: #566072;
+  --color-on-ink: #ffffff;
+  --color-brand: #0f1b2e;
+  --color-accent: #2457d6;
+  --color-on-accent: #ffffff;
+  --color-water: #3d7bff;
+  --color-sev-normal: #8a93a3;
+  --color-sev-watch: #b07f00;
+  --color-sev-watch-ink: #7a5500;
+  --color-sev-watch-soft: #fdf3d3;
+  --color-sev-warning: #e0640a;
+  --color-sev-warning-ink: #9c4006;
+  --color-sev-warning-soft: #fde8d6;
+  --color-sev-danger: #c81e1e;
+  --color-sev-danger-ink: #a3171b;
+  --color-sev-danger-soft: #fbe1e1;
+  --color-on-sev: #0f1b2e;
+  --color-on-sev-danger: #ffffff;
+
+  --text-caption: 12px;
+  --text-caption--line-height: 18px;
+  --text-label: 13px;
+  --text-label--line-height: 20px;
+  --text-label--font-weight: 500;
+  --text-body: 15px;
+  --text-body--line-height: 24px;
+  --text-title: 17px;
+  --text-title--line-height: 26px;
+  --text-title--font-weight: 600;
+  --text-heading: 22px;
+  --text-heading--line-height: 32px;
+  --text-heading--font-weight: 600;
+  --text-figure-sm: 24px;
+  --text-figure-sm--line-height: 28px;
+  --text-figure-sm--letter-spacing: -0.01em;
+  --text-figure: 36px;
+  --text-figure--line-height: 40px;
+  --text-figure--letter-spacing: -0.02em;
+
+  --radius-tiny: 4px;
+  --radius-small: 6px;
+  --radius-control: 8px;
+  --radius-card: 12px;
+
+  --shadow-raised: 0 1px 2px rgba(15, 27, 46, 0.06);
+  --shadow-overlay: 0 8px 24px rgba(15, 27, 46, 0.14);
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --color-bg: #0a111e;
+  --color-surface: #111b2c;
+  --color-surface-sunken: #1a263a;
+  --color-line: #1f2b40;
+  --color-line-control: #5d6b84;
+  --color-ink: #e6ebf3;
+  --color-ink-muted: #94a1b8;
+  --color-on-ink: #0a111e;
+  --color-brand: #1e3254;
+  --color-accent: #8dbbff;
+  --color-on-accent: #0a111e;
+  --color-sev-normal: #5d6b84;
+  --color-sev-watch: #f5c542;
+  --color-sev-watch-ink: #f5c542;
+  --color-sev-watch-soft: #2e2610;
+  --color-sev-warning: #ff9440;
+  --color-sev-warning-ink: #ff9440;
+  --color-sev-warning-soft: #35200f;
+  --color-sev-danger: #ff6464;
+  --color-sev-danger-ink: #ff7a7a;
+  --color-sev-danger-soft: #3a1519;
+  --color-on-sev: #0a111e;
+  --color-on-sev-danger: #0a111e;
+  --shadow-raised: none;
+  --shadow-overlay: 0 8px 24px rgba(0, 0, 0, 0.55);
+}
+
+:root[data-cvd='on'] {
+  --color-sev-watch: #ddcc77;
+  --color-sev-watch-ink: #5c4f10;
+  --color-sev-watch-soft: #f6f0d6;
+  --color-sev-warning: #cc6677;
+  --color-sev-warning-ink: #7a2f3f;
+  --color-sev-warning-soft: #f5dde2;
+  --color-sev-danger: #882255;
+  --color-sev-danger-ink: #5a0f33;
+  --color-sev-danger-soft: #ecd3df;
+  --color-on-sev-danger: #ffffff;
+}
+
+:root[data-theme='dark'][data-cvd='on'] {
+  --color-sev-watch-ink: #eadf9e;
+  --color-sev-watch-soft: #3a3519;
+  --color-sev-warning-ink: #f0a9b6;
+  --color-sev-warning-soft: #42232b;
+  --color-sev-danger: #e59ac0;
+  --color-sev-danger-ink: #e59ac0;
+  --color-sev-danger-soft: #3a1427;
+  --color-on-sev-danger: #0a111e;
+}
+
+/* The only motion in the design system: fresh data fades in. */
+@media (prefers-reduced-motion: no-preference) {
+  .hw-fade-in {
+    animation: hw-fade-in 150ms ease-out;
+  }
+}
+@keyframes hw-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* Level = number of filled bars, so severity reads without colour. */
+.hw-meter {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 12px;
+}
+.hw-meter i {
+  display: block;
+  width: 3px;
+  border-radius: var(--radius-tiny);
+  background: currentColor;
+  opacity: 0.28;
+}
+.hw-meter i:nth-child(1) { height: 6px; }
+.hw-meter i:nth-child(2) { height: 9px; }
+.hw-meter i:nth-child(3) { height: 12px; }
+.hw-meter[data-level='1'] i:nth-child(-n + 1),
+.hw-meter[data-level='2'] i:nth-child(-n + 2),
+.hw-meter[data-level='3'] i { opacity: 1; }
+.hw-meter--lg { height: 20px; gap: 3px; }
+.hw-meter--lg i { width: 5px; }
+.hw-meter--lg i:nth-child(1) { height: 10px; }
+.hw-meter--lg i:nth-child(2) { height: 15px; }
+.hw-meter--lg i:nth-child(3) { height: 20px; }

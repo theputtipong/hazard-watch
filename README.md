@@ -75,6 +75,9 @@ packages/
   core/     Shared types, coverage regions (src/regions.ts), alert thresholds (src/config.ts), severity rules,
             i18n (src/i18n/messages.ts).
   sources/  One adapter per data source; parses into the shared types. Tested against fixtures.
+  tokens/   Design system source (tokens.json). `pnpm --filter @hw/tokens generate` writes the web theme CSS, TS
+            colours for Leaflet, and the palettes the Flutter app's own design system is checked against (plus its
+            colour-blind mode); `test` fails if a generated file is stale.
 .github/workflows/
   ingest-runner.yml  Fetches feeds that block Cloudflare IPs (BMA, ThaiWater) and pushes them to ingest.
   ci.yml             Typecheck, lint, tests; on main also deploys what changed (see Deploy).

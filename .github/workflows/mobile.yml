@@ -1,0 +1,81 @@
+name: mobile
+
+# The Flutter app (apps/mobile) is an extra channel next to the web; this workflow never touches web/ingest deploys.
+# Generated tokens and strings are checked for staleness by `pnpm test` in ci.yml.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/mobile/**'
+      - 'packages/tokens/**'
+      - 'packages/core/src/i18n/**'
+      - '.github/workflows/mobile.yml'
+  pull_request:
+    paths:
+      - 'apps/mobile/**'
+      - 'packages/tokens/**'
+      - 'packages/core/src/i18n/**'
+      - '.github/workflows/mobile.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: mobile-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  FLUTTER_VERSION: 3.44.8
+
+defaults:
+  run:
+    working-directory: apps/mobile
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      # hw_theme.dart is copied verbatim from the mobile design system, so it keeps that file's formatting.
+      - run: find lib test -name '*.dart' ! -path lib/theme/hw_theme.dart ! -path 'lib/l10n/gen/*' | xargs dart format --set-exit-if-changed
+      - run: flutter analyze
+      - run: flutter test
+
+  # Signed with the debug key until the upload keystore exists (phase 5): installable for testing, not for Play.
+  android:
+    needs: check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - run: flutter build apk --release --build-number ${{ github.run_number }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hazardwatch-android-${{ github.run_number }}
+          path: apps/mobile/build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 14
+
+  # Proves the iOS build compiles. No signing certificate yet, so the output cannot be installed and is not uploaded.
+  ios:
+    needs: check
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - run: flutter build ios --release --no-codesign --build-number ${{ github.run_number }}
