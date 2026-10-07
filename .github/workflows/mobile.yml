@@ -1,6 +1,5 @@
 name: mobile
 
-# The Flutter app (apps/mobile) is an extra channel next to the web; this workflow never touches web/ingest deploys.
 # Generated tokens and strings are checked for staleness by `pnpm test` in ci.yml.
 on:
   push:

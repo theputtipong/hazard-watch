@@ -24,8 +24,6 @@ const meter = strip(tokens.meter);
 
 const rgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
 
-// ---- CSS (Tailwind v4 theme for apps/web) ----
-
 const cssShadow = (s) => (s ? `0 ${s.y}px ${s.blur}px rgba(${rgb(s.color).join(', ')}, ${s.opacity})` : 'none');
 const cssVars = (colors, indent = '  ') => Object.entries(colors).map(([k, v]) => `${indent}--color-${k}: ${v};`);
 const cssFont = [`var(${tokens.font.webVariable})`, ...tokens.font.fallback.map((f) => (f.includes(' ') ? `"${f}"` : f))].join(', ');
@@ -108,8 +106,7 @@ function css() {
   ].join('\n');
 }
 
-// ---- TypeScript (for colours the web passes to Leaflet, which cannot read CSS variables) ----
-
+// Leaflet cannot read CSS variables, so the web also gets the colours as TypeScript.
 const camelColors = (colors) => Object.fromEntries(Object.entries(colors).map(([k, v]) => [camel(k), v]));
 
 function ts() {
@@ -127,11 +124,9 @@ function ts() {
   ].join('\n');
 }
 
-// ---- Dart (Flutter, apps/mobile) ----
 // The app's own design system (apps/mobile/lib/theme/hw_theme.dart) owns sizes and type. From the web it takes only the
 // colour-blind palettes, and its tests compare its light/dark colours with these so the two channels never drift.
 // Written in `dart format` style (page width 120, see apps/mobile/analysis_options.yaml) so CI's format check passes.
-
 const dartColor = (hex) => `Color(0xFF${hex.slice(1).toUpperCase()})`;
 
 function dart() {

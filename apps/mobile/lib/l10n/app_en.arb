@@ -282,6 +282,7 @@
   "readingAt": "{what} · {place}",
   "readingMeta": "Data from {source} · {time} · {km} km",
   "readingSemantics": "{what} at {place}, {value}, {level}. {note}",
+  "readingOnDevice": "fetched on this phone",
   "readingFloodUnit": "spots",
   "readingQuakeNote": "{place}, {km} km away",
   "noteRainOk": "No heavy rain",

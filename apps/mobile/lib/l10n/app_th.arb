@@ -1616,6 +1616,10 @@
       }
     }
   },
+  "readingOnDevice": "โหลดบนเครื่องนี้",
+  "@readingOnDevice": {
+    "description": "reading.onDevice"
+  },
   "readingFloodUnit": "จุด",
   "@readingFloodUnit": {
     "description": "reading.floodUnit"

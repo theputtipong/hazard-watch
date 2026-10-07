@@ -15,7 +15,6 @@ class LocalizedText {
   String of(Locale locale) => locale.languageCode == 'th' ? th : en;
 }
 
-/// API severities ('ok' | 'watch' | 'warn' | 'danger', packages/core) to the design system's levels.
 HwLevel levelOf(String severity) => switch (severity) {
   'watch' => HwLevel.watch,
   'warn' => HwLevel.warning,
@@ -60,6 +59,19 @@ class AreaAlert {
 }
 
 class AreaReading {
+  const AreaReading({
+    required this.id,
+    required this.kind,
+    required this.source,
+    required this.name,
+    required this.value,
+    required this.unit,
+    required this.level,
+    required this.observedAt,
+    required this.km,
+    required this.stale,
+  });
+
   AreaReading.fromJson(Map<String, dynamic> j)
     : id = j['id'] as String,
       kind = j['kind'] as String,
@@ -85,6 +97,14 @@ class AreaReading {
 }
 
 class FloodCounts {
+  const FloodCounts({
+    required this.flooded,
+    required this.minor,
+    required this.normal,
+    required this.offline,
+    required this.deepestCm,
+  });
+
   FloodCounts.fromJson(Map<String, dynamic> j)
     : flooded = j['flooded'] as int,
       minor = j['minor'] as int,
@@ -119,6 +139,8 @@ class Quake {
 enum FeedState { live, stale, down }
 
 class Feed {
+  const Feed({required this.topic, required this.state, required this.lastOkAt, required this.failingSince});
+
   Feed.fromJson(Map<String, dynamic> j)
     : topic = j['topic'] as String,
       state = FeedState.values.byName(j['state'] as String),

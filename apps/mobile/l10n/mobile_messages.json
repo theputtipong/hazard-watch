@@ -32,6 +32,7 @@
   "reading.at": { "th": "{what} · {place}", "en": "{what} · {place}" },
   "reading.meta": { "th": "ข้อมูลจาก {source} · {time} · {km} กม.", "en": "Data from {source} · {time} · {km} km" },
   "reading.semantics": { "th": "{what} ที่{place} {value} ระดับ{level} {note}", "en": "{what} at {place}, {value}, {level}. {note}" },
+  "reading.onDevice": { "th": "โหลดบนเครื่องนี้", "en": "fetched on this phone" },
   "reading.floodUnit": { "th": "จุด", "en": "spots" },
   "reading.quakeNote": { "th": "{place} ห่าง {km} กม.", "en": "{place}, {km} km away" },
   "note.rain.ok": { "th": "ฝนไม่หนัก", "en": "No heavy rain" },

@@ -23,4 +23,3 @@ tools/radar-calibrate/best*.json
 
 # Local drafts (letters, research) — not in git
 notes/
-.claude/worktrees/

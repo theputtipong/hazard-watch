@@ -8,7 +8,6 @@ import '../theme/hw_app_theme.dart';
 import '../widgets/hw_card.dart';
 import 'area_picker_screen.dart';
 
-/// Settings tab: the district followed, and display (theme, colour-blind colours, language).
 /// Alert choices arrive with app push notifications (phase 4).
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key, required this.settings, required this.api, required this.location});

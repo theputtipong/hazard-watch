@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../api/hazard_api.dart';
+import '../bma/device_bma.dart';
 import '../l10n/gen/app_localizations.dart';
 import '../location.dart';
 import '../settings.dart';
@@ -11,12 +12,20 @@ import 'soon_screen.dart';
 
 /// Design system NavigationBar: four fixed destinations, labels always shown, `line` along the top.
 class AppShell extends StatefulWidget {
-  const AppShell({super.key, required this.settings, required this.api, required this.location, required this.clock});
+  const AppShell({
+    super.key,
+    required this.settings,
+    required this.api,
+    required this.location,
+    required this.clock,
+    this.bma,
+  });
 
   final AppSettings settings;
   final HazardApi api;
   final LocationService location;
   final DateTime Function() clock;
+  final DeviceBma? bma;
 
   @override
   State<AppShell> createState() => _AppShellState();
@@ -33,7 +42,13 @@ class _AppShellState extends State<AppShell> {
       body: IndexedStack(
         index: _tab,
         children: [
-          HomeScreen(settings: widget.settings, api: widget.api, location: widget.location, clock: widget.clock),
+          HomeScreen(
+            settings: widget.settings,
+            api: widget.api,
+            location: widget.location,
+            clock: widget.clock,
+            bma: widget.bma,
+          ),
           SoonScreen(title: l.navMap),
           // Alert history arrives with app push notifications (phase 4).
           SoonScreen(title: l.navAlerts),

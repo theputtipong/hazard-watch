@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 
 import '../api/hazard_api.dart';
 import '../api/models.dart';
+import '../bma/device_bma.dart';
+import '../bma/merge.dart';
 import '../format.dart';
 import '../l10n/gen/app_localizations.dart';
 import '../location.dart';
@@ -18,10 +20,20 @@ import 'area_picker_screen.dart';
 
 /// Home (design system app structure): district name → alerts → readings → data freshness. Pull down to reload.
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key, required this.settings, required this.api, required this.location, required this.clock});
+  const HomeScreen({
+    super.key,
+    required this.settings,
+    required this.api,
+    required this.location,
+    required this.clock,
+    this.bma,
+  });
 
   final AppSettings settings;
   final HazardApi api;
+
+  /// BMA flood/rain fetched on this phone when the server's copy fails; null turns it off.
+  final DeviceBma? bma;
   final LocationService location;
   final DateTime Function() clock;
 
@@ -37,6 +49,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _loading = false;
   bool _showAllAlerts = false;
   String? _districtId;
+  Map<BmaKind, BmaCopy?> _device = const {};
   final _announced = <String>{};
 
   @override
@@ -58,6 +71,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _districtId = id;
     setState(() {
       _report = null;
+      _device = const {};
       _error = null;
       _showAllAlerts = false;
     });
@@ -76,14 +90,28 @@ class _HomeScreenState extends State<HomeScreen> {
         _error = null;
       });
       _announceDanger(report);
+      await _loadDevice(report);
     } on UnknownDistrictException {
       widget.settings.district = null;
     } on ApiException catch (e) {
-      // Keep the last report on screen and say how old it is.
       if (mounted) setState(() => _error = e);
     } finally {
       if (mounted) setState(() => _loading = false);
     }
+  }
+
+  Future<void> _loadDevice(AreaReport report) async {
+    final bma = widget.bma;
+    if (bma == null) return;
+    final id = _districtId;
+    final now = widget.clock();
+    final kinds = [
+      for (final k in BmaKind.values)
+        if (needsDeviceCopy(report, k, now)) k,
+    ];
+    final copies = await Future.wait([for (final k in kinds) bma.get(k, now)]);
+    if (!mounted || id != _districtId) return;
+    setState(() => _device = {for (var i = 0; i < kinds.length; i++) kinds[i]: copies[i]});
   }
 
   /// Design system: a danger card that newly appears is announced and gives one medium haptic tap.
@@ -170,15 +198,16 @@ class _HomeScreenState extends State<HomeScreen> {
     final c = context.hw;
     final shown = _showAllAlerts ? r.alerts : r.alerts.take(_maxAlerts).toList();
     final meta = r.updatedAt == null ? null : l.homeAlertsMeta(agoText(l, r.updatedAt!, now));
+    final v = mergeDevice(r, flood: _device[BmaKind.flood], rain: _device[BmaKind.rain], now: now);
     final tiles = [
       if (r.pm25 != null) _pm25Tile(context, r.pm25!, now),
-      if (r.rain != null) _rainTile(context, r.rain!, now),
-      if (r.flood != null) _floodTile(context, r.flood!),
+      if (v.rain != null) _rainTile(context, v.rain!, now, onDevice: v.rainOnDevice),
+      if (v.flood != null) _floodTile(context, v, now),
       if (r.quake != null) _quakeTile(context, r.quake!, now),
     ];
     return [
       // Calm only when nothing shown is at caution or above (design system AlertCard rule).
-      if (r.calm) CalmBox(text: l.extAllClear),
+      if (v.calm) CalmBox(text: l.extAllClear),
       for (final a in shown) ...[
         AlertCard(level: a.level, title: a.title.of(locale), body: a.body.of(locale), meta: meta),
         const SizedBox(height: HwSize.space3),
@@ -210,19 +239,21 @@ class _HomeScreenState extends State<HomeScreen> {
       const SizedBox(height: HwSize.space6),
       Text(l.feedsTitle, style: text.labelLarge!.copyWith(color: c.inkMuted)),
       const SizedBox(height: HwSize.space2),
-      for (var i = 0; i < r.feeds.length; i++) ...[
+      for (var i = 0; i < v.feeds.length; i++) ...[
         if (i > 0) Divider(height: 1, color: c.line),
         FeedStatusRow(
-          name: feedName(l, r.feeds[i].topic),
-          state: r.feeds[i].state,
-          age: feedAgeText(l, r.feeds[i], now),
+          name: feedName(l, v.feeds[i].topic),
+          state: v.feeds[i].state,
+          age: feedAgeText(l, v.feeds[i], now),
         ),
       ],
     ];
   }
 
-  String _metaFor(AppLocalizations l, AreaReading r, DateTime now) =>
-      l.readingMeta(sourceName(l, r.source), clockText(l, r.observedAt, now), kmText(r.km));
+  String _metaFor(AppLocalizations l, AreaReading r, DateTime now, {bool onDevice = false}) {
+    final meta = l.readingMeta(sourceName(l, r.source), clockText(l, r.observedAt, now), kmText(r.km));
+    return onDevice ? '$meta · ${l.readingOnDevice}' : meta;
+  }
 
   Widget _tile(
     BuildContext context, {
@@ -232,6 +263,7 @@ class _HomeScreenState extends State<HomeScreen> {
     String? unit,
     required String note,
     required DateTime now,
+    bool onDevice = false,
   }) {
     final l = AppLocalizations.of(context);
     final locale = Localizations.localeOf(context);
@@ -244,7 +276,7 @@ class _HomeScreenState extends State<HomeScreen> {
       level: r.level,
       stale: r.stale,
       note: shownNote,
-      meta: _metaFor(l, r, now),
+      meta: _metaFor(l, r, now, onDevice: onDevice),
       semantics: l.readingSemantics(what, place, r.stale ? '—' : value, r.level.label(locale), shownNote),
     );
   }
@@ -267,10 +299,11 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _rainTile(BuildContext context, AreaReading r, DateTime now) {
+  Widget _rainTile(BuildContext context, AreaReading r, DateTime now, {required bool onDevice}) {
     final l = AppLocalizations.of(context);
     return _tile(
       context,
+      onDevice: onDevice,
       what: l.readingRain,
       r: r,
       value: numberText(r.value),
@@ -285,22 +318,30 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _floodTile(BuildContext context, FloodCounts f) {
+  Widget _floodTile(BuildContext context, HazardView v, DateTime now) {
     final l = AppLocalizations.of(context);
     final locale = Localizations.localeOf(context);
-    final note = f.flooded > 0
+    final f = v.flood!;
+    final note = v.floodStale
+        ? l.freshStale(clockText(l, v.floodAt!, now))
+        : f.flooded > 0
         ? l.noteFloodSome('${(f.deepestCm ?? 0).round()}')
         : f.minor > 0
         ? l.zoneSumMinor('${f.minor}')
         : l.noteFloodOk;
-    final value = '${f.flooded}';
+    final value = v.floodStale ? '—' : '${f.flooded}';
     return ReadingTile(
       label: l.extFlood,
       value: value,
       unit: l.readingFloodUnit,
       level: f.level,
+      stale: v.floodStale,
       note: note,
-      meta: '${l.commonSource} ${l.sourceNameBma} · ${l.extFloodCount('${f.flooded}', '${f.normal}')}',
+      meta: [
+        '${l.commonSource} ${l.sourceNameBma}',
+        l.extFloodCount('${f.flooded}', '${f.normal}'),
+        if (v.floodOnDevice) l.readingOnDevice,
+      ].join(' · '),
       semantics: '${l.extFlood} $value ${l.readingFloodUnit}, ${l.levelSemantics(f.level.label(locale))}. $note',
     );
   }

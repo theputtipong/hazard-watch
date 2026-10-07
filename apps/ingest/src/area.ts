@@ -28,9 +28,8 @@ import provincesFile from '../../web/public/geo/provinces.json';
 import { DISTRICTS } from './push/run';
 
 /**
- * One district, already judged: what the mobile app's home screen shows. Severities and alert text are computed here
- * with the same rules as Web Push, so every channel says the same thing. Display text the app can build from a level
- * (notes, gauge states, times) is left to the app's strings, which come from the same messages.
+ * Severities and alert text use the same rules as Web Push so every channel agrees; text the app can build from a
+ * level (notes, gauge states, times) is left to the app's strings.
  */
 export interface AreaReport {
   generatedAt: string;

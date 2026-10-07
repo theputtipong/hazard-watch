@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hazardwatch/api/hazard_api.dart';
 import 'package:hazardwatch/api/models.dart';
 import 'package:hazardwatch/app.dart';
+import 'package:hazardwatch/bma/device_bma.dart';
 import 'package:hazardwatch/l10n/gen/app_localizations.dart';
 import 'package:hazardwatch/location.dart';
 import 'package:hazardwatch/settings.dart';
@@ -70,6 +71,8 @@ Future<AppSettings> pumpApp(
   bool cvd = false,
   String lang = 'th',
   bool withDistrict = true,
+  DeviceBma? bma,
+  DateTime? now,
 }) async {
   final settings = AppSettings()
     ..themeMode = mode
@@ -81,14 +84,14 @@ Future<AppSettings> pumpApp(
       settings: settings,
       api: api ?? FakeApi(),
       location: location ?? FakeLocation(LocationUnavailable(denied: true)),
-      clock: () => fixtureNow,
+      clock: () => now ?? fixtureNow,
+      bma: bma,
     ),
   );
   await tester.pumpAndSettle();
   return settings;
 }
 
-/// A single widget under the app theme, for component tests.
 Future<void> pumpThemed(
   WidgetTester tester,
   Widget child, {
