@@ -1,25 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hazardwatch/app.dart';
-import 'package:hazardwatch/settings.dart';
 import 'package:hazardwatch/theme/hw_app_theme.dart';
 import 'package:hazardwatch/theme/web_palettes.g.dart';
 import 'package:hazardwatch/widgets/severity.dart';
 
-Future<AppSettings> pumpApp(
-  WidgetTester tester, {
-  ThemeMode mode = ThemeMode.light,
-  bool cvd = false,
-  String lang = 'th',
-}) async {
-  final settings = AppSettings()
-    ..themeMode = mode
-    ..cvd = cvd
-    ..locale = Locale(lang);
-  await tester.pumpWidget(HazardWatchApp(settings: settings));
-  await tester.pumpAndSettle();
-  return settings;
-}
+import 'support.dart';
 
 /// Every colour role both systems share, by the same name.
 Map<String, Color> shared(HwColors c) => {
@@ -109,30 +94,30 @@ void main() {
     }
   });
 
+  Widget badges() => Wrap(children: [for (final level in HwLevel.values) SeverityBadge(level: level)]);
+
   testWidgets('badges show the level word in Thai and English', (tester) async {
-    await pumpApp(tester);
+    await pumpThemed(tester, badges());
     for (final level in HwLevel.values) {
-      expect(find.text(level.th), findsWidgets);
+      expect(find.text(level.th), findsOneWidget);
     }
-    await pumpApp(tester, lang: 'en');
+    await pumpThemed(tester, badges(), lang: 'en');
     for (final level in HwLevel.values) {
-      expect(find.text(level.en), findsWidgets);
+      expect(find.text(level.en), findsOneWidget);
     }
   });
 
   testWidgets('screen readers hear the level, not the bars', (tester) async {
     final handle = tester.ensureSemantics();
-    await pumpApp(tester);
-    // Cards merge their children into one sentence for screen readers, so match within the label.
-    expect(find.bySemanticsLabel(RegExp('PM2.5\nระดับ ระวังมาก\n62')), findsOneWidget);
-    expect(find.bySemanticsLabel(RegExp('ระดับ อันตราย')), findsOneWidget);
+    await pumpThemed(tester, const SeverityBadge(level: HwLevel.warning));
+    expect(find.bySemanticsLabel('ระดับ ระวังมาก'), findsOneWidget);
     handle.dispose();
   });
 
   testWidgets('meter fills one bar per level', (tester) async {
-    await pumpApp(tester);
+    await pumpThemed(tester, Row(children: [for (final level in HwLevel.values) SeverityMeter(level: level)]));
     for (final level in HwLevel.values) {
-      final meter = find.byWidgetPredicate((w) => w is SeverityMeter && w.level == level && !w.large).first;
+      final meter = find.byWidgetPredicate((w) => w is SeverityMeter && w.level == level);
       final bars = tester
           .widgetList<Container>(find.descendant(of: meter, matching: find.byType(Container)))
           .map((c) => (c.decoration! as BoxDecoration).color!);
@@ -141,35 +126,40 @@ void main() {
   });
 
   testWidgets('badge is 28dp with soft background and level ink, in every mode', (tester) async {
-    for (final (mode, cvd, colors) in [
-      (ThemeMode.light, false, web(WebPalettes.light)),
-      (ThemeMode.dark, false, web(WebPalettes.dark)),
-      (ThemeMode.light, true, web(WebPalettes.lightCvd)),
-      (ThemeMode.dark, true, web(WebPalettes.darkCvd)),
+    for (final (brightness, cvd, colors) in [
+      (Brightness.light, false, web(WebPalettes.light)),
+      (Brightness.dark, false, web(WebPalettes.dark)),
+      (Brightness.light, true, web(WebPalettes.lightCvd)),
+      (Brightness.dark, true, web(WebPalettes.darkCvd)),
     ]) {
-      await pumpApp(tester, mode: mode, cvd: cvd);
-      final badge = find.byWidgetPredicate((w) => w is SeverityBadge && w.level == HwLevel.danger).first;
-      final box = find.descendant(of: badge, matching: find.byType(Container)).first;
+      await pumpThemed(
+        tester,
+        const SeverityBadge(level: HwLevel.danger),
+        brightness: brightness,
+        cvd: cvd,
+      );
+      final box = find.descendant(of: find.byType(SeverityBadge), matching: find.byType(Container)).first;
       expect(tester.getSize(box).height, 28);
       expect((tester.widget<Container>(box).decoration! as BoxDecoration).color, colors['sevDangerSoft']);
-      final word = tester.widget<Text>(find.descendant(of: badge, matching: find.byType(Text)));
-      expect(word.style!.color, colors['sevDangerInk'], reason: '$mode cvd=$cvd');
+      final word = tester.widget<Text>(find.descendant(of: find.byType(SeverityBadge), matching: find.byType(Text)));
+      expect(word.style!.color, colors['sevDangerInk'], reason: '$brightness cvd=$cvd');
     }
   });
 
   testWidgets('buttons meet the 48dp touch target', (tester) async {
-    await pumpApp(tester);
+    await pumpThemed(
+      tester,
+      Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          FilledButton(onPressed: () {}, child: const Text('a')),
+          OutlinedButton(onPressed: () {}, child: const Text('b')),
+          TextButton(onPressed: () {}, child: const Text('c')),
+        ],
+      ),
+    );
     for (final type in [FilledButton, OutlinedButton, TextButton]) {
-      expect(tester.getSize(find.byType(type).first).height, greaterThanOrEqualTo(48), reason: '$type');
+      expect(tester.getSize(find.byType(type)).height, greaterThanOrEqualTo(48), reason: '$type');
     }
-  });
-
-  testWidgets('changing settings re-themes the app', (tester) async {
-    final settings = await pumpApp(tester);
-    final badge = find.byType(SeverityBadge).first;
-    expect(Theme.of(tester.element(badge)).brightness, Brightness.light);
-    settings.themeMode = ThemeMode.dark;
-    await tester.pumpAndSettle();
-    expect(Theme.of(tester.element(badge)).brightness, Brightness.dark);
   });
 }

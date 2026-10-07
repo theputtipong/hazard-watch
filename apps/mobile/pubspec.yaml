@@ -11,7 +11,10 @@ dependencies:
     sdk: flutter
   flutter_localizations:
     sdk: flutter
+  geolocator: ^14.1.1
+  http: ^1.6.0
   intl: any
+  shared_preferences: ^2.5.6
 
 dev_dependencies:
   flutter_test:

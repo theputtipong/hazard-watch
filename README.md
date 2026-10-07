@@ -71,6 +71,8 @@ apps/
   ingest/   Cloudflare Worker (Hono): cron for edge feeds, KV snapshots, public read API, authenticated writes,
             Web Push (D1 subscriptions, alerts after every data update).
   extension/ Chrome/Edge extension (MV3): alerts for the person's district + a summary popup, read from the public API.
+  mobile/   Flutter app (iOS + Android, in development): an extra channel on the HazardWatch Mobile design system.
+            Reads `/v1/area` (one district, judged with the Web Push rules) and `/v1/districts`. See its README.
 packages/
   core/     Shared types, coverage regions (src/regions.ts), alert thresholds (src/config.ts), severity rules,
             i18n (src/i18n/messages.ts).

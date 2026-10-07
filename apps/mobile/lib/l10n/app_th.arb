@@ -1506,10 +1506,6 @@
       }
     }
   },
-  "homeAllClear": "แถวนี้ตอนนี้ปกติดี",
-  "@homeAllClear": {
-    "description": "home.allClear"
-  },
   "commonOfflineAt": "ไม่มีอินเทอร์เน็ต กำลังแสดงข้อมูลเมื่อ {time}",
   "@commonOfflineAt": {
     "description": "common.offlineAt",
@@ -1522,6 +1518,10 @@
   "permissionLocation": "ใช้ตำแหน่งเพื่อหาว่าคุณอยู่เขตไหนเท่านั้น ไม่มีการเก็บไว้",
   "@permissionLocation": {
     "description": "permission.location"
+  },
+  "permissionLocationDenied": "ไม่ได้รับสิทธิ์ใช้ตำแหน่ง เลือกเขต/อำเภอเองได้",
+  "@permissionLocationDenied": {
+    "description": "permission.locationDenied"
   },
   "permissionNotifications": "เปิดไว้ แล้วเราจะบอกเมื่อแถวบ้านมีเรื่องต้องระวัง",
   "@permissionNotifications": {
@@ -1542,5 +1542,159 @@
   "navSettings": "ตั้งค่า",
   "@navSettings": {
     "description": "nav.settings"
+  },
+  "homePickFirst": "เลือกเขตที่อยากติดตาม แล้วเราจะบอกว่าแถวนั้นมีฝนหนัก น้ำท่วม ฝุ่น หรือแผ่นดินไหวไหม",
+  "@homePickFirst": {
+    "description": "home.pickFirst"
+  },
+  "homeNotDeployed": "เซิร์ฟเวอร์ยังไม่รองรับแอปเวอร์ชันนี้",
+  "@homeNotDeployed": {
+    "description": "home.notDeployed"
+  },
+  "homeAlertsMeta": "อัปเดต {ago}",
+  "@homeAlertsMeta": {
+    "description": "home.alertsMeta",
+    "placeholders": {
+      "ago": {
+        "type": "String"
+      }
+    }
+  },
+  "areaSearch": "ค้นหาเขต/อำเภอ",
+  "@areaSearch": {
+    "description": "area.search"
+  },
+  "readingRain": "ฝนชั่วโมงที่แล้ว",
+  "@readingRain": {
+    "description": "reading.rain"
+  },
+  "readingAt": "{what} · {place}",
+  "@readingAt": {
+    "description": "reading.at",
+    "placeholders": {
+      "what": {
+        "type": "String"
+      },
+      "place": {
+        "type": "String"
+      }
+    }
+  },
+  "readingMeta": "ข้อมูลจาก {source} · {time} · {km} กม.",
+  "@readingMeta": {
+    "description": "reading.meta",
+    "placeholders": {
+      "source": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      },
+      "km": {
+        "type": "String"
+      }
+    }
+  },
+  "readingSemantics": "{what} ที่{place} {value} ระดับ{level} {note}",
+  "@readingSemantics": {
+    "description": "reading.semantics",
+    "placeholders": {
+      "what": {
+        "type": "String"
+      },
+      "place": {
+        "type": "String"
+      },
+      "value": {
+        "type": "String"
+      },
+      "level": {
+        "type": "String"
+      },
+      "note": {
+        "type": "String"
+      }
+    }
+  },
+  "readingFloodUnit": "จุด",
+  "@readingFloodUnit": {
+    "description": "reading.floodUnit"
+  },
+  "readingQuakeNote": "{place} ห่าง {km} กม.",
+  "@readingQuakeNote": {
+    "description": "reading.quakeNote",
+    "placeholders": {
+      "place": {
+        "type": "String"
+      },
+      "km": {
+        "type": "String"
+      }
+    }
+  },
+  "noteRainOk": "ฝนไม่หนัก",
+  "@noteRainOk": {
+    "description": "note.rain.ok"
+  },
+  "noteRainWatch": "ฝนหนัก ถนนบางแห่งอาจมีน้ำขัง",
+  "@noteRainWatch": {
+    "description": "note.rain.watch"
+  },
+  "noteRainWarn": "ฝนหนักมาก ถนนแถวนั้นอาจมีน้ำท่วม",
+  "@noteRainWarn": {
+    "description": "note.rain.warn"
+  },
+  "noteRainDanger": "ท่อระบายน้ำรับไม่ทัน เลี่ยงการเดินทางถ้าทำได้",
+  "@noteRainDanger": {
+    "description": "note.rain.danger"
+  },
+  "noteFloodOk": "ถนนในเขตนี้ไม่มีน้ำท่วม",
+  "@noteFloodOk": {
+    "description": "note.flood.ok"
+  },
+  "noteFloodSome": "ลึกสุด {depth} ซม. ถ้าไม่จำเป็นให้เลี่ยงถนนแถวนั้น",
+  "@noteFloodSome": {
+    "description": "note.flood.some",
+    "placeholders": {
+      "depth": {
+        "type": "String"
+      }
+    }
+  },
+  "sourceNameAir4thai": "กรมควบคุมมลพิษ",
+  "@sourceNameAir4thai": {
+    "description": "sourceName.air4thai"
+  },
+  "sourceNameBma": "กทม.",
+  "@sourceNameBma": {
+    "description": "sourceName.bma"
+  },
+  "sourceNameThaiwater": "ThaiWater",
+  "@sourceNameThaiwater": {
+    "description": "sourceName.thaiwater"
+  },
+  "sourceNameTmd": "กรมอุตุฯ",
+  "@sourceNameTmd": {
+    "description": "sourceName.tmd"
+  },
+  "sourceNameUsgs": "USGS",
+  "@sourceNameUsgs": {
+    "description": "sourceName.usgs"
+  },
+  "sourceNameOther": "แหล่งข้อมูล",
+  "@sourceNameOther": {
+    "description": "sourceName.other"
+  },
+  "settingsArea": "เขตที่ติดตาม",
+  "@settingsArea": {
+    "description": "settings.area"
+  },
+  "settingsDisplay": "การแสดงผล",
+  "@settingsDisplay": {
+    "description": "settings.display"
+  },
+  "settingsData": "ข้อมูล",
+  "@settingsData": {
+    "description": "settings.data"
   }
 }

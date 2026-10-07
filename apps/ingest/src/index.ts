@@ -9,6 +9,7 @@ import { cleanPrefs, type IncomingPrefs } from './push/prefs';
 import { DISTRICT_IDS, messageFor, notifierFor, sendAlerts, type PushEnv } from './push/run';
 import { deleteSubscription, getSubscription, markSent, sentSince, subscriptionId, upsertSubscription } from './push/store';
 import { KEYS, readGroup, unpackRadar, writeGroup, type FeedMap } from './store';
+import { buildAreaReport, districtAt, districtList, findDistrict } from './area';
 import { buildSummary } from './summary';
 
 export interface Env extends PushEnv {
@@ -100,6 +101,27 @@ app.get('/v1/summary', async (c) => {
   return edgeCached(c, cacheKey(c, '/v1/summary'), INGEST.cacheSeconds.snapshot, async () => {
     const [edge, runner] = await Promise.all([readGroup(c.env.SNAPSHOTS, KEYS.edge), readGroup(c.env.SNAPSHOTS, KEYS.runner)]);
     return Response.json(buildSummary(edge, runner));
+  });
+});
+
+app.get('/v1/districts', (c) =>
+  edgeCached(c, cacheKey(c, '/v1/districts'), INGEST.cacheSeconds.districts, async () => Response.json(districtList())),
+);
+
+/** One district, judged for the mobile app: `?district=<id>`, or `?lat=&lng=` for the district at a point. */
+app.get('/v1/area', async (c) => {
+  const id = c.req.query('district');
+  const lat = Number(c.req.query('lat'));
+  const lng = Number(c.req.query('lng'));
+  let district;
+  if (id) district = findDistrict(id);
+  else if (Number.isFinite(lat) && Number.isFinite(lng) && c.req.query('lat') && c.req.query('lng')) district = districtAt({ lat, lng });
+  else return c.json({ error: 'district, or lat and lng, is required' }, 400);
+  if (!district) return c.json({ error: id ? 'unknown district' : 'outside coverage' }, 404);
+  // Cached per district, so every point inside it shares one entry.
+  return edgeCached(c, cacheKey(c, `/v1/area?district=${district.properties.id}`), INGEST.cacheSeconds.snapshot, async () => {
+    const [edge, runner] = await Promise.all([readGroup(c.env.SNAPSHOTS, KEYS.edge), readGroup(c.env.SNAPSHOTS, KEYS.runner)]);
+    return Response.json(buildAreaReport({ edge, runner } as DashboardSnapshot, district));
   });
 });
 

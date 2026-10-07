@@ -1,6 +1,6 @@
 export const INGEST = {
   maxUploadBytes: 5 * 1024 * 1024,
-  cacheSeconds: { snapshot: 60, weather: 600, radar: 120 },
+  cacheSeconds: { snapshot: 60, weather: 600, radar: 120, districts: 3600 },
   radarDownloadTimeoutMs: 30_000,
   /**
    * GitHub's schedule is often hours late, so the edge cron dispatches the runner (needs GITHUB_DISPATCH_TOKEN).

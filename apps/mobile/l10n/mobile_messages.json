@@ -1,11 +1,14 @@
 {
-  "$comment": "Strings only the app needs, or where the mobile design system's wording differs from the web. Same key as packages/core/src/i18n/messages.ts overrides it; a new key adds one. Run `pnpm --filter @hw/mobile generate` after editing.",
+  "$comment": "Strings only the app needs, or where the mobile design system's wording differs from the web. Same key as packages/core/src/i18n/messages.ts overrides it; a new key adds one. Run `pnpm --filter @hw/mobile generate` after editing. Reuse web keys (ext.*, feeds.*, gauge.*, note.*) before adding one here.",
   "level.semantics": { "th": "ระดับ {level}", "en": "Level: {level}" },
-  "home.allClear": { "th": "แถวนี้ตอนนี้ปกติดี", "en": "All normal around here right now" },
   "common.offlineAt": { "th": "ไม่มีอินเทอร์เน็ต กำลังแสดงข้อมูลเมื่อ {time}", "en": "No internet. Showing data from {time}" },
   "permission.location": {
     "th": "ใช้ตำแหน่งเพื่อหาว่าคุณอยู่เขตไหนเท่านั้น ไม่มีการเก็บไว้",
     "en": "Your location is only used to find your district. It is not stored."
+  },
+  "permission.locationDenied": {
+    "th": "ไม่ได้รับสิทธิ์ใช้ตำแหน่ง เลือกเขต/อำเภอเองได้",
+    "en": "Location permission is off. You can pick a district instead"
   },
   "permission.notifications": {
     "th": "เปิดไว้ แล้วเราจะบอกเมื่อแถวบ้านมีเรื่องต้องระวัง",
@@ -14,5 +17,36 @@
   "nav.home": { "th": "หน้าแรก", "en": "Home" },
   "nav.map": { "th": "แผนที่", "en": "Map" },
   "nav.alerts": { "th": "แจ้งเตือน", "en": "Alerts" },
-  "nav.settings": { "th": "ตั้งค่า", "en": "Settings" }
+  "nav.settings": { "th": "ตั้งค่า", "en": "Settings" },
+  "home.pickFirst": {
+    "th": "เลือกเขตที่อยากติดตาม แล้วเราจะบอกว่าแถวนั้นมีฝนหนัก น้ำท่วม ฝุ่น หรือแผ่นดินไหวไหม",
+    "en": "Choose a district to follow and we'll tell you about heavy rain, flooding, dust or earthquakes there"
+  },
+  "home.notDeployed": {
+    "th": "เซิร์ฟเวอร์ยังไม่รองรับแอปเวอร์ชันนี้",
+    "en": "The server doesn't support this app version yet"
+  },
+  "home.alertsMeta": { "th": "อัปเดต {ago}", "en": "Updated {ago}" },
+  "area.search": { "th": "ค้นหาเขต/อำเภอ", "en": "Search districts" },
+  "reading.rain": { "th": "ฝนชั่วโมงที่แล้ว", "en": "Rain in the past hour" },
+  "reading.at": { "th": "{what} · {place}", "en": "{what} · {place}" },
+  "reading.meta": { "th": "ข้อมูลจาก {source} · {time} · {km} กม.", "en": "Data from {source} · {time} · {km} km" },
+  "reading.semantics": { "th": "{what} ที่{place} {value} ระดับ{level} {note}", "en": "{what} at {place}, {value}, {level}. {note}" },
+  "reading.floodUnit": { "th": "จุด", "en": "spots" },
+  "reading.quakeNote": { "th": "{place} ห่าง {km} กม.", "en": "{place}, {km} km away" },
+  "note.rain.ok": { "th": "ฝนไม่หนัก", "en": "No heavy rain" },
+  "note.rain.watch": { "th": "ฝนหนัก ถนนบางแห่งอาจมีน้ำขัง", "en": "Heavy rain. Some streets may flood" },
+  "note.rain.warn": { "th": "ฝนหนักมาก ถนนแถวนั้นอาจมีน้ำท่วม", "en": "Very heavy rain. Streets nearby may flood" },
+  "note.rain.danger": { "th": "ท่อระบายน้ำรับไม่ทัน เลี่ยงการเดินทางถ้าทำได้", "en": "Drains can't keep up. Avoid travelling if you can" },
+  "note.flood.ok": { "th": "ถนนในเขตนี้ไม่มีน้ำท่วม", "en": "No street flooding in this district" },
+  "note.flood.some": { "th": "ลึกสุด {depth} ซม. ถ้าไม่จำเป็นให้เลี่ยงถนนแถวนั้น", "en": "Up to {depth} cm deep. Avoid those streets if you can" },
+  "sourceName.air4thai": { "th": "กรมควบคุมมลพิษ", "en": "Pollution Control Department" },
+  "sourceName.bma": { "th": "กทม.", "en": "BMA" },
+  "sourceName.thaiwater": { "th": "ThaiWater", "en": "ThaiWater" },
+  "sourceName.tmd": { "th": "กรมอุตุฯ", "en": "TMD" },
+  "sourceName.usgs": { "th": "USGS", "en": "USGS" },
+  "sourceName.other": { "th": "แหล่งข้อมูล", "en": "the source" },
+  "settings.area": { "th": "เขตที่ติดตาม", "en": "District you follow" },
+  "settings.display": { "th": "การแสดงผล", "en": "Display" },
+  "settings.data": { "th": "ข้อมูล", "en": "Data" }
 }

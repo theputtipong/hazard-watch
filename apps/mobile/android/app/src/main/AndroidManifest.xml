@@ -1,6 +1,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Reads the public HazardWatch API. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Only to find which district the person is in; coarse is enough and nothing is stored. -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
     <application
-        android:label="hazardwatch"
+        android:label="HazardWatch"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

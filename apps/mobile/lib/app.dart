@@ -1,15 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
+import 'api/hazard_api.dart';
 import 'l10n/gen/app_localizations.dart';
-import 'screens/preview_screen.dart';
+import 'location.dart';
+import 'screens/app_shell.dart';
 import 'settings.dart';
 import 'theme/hw_app_theme.dart';
 
 class HazardWatchApp extends StatelessWidget {
-  const HazardWatchApp({super.key, required this.settings});
+  const HazardWatchApp({super.key, required this.settings, required this.api, required this.location, this.clock});
 
   final AppSettings settings;
+  final HazardApi api;
+  final LocationService location;
+
+  /// Fixed "now" for tests and screenshots; real time otherwise.
+  final DateTime Function()? clock;
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +36,7 @@ class HazardWatchApp extends StatelessWidget {
           GlobalWidgetsLocalizations.delegate,
           GlobalCupertinoLocalizations.delegate,
         ],
-        home: PreviewScreen(settings: settings),
+        home: AppShell(settings: settings, api: api, location: location, clock: clock ?? DateTime.now),
       ),
     );
   }

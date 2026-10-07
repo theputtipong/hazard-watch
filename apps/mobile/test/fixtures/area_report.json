@@ -1,0 +1,168 @@
+{
+  "generatedAt": "2026-10-05T10:00:00.000Z",
+  "updatedAt": "2026-10-05T09:50:00Z",
+  "district": {
+    "id": "TH1001",
+    "name": {
+      "th": "พระนคร",
+      "en": "Phra Nakhon"
+    },
+    "province": {
+      "th": "กรุงเทพมหานคร",
+      "en": "Bangkok"
+    },
+    "center": {
+      "lat": 13.75565,
+      "lng": 100.49867
+    }
+  },
+  "severity": "warn",
+  "calm": false,
+  "alerts": [
+    {
+      "key": "flood:TH1001",
+      "kind": "flood",
+      "severity": "warn",
+      "title": {
+        "th": "ระวังมาก: น้ำท่วมบนถนนที่พระนคร",
+        "en": "Warning: street flooding in Phra Nakhon"
+      },
+      "body": {
+        "th": "น้ำท่วม 1 จุด ลึกสุด 25 ซม. ถ้าไม่จำเป็นให้เลี่ยงถนนแถวนั้น",
+        "en": "1 flooded spots, up to 25 cm deep. Avoid those streets if you can"
+      }
+    },
+    {
+      "key": "pm25:TH1001",
+      "kind": "pm25",
+      "severity": "warn",
+      "title": {
+        "th": "ระวังมาก: ฝุ่นเยอะที่พระนคร",
+        "en": "Warning: high PM2.5 in Phra Nakhon"
+      },
+      "body": {
+        "th": "48.2 µg/m³ · ฝุ่นเยอะ ถ้าออกนอกบ้านควรใส่หน้ากาก",
+        "en": "48.2 µg/m³ · Lots of dust. Wear a mask if you go out"
+      }
+    }
+  ],
+  "readings": {
+    "pm25": {
+      "id": "pm-near",
+      "kind": "pm25",
+      "source": "air4thai",
+      "name": {
+        "th": "จุด pm-near",
+        "en": "Station pm-near"
+      },
+      "value": 48.2,
+      "unit": "µg/m³",
+      "severity": "warn",
+      "observedAt": "2026-10-05T09:40:00Z",
+      "km": 0.2,
+      "stale": false
+    },
+    "rain": {
+      "id": "r1",
+      "kind": "rain",
+      "source": "bma-rain",
+      "name": {
+        "th": "จุด r1",
+        "en": "Station r1"
+      },
+      "value": 12.5,
+      "unit": "mm/h",
+      "severity": "watch",
+      "observedAt": "2026-10-05T09:40:00Z",
+      "km": 2.4,
+      "stale": false
+    }
+  },
+  "flood": {
+    "flooded": 1,
+    "minor": 1,
+    "normal": 1,
+    "offline": 1,
+    "deepestCm": 25
+  },
+  "rivers": [
+    {
+      "id": "w1",
+      "kind": "waterlevel",
+      "source": "thaiwater",
+      "name": {
+        "th": "จุด w1",
+        "en": "Station w1"
+      },
+      "value": 86,
+      "unit": "%",
+      "severity": "watch",
+      "observedAt": "2026-10-05T09:40:00Z",
+      "km": 2.4,
+      "stale": false
+    },
+    {
+      "id": "w2",
+      "kind": "waterlevel",
+      "source": "thaiwater",
+      "name": {
+        "th": "จุด w2",
+        "en": "Station w2"
+      },
+      "value": 44,
+      "unit": "%",
+      "severity": "ok",
+      "observedAt": "2026-10-05T09:40:00Z",
+      "km": 19.4,
+      "stale": false
+    }
+  ],
+  "quake": {
+    "magnitude": 5.1,
+    "place": {
+      "th": "อ.แม่สาย จ.เชียงราย",
+      "en": "Mae Sai, Chiang Rai"
+    },
+    "occurredAt": "2026-10-05T08:00:00Z",
+    "km": 702,
+    "severity": "ok"
+  },
+  "feeds": [
+    {
+      "topic": "flood",
+      "state": "live",
+      "lastOkAt": "2026-10-05T09:50:00Z",
+      "failingSince": null
+    },
+    {
+      "topic": "rain",
+      "state": "live",
+      "lastOkAt": "2026-10-05T09:50:00Z",
+      "failingSince": null
+    },
+    {
+      "topic": "waterlevel",
+      "state": "live",
+      "lastOkAt": "2026-10-05T09:50:00Z",
+      "failingSince": null
+    },
+    {
+      "topic": "radar",
+      "state": "down",
+      "lastOkAt": "2026-10-05T01:00:00Z",
+      "failingSince": "2026-10-05T07:00:00Z"
+    },
+    {
+      "topic": "pm25",
+      "state": "live",
+      "lastOkAt": "2026-10-05T09:50:00Z",
+      "failingSince": null
+    },
+    {
+      "topic": "quakes",
+      "state": "live",
+      "lastOkAt": "2026-10-05T09:50:00Z",
+      "failingSince": null
+    }
+  ]
+}
