@@ -27,6 +27,24 @@
     "en": "The server doesn't support this app version yet"
   },
   "home.alertsMeta": { "th": "อัปเดต {ago}", "en": "Updated {ago}" },
+  "alerts.empty": { "th": "ตอนนี้ไม่มีการแจ้งเตือนในเขตนี้", "en": "No alerts for this district right now" },
+  "alerts.quakeAt": { "th": "เกิดเมื่อ {time}", "en": "Happened at {time}" },
+  "alerts.notifyOff": {
+    "th": "การแจ้งเตือนบนโทรศัพท์ปิดอยู่ เปิดได้ที่หน้าตั้งค่า",
+    "en": "Phone notifications are off. You can turn them on in Settings"
+  },
+  "settings.notifications": { "th": "การแจ้งเตือน", "en": "Notifications" },
+  "notify.toggle": { "th": "แจ้งเตือนบนโทรศัพท์เครื่องนี้", "en": "Notify me on this phone" },
+  "notify.how": {
+    "th": "แอปเช็กเขตที่ติดตามประมาณทุก 15 นาที แล้วแจ้งเมื่อมีเรื่องใหม่หรือระดับสูงขึ้น บน iPhone ระบบอาจเช็กห่างกว่านี้",
+    "en": "The app checks your district about every 15 minutes and tells you when something new appears or gets worse. On iPhone the system may check less often"
+  },
+  "notify.denied": {
+    "th": "โทรศัพท์ไม่อนุญาตให้แอปนี้แจ้งเตือน เปิดได้ในการตั้งค่าของโทรศัพท์",
+    "en": "Notifications are blocked for this app. Allow them in your phone's settings"
+  },
+  "notify.pickArea": { "th": "เลือกเขตที่ติดตามก่อน แล้วจึงเปิดการแจ้งเตือน", "en": "Choose a district to follow first" },
+  "notify.channel": { "th": "แจ้งเตือนภัยในเขตที่ติดตาม", "en": "Alerts for your district" },
   "area.search": { "th": "ค้นหาเขต/อำเภอ", "en": "Search districts" },
   "reading.rain": { "th": "ฝนชั่วโมงที่แล้ว", "en": "Rain in the past hour" },
   "reading.at": { "th": "{what} · {place}", "en": "{what} · {place}" },

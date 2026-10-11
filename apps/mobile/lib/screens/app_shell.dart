@@ -6,6 +6,7 @@ import '../l10n/gen/app_localizations.dart';
 import '../location.dart';
 import '../settings.dart';
 import '../theme/hw_app_theme.dart';
+import 'alerts_screen.dart';
 import 'home_screen.dart';
 import 'settings_screen.dart';
 import 'soon_screen.dart';
@@ -50,8 +51,13 @@ class _AppShellState extends State<AppShell> {
             bma: widget.bma,
           ),
           SoonScreen(title: l.navMap),
-          // Alert history arrives with app push notifications (phase 4).
-          SoonScreen(title: l.navAlerts),
+          AlertsScreen(
+            settings: widget.settings,
+            api: widget.api,
+            location: widget.location,
+            clock: widget.clock,
+            bma: widget.bma,
+          ),
           SettingsScreen(settings: widget.settings, api: widget.api, location: widget.location),
         ],
       ),

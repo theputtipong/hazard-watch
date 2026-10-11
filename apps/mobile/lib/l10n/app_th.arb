@@ -1560,6 +1560,47 @@
       }
     }
   },
+  "alertsEmpty": "ตอนนี้ไม่มีการแจ้งเตือนในเขตนี้",
+  "@alertsEmpty": {
+    "description": "alerts.empty"
+  },
+  "alertsQuakeAt": "เกิดเมื่อ {time}",
+  "@alertsQuakeAt": {
+    "description": "alerts.quakeAt",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "alertsNotifyOff": "การแจ้งเตือนบนโทรศัพท์ปิดอยู่ เปิดได้ที่หน้าตั้งค่า",
+  "@alertsNotifyOff": {
+    "description": "alerts.notifyOff"
+  },
+  "settingsNotifications": "การแจ้งเตือน",
+  "@settingsNotifications": {
+    "description": "settings.notifications"
+  },
+  "notifyToggle": "แจ้งเตือนบนโทรศัพท์เครื่องนี้",
+  "@notifyToggle": {
+    "description": "notify.toggle"
+  },
+  "notifyHow": "แอปเช็กเขตที่ติดตามประมาณทุก 15 นาที แล้วแจ้งเมื่อมีเรื่องใหม่หรือระดับสูงขึ้น บน iPhone ระบบอาจเช็กห่างกว่านี้",
+  "@notifyHow": {
+    "description": "notify.how"
+  },
+  "notifyDenied": "โทรศัพท์ไม่อนุญาตให้แอปนี้แจ้งเตือน เปิดได้ในการตั้งค่าของโทรศัพท์",
+  "@notifyDenied": {
+    "description": "notify.denied"
+  },
+  "notifyPickArea": "เลือกเขตที่ติดตามก่อน แล้วจึงเปิดการแจ้งเตือน",
+  "@notifyPickArea": {
+    "description": "notify.pickArea"
+  },
+  "notifyChannel": "แจ้งเตือนภัยในเขตที่ติดตาม",
+  "@notifyChannel": {
+    "description": "notify.channel"
+  },
   "areaSearch": "ค้นหาเขต/อำเภอ",
   "@areaSearch": {
     "description": "area.search"
