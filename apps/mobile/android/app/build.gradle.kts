@@ -1,8 +1,16 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
+
+// Play upload key, kept outside git: HW_KEY_PROPERTIES or android/key.properties. Without it release builds
+// fall back to the debug key so CI and contributors can still build (not uploadable to Play).
+val keyPropertiesFile = (System.getenv("HW_KEY_PROPERTIES")?.takeIf { it.isNotBlank() }?.let(::File)
+    ?: rootProject.file("key.properties")).takeIf { it.isFile }
+val keyProperties = keyPropertiesFile?.let { f -> Properties().apply { f.inputStream().use(::load) } }
 
 android {
     namespace = "com.pdouvch.hazardwatch"
@@ -22,10 +30,21 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        if (keyProperties != null) {
+            create("upload") {
+                keyAlias = keyProperties.getProperty("keyAlias")
+                keyPassword = keyProperties.getProperty("keyPassword")
+                // A relative storeFile is resolved next to key.properties.
+                storeFile = keyPropertiesFile!!.parentFile.resolve(keyProperties.getProperty("storeFile"))
+                storePassword = keyProperties.getProperty("storePassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // Debug-signed until the upload keystore exists (phase 5).
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName(if (keyProperties != null) "upload" else "debug")
         }
     }
 }

@@ -20,4 +20,26 @@ flutter test
 flutter build apk --release
 ```
 
-CI: `.github/workflows/mobile.yml` (analyze, test, Android APK artifact, iOS build without signing).
+## Release builds
+
+- Android: release builds are signed with the Play upload key when a `key.properties` is found (`HW_KEY_PROPERTIES`,
+  or `android/key.properties`, gitignored) with `storePassword`, `keyPassword`, `keyAlias` and `storeFile` (relative
+  to the properties file). Without it they fall back to the debug key, which Play rejects. The key lives in the
+  owner's offline backup, not in the repo.
+
+  ```sh
+  HW_KEY_PROPERTIES=/path/to/key.properties flutter build appbundle --release
+  ```
+
+- iOS: `flutter build ipa --release` once a signing team is set in Xcode.
+- Launcher icons and Play graphics: `node tools/icons/make-icons.mjs`. Store text, data-safety answers and the manual
+  store steps: `store/`.
+
+CI: `.github/workflows/mobile.yml` (analyze, test, debug-signed APK artifact, iOS build without signing, and a
+signed AAB artifact in `android-release` once these repository secrets exist):
+
+```sh
+base64 -i upload.jks | gh secret set ANDROID_KEYSTORE_BASE64 --repo theputtipong/hazard-watch
+gh secret set ANDROID_KEY_PASSWORD --repo theputtipong/hazard-watch   # prompts; store and key passwords are the same
+gh secret set ANDROID_KEY_ALIAS --repo theputtipong/hazard-watch      # optional, defaults to "upload"
+```

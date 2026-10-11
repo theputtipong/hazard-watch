@@ -39,4 +39,26 @@ fs.copyFileSync(new URL('source/hazardwatch-icon-small.svg', import.meta.url), o
 fs.copyFileSync(new URL('source/hazardwatch-icon-small.svg', import.meta.url), out('apps/extension/static/icons/hazardwatch-icon-small.svg'));
 for (const size of [16, 32]) await write(`apps/extension/static/icons/icon-${size}.png`, render(small, size));
 for (const size of [48, 128]) await write(`apps/extension/static/icons/icon-${size}.png`, render(full, size));
+
+// Mobile app. App Store rejects icons with an alpha channel, so iOS icons are flattened onto brand navy.
+const opaque = async (buf) => sharp(await buf).removeAlpha().png().toBuffer();
+const iconSet = 'apps/mobile/ios/Runner/Assets.xcassets/AppIcon.appiconset';
+for (const { size, scale, filename } of JSON.parse(fs.readFileSync(out(`${iconSet}/Contents.json`))).images) {
+  const px = Math.round(parseFloat(size) * parseInt(scale, 10));
+  await write(`${iconSet}/${filename}`, opaque(render(px <= 32 ? small : full, px, { bleed: true })));
+}
+const androidRes = 'apps/mobile/android/app/src/main/res';
+for (const [dpi, scale] of Object.entries({ mdpi: 1, hdpi: 1.5, xhdpi: 2, xxhdpi: 3, xxxhdpi: 4 })) {
+  await write(`${androidRes}/mipmap-${dpi}/ic_launcher.png`, render(full, 48 * scale));
+  // Adaptive foreground (108dp): launchers mask to the centre 66-72dp, so the artwork is inset to stay visible.
+  await write(`${androidRes}/mipmap-${dpi}/ic_launcher_foreground.png`, render(full, 108 * scale, { bleed: true, pad: 0.12 }));
+}
+await write('apps/mobile/store/icon-512.png', opaque(render(full, 512, { bleed: true })));
+await write(
+  'apps/mobile/store/feature-graphic-1024x500.png',
+  sharp({ create: { width: 1024, height: 500, channels: 3, background: BRAND } })
+    .composite([{ input: await render(full, 320), gravity: 'center' }])
+    .png()
+    .toBuffer(),
+);
 console.log('icons written');
