@@ -1,7 +1,7 @@
 # Data safety (Play) and App Privacy (App Store)
 
-Based on what the app does today (no push notifications, no account, no analytics or crash SDK). Re-check this
-whenever a feature or dependency is added; push alerts will change the answers.
+Based on what the app does today (alerts are built on the phone, no server push, no account, no analytics or crash
+SDK). Re-check this whenever a feature or dependency is added; server push alerts would change the answers.
 
 ## What the app actually sends
 
@@ -38,21 +38,7 @@ Like the web and extension, the app rounds coordinates to two decimals (about 1 
   coarse location is the safer choice.)
 - Privacy policy URL: https://hazard.pdouvch.com/en/privacy
 
-## Privacy policy: add a mobile app section
+## Privacy policy
 
-`apps/web/src/content/privacy.ts` covers the web and the browser extension but not the app. Both stores require the
-policy to cover the app. Suggested wording (have it reviewed with the rest of the PDPA notice):
-
-**แอปมือถือ (Android/iOS)**
-- การตั้งค่า และเขต/อำเภอที่เลือก เก็บไว้ในเครื่องของคุณเท่านั้น การลบแอปจะลบข้อมูลทั้งหมด
-- ถ้าคุณกด "ใช้ตำแหน่งของฉัน" แอปส่งตำแหน่งโดยประมาณไปที่ API ของเราครั้งเดียวเพื่อหาเขต และไม่ถูกบันทึกไว้
-- ในกรุงเทพฯ แอปอาจโหลดข้อมูลน้ำท่วมและฝนจากเว็บไซต์ของ กทม. โดยตรง ซึ่งจะเห็นหมายเลข IP ของคุณ แต่ไม่ได้รับตำแหน่งของคุณ
-- ไม่มีบัญชีผู้ใช้ ไม่มีโฆษณา และไม่มีตัวติดตาม
-
-**Mobile app (Android/iOS)**
-- Your settings and chosen district stay on your device. Uninstalling the app deletes them.
-- If you tap "Use my location", the app sends your approximate location to our API once to find your district; it is
-  not stored.
-- In Bangkok the app may load flood and rain data straight from the BMA website, which sees your IP address but not
-  your location.
-- There is no account, no ads and no trackers.
+The "Mobile app (Android/iOS)" section of `apps/web/src/content/privacy.ts` covers the app. Update it together with
+this file.

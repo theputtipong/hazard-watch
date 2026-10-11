@@ -89,7 +89,7 @@ and call 1784 (DDPM) or 191.
 | Category | Play: Weather · App Store: Weather (secondary: Utilities) |
 | Contact email | support.pdouvch@gmail.com |
 | Website | https://hazard.pdouvch.com |
-| Privacy policy | https://hazard.pdouvch.com/th/privacy (Thai) · https://hazard.pdouvch.com/en/privacy (English); add the mobile section from `data-safety.md` first |
+| Privacy policy | https://hazard.pdouvch.com/th/privacy (Thai) · https://hazard.pdouvch.com/en/privacy (English) |
 | Price | Free, no in-app purchases, no ads |
 | Content rating | Play IARC questionnaire: no violence, no user content, no sharing of location with other users → Everyone / 3+. App Store age rating: 4+ |
 | Countries | Thailand (data covers Thailand only) |

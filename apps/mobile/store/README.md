@@ -1,8 +1,7 @@
 # Store release
 
 - `listing.md`: Thai and English store text, category, rating, contact.
-- `data-safety.md`: Play Data safety and App Store App Privacy answers, plus the privacy-policy section the app
-  still needs.
+- `data-safety.md`: Play Data safety and App Store App Privacy answers.
 - `icon-512.png`, `feature-graphic-1024x500.png`: Play graphics, generated with the launcher icons by
   `node tools/icons/make-icons.mjs` (design-system artwork from `tools/icons/source`).
 
@@ -16,8 +15,7 @@
 
 1. Map and Alerts tabs still show "coming soon". Apple rejects placeholder content (guideline 2.1/4.2): hide the two
    tabs or ship them before the first App Store review. Play is more lenient but reviewers may flag it too.
-2. Add the mobile section to the privacy policy (`data-safety.md`) and deploy the web.
-3. Screenshots in Thai and English: phone (Play min 2, 16:9 or 9:16; App Store 6.9" 1320x2868 or 6.5" 1284x2778),
+2. Screenshots in Thai and English: phone (Play min 2, 16:9 or 9:16; App Store 6.9" 1320x2868 or 6.5" 1284x2778),
    plus iPad 13" if the iPad build stays enabled (`TARGETED_DEVICE_FAMILY` includes iPad). Use light and dark themes.
 
 ## Google Play (manual)
