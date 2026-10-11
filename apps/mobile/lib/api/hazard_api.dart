@@ -63,7 +63,10 @@ class HttpHazardApi implements HazardApi {
 
   @override
   Future<AreaReport> area({String? districtId, double? lat, double? lng}) async {
-    final query = districtId != null ? {'district': districtId} : {'lat': '$lat', 'lng': '$lng'};
+    // Rounded to ~1 km like the web, as the privacy policy promises.
+    final query = districtId != null
+        ? {'district': districtId}
+        : {'lat': lat!.toStringAsFixed(2), 'lng': lng!.toStringAsFixed(2)};
     return AreaReport.fromJson((await _get('/v1/area', query))! as Map<String, dynamic>);
   }
 

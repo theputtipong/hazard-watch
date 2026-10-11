@@ -12,9 +12,8 @@ whenever a feature or dependency is added; push alerts will change the answers.
 | Nothing personal | weather.bangkok.go.th (BMA flood/rain feeds, fetched by the phone when our server's copy is stale) | BMA sees the phone's IP address, like any website |
 | Language, theme, colour mode, followed district | On the device only (shared preferences) | Device only; removed on uninstall |
 
-The app sends the coordinates as reported by the OS (coarse), not rounded. The web and extension round to about
-1 km before sending; consider doing the same in `lib/api/hazard_api.dart` so the privacy policy's wording ("rounded
-to about 1 km") is true for the app too.
+Like the web and extension, the app rounds coordinates to two decimals (about 1 km) before sending them
+(`lib/api/hazard_api.dart`), matching the privacy policy.
 
 ## Google Play: Data safety form
 
