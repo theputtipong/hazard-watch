@@ -1,6 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
+import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { activeRegions, DEFAULT_CONFIG, groupByZone, isStale, summarizeZone, zoneCenter, type DashboardSnapshot, type WeatherNow } from '@hw/core';
 import { t, type Lang, type MessageKey } from '@hw/core/i18n';
@@ -362,6 +363,9 @@ export function Dashboard({ lang, initialArea }: { lang: Lang; initialArea?: str
         <span className="flex flex-[1_1_520px] flex-col gap-1">
           <span>{t('app.coverage', lang, { regions: activeRegions().map((r) => r.name[lang]).join(', ') })}</span>
           <span>{t('footer.credits', lang)}</span>
+          <Link href={`/${lang}/privacy`} className="inline-flex min-h-11 items-center self-start text-accent underline underline-offset-4">
+            {t('privacy.title', lang)}
+          </Link>
         </span>
         <a
           href={WEB.donateUrl}
