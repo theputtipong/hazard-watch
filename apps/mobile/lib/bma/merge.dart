@@ -45,7 +45,7 @@ bool needsDeviceCopy(AreaReport r, BmaKind kind, DateTime now) {
 }
 
 /// The server's copy wins when its feed is live and at least as fresh as the phone's.
-bool _useDevice(AreaReport r, BmaKind kind, BmaCopy? copy) {
+bool usesDeviceCopy(AreaReport r, BmaKind kind, BmaCopy? copy) {
   if (copy == null) return false;
   final f = _feed(r, kind);
   return !(f != null && f.state == FeedState.live && f.lastOkAt != null && !f.lastOkAt!.isBefore(copy.fetchedAt));
@@ -96,8 +96,8 @@ FloodCounts? deviceFlood(BmaCopy copy, String districtId, DateTime now) {
 }
 
 HazardView mergeDevice(AreaReport r, {BmaCopy? flood, BmaCopy? rain, required DateTime now}) {
-  final rainOnDevice = _useDevice(r, BmaKind.rain, rain);
-  final floodOnDevice = _useDevice(r, BmaKind.flood, flood);
+  final rainOnDevice = usesDeviceCopy(r, BmaKind.rain, rain);
+  final floodOnDevice = usesDeviceCopy(r, BmaKind.flood, flood);
   final shownRain = rainOnDevice ? deviceRain(rain!, r.district, now) : r.rain;
   final shownFlood = floodOnDevice ? deviceFlood(flood!, r.district.id, now) : r.flood;
   final floodStale = floodOnDevice && flood!.failed;

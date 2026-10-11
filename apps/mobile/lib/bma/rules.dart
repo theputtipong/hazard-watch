@@ -13,6 +13,18 @@ abstract final class CoreConfig {
   static const floodDangerDepthCm = 30.0;
 
   static const staleAfterMinutes = 90;
+
+  static const pm25PushAt = 37.5;
+  static const pushCooldownHours = 3;
+  static const quakeLookbackHours = 24 * 7;
+
+  /// Loosest central quake tier: the limit when the person has not picked one (quakeAlertFloor).
+  static const quakeFloorMinMagnitude = 6.0;
+  static const quakeFloorMaxDistanceKm = 1500;
+
+  /// push.quakeChoices: the only personal quake limits the web and server accept.
+  static const quakeMinMagnitudeChoices = [5.0, 6.0, 7.0];
+  static const quakeMaxDistanceKmChoices = [500, 1000, 1500];
 }
 
 const severities = ['ok', 'watch', 'warn', 'danger'];
