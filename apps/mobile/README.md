@@ -12,6 +12,10 @@ iOS and Android app: an extra channel next to the web, PWA and extension, readin
   is never uploaded. Severities use the thresholds in `lib/bma/rules.dart` (checked against
   `packages/core/src/config.ts` by a test) and the district outlines in `lib/bma/bangkok_districts.g.dart`, generated
   from `apps/web/public/geo/districts.json` by `pnpm --filter @hw/mobile generate`.
+- Map tab: the web map's street flooding, canal levels and PM2.5 plus rain gauges and regional earthquakes, from
+  `/v1/snapshot` (and the phone's own BMA copy when the server's is failing), on OpenFreeMap vector tiles in the app's
+  theme and language (`lib/map/`). Falls back to OSM raster tiles if the style can't load. Nothing loads until the tab
+  is opened.
 - Alerts tab: the followed district's alerts from `/v1/area` (flood and rain from the phone's BMA copy when that is
   what Home shows), grouped by level, most severe first.
 - Phone notifications (off until turned on in Settings, which asks for permission): no Firebase or push service. A

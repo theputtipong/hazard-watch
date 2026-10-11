@@ -8,8 +8,8 @@ import '../settings.dart';
 import '../theme/hw_app_theme.dart';
 import 'alerts_screen.dart';
 import 'home_screen.dart';
+import 'map_screen.dart';
 import 'settings_screen.dart';
-import 'soon_screen.dart';
 
 /// Design system NavigationBar: four fixed destinations, labels always shown, `line` along the top.
 class AppShell extends StatefulWidget {
@@ -50,7 +50,13 @@ class _AppShellState extends State<AppShell> {
             clock: widget.clock,
             bma: widget.bma,
           ),
-          SoonScreen(title: l.navMap),
+          MapScreen(
+            settings: widget.settings,
+            api: widget.api,
+            location: widget.location,
+            clock: widget.clock,
+            bma: widget.bma,
+          ),
           AlertsScreen(
             settings: widget.settings,
             api: widget.api,

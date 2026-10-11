@@ -10,10 +10,15 @@ import 'package:hazardwatch/app.dart';
 import 'package:hazardwatch/bma/device_bma.dart';
 import 'package:hazardwatch/l10n/gen/app_localizations.dart';
 import 'package:hazardwatch/location.dart';
+import 'package:hazardwatch/map/map_data.dart';
 import 'package:hazardwatch/settings.dart';
 import 'package:hazardwatch/theme/hw_app_theme.dart';
 
 /// Written by apps/ingest/test/area.test.ts from the real report builder.
+/// Written by apps/ingest/test/area.test.ts: the snapshot that area_report.json is built from.
+Map<String, dynamic> snapshotJson() =>
+    jsonDecode(File('test/fixtures/snapshot.json').readAsStringSync()) as Map<String, dynamic>;
+
 Map<String, dynamic> fixtureJson() =>
     jsonDecode(File('test/fixtures/area_report.json').readAsStringSync()) as Map<String, dynamic>;
 
@@ -47,6 +52,16 @@ class FakeApi implements HazardApi {
       lng: 100.56,
     ),
   ];
+
+  Map<String, dynamic>? snapshotData;
+  int snapshotCalls = 0;
+
+  @override
+  Future<MapSnapshot> snapshot() async {
+    snapshotCalls++;
+    if (error != null) throw error!;
+    return MapSnapshot.fromJson(snapshotData ?? snapshotJson());
+  }
 }
 
 class FakeLocation implements LocationService {

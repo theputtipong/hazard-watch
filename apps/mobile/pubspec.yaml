@@ -12,10 +12,14 @@ dependencies:
   flutter_local_notifications: ^22.3.1
   flutter_localizations:
     sdk: flutter
+  flutter_map: ^8.3.2
   geolocator: ^14.1.1
   http: ^1.6.0
   intl: any
+  latlong2: ^0.10.1
   shared_preferences: ^2.5.6
+  vector_map_tiles: 9.0.0-beta.13
+  vector_tile_renderer: ^6.1.0
   workmanager: ^0.10.10
 
 dev_dependencies:
