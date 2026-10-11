@@ -49,5 +49,20 @@
   "sourceName.other": { "th": "แหล่งข้อมูล", "en": "the source" },
   "settings.area": { "th": "เขตที่ติดตาม", "en": "District you follow" },
   "settings.display": { "th": "การแสดงผล", "en": "Display" },
-  "settings.data": { "th": "ข้อมูล", "en": "Data" }
+  "settings.data": { "th": "ข้อมูล", "en": "Data" },
+  "layer.rain": { "th": "ฝนที่ตกอยู่", "en": "Rain now" },
+  "layer.quake": { "th": "แผ่นดินไหว", "en": "Earthquakes" },
+  "map.locationOff": { "th": "เปิดสิทธิ์ตำแหน่งในการตั้งค่าเครื่องก่อน แล้วกดอีกครั้ง", "en": "Allow location in your phone’s settings, then tap again" },
+  "map.locationWhy": {
+    "th": "ใช้ตำแหน่งเพื่อเลื่อนแผนที่มาหาคุณเท่านั้น ไม่มีการเก็บไว้",
+    "en": "Your location is only used to move the map to you. It is not stored."
+  },
+  "map.noFix": { "th": "หาตำแหน่งไม่เจอ ลองอีกครั้ง", "en": "Couldn’t find your location. Try again" },
+  "map.area": { "th": "ไปที่เขตที่ติดตาม", "en": "Go to the district you follow" },
+  "map.bangkok": { "th": "กรุงเทพฯ", "en": "Bangkok" },
+  "map.pin": { "th": "{what} {place} ระดับ{level}", "en": "{what}: {place}, {level}" },
+  "map.quakeDepth": { "th": "ลึก {km} กม.", "en": "{km} km deep" },
+  "map.quakeFrom": { "th": "ห่างจาก{place} {km} กม.", "en": "{km} km from {place}" },
+  "map.rainUnit": { "th": "มม./ชม.", "en": "mm/h" },
+  "unit.cm": { "th": "ซม.", "en": "cm" }
 }

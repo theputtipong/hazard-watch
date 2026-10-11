@@ -13,6 +13,17 @@ abstract final class CoreConfig {
   static const floodDangerDepthCm = 30.0;
 
   static const staleAfterMinutes = 90;
+
+  /// Most severe matching tier wins; no match is 'ok'.
+  static const quakeTiers = [
+    (severity: 'danger', minMagnitude: 7.0, maxDistanceKm: 1500.0),
+    (severity: 'warn', minMagnitude: 6.0, maxDistanceKm: 1500.0),
+  ];
+  static const quakeLookbackHours = 24 * 7;
+
+  /// USGS and TMD often report the same event: reports this close in time and space are one.
+  static const quakeDuplicateWithinSeconds = 90;
+  static const quakeDuplicateWithinKm = 50.0;
 }
 
 const severities = ['ok', 'watch', 'warn', 'danger'];
@@ -47,6 +58,18 @@ String bmaFloodSeverity(int subStatus, double? depthCm) {
   if (base == 'ok') return 'ok';
   return depthCm != null && depthCm >= CoreConfig.floodDangerDepthCm ? 'danger' : base;
 }
+
+/// Port of quakeSeverity in packages/core/src/severity.ts, [km] from the place being judged.
+String quakeSeverity(double magnitude, double km) {
+  final tiers = [...CoreConfig.quakeTiers]..sort((a, b) => rank(b.severity) - rank(a.severity));
+  for (final t in tiers) {
+    if (magnitude >= t.minMagnitude && km <= t.maxDistanceKm) return t.severity;
+  }
+  return 'ok';
+}
+
+/// Widest tier: quakes beyond it never matter to the place (quakeAlertFloor in severity.ts).
+double get quakeMaxDistanceKm => CoreConfig.quakeTiers.map((t) => t.maxDistanceKm).reduce((a, b) => a > b ? a : b);
 
 bool isStale(DateTime observedAt, DateTime now) =>
     now.difference(observedAt) > const Duration(minutes: CoreConfig.staleAfterMinutes);

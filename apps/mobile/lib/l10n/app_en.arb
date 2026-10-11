@@ -72,7 +72,7 @@
   "mapLocate": "Go to my location",
   "mapFitRegion": "Show whole area",
   "mapLocating": "Finding your location…",
-  "mapLocationOff": "Allow location in your browser, then tap again",
+  "mapLocationOff": "Allow location in your phone’s settings, then tap again",
   "mapShowLegend": "Show legend",
   "mapHideLegend": "Hide legend",
   "popupDepth": "Depth",
@@ -299,5 +299,16 @@
   "sourceNameOther": "the source",
   "settingsArea": "District you follow",
   "settingsDisplay": "Display",
-  "settingsData": "Data"
+  "settingsData": "Data",
+  "layerRain": "Rain now",
+  "layerQuake": "Earthquakes",
+  "mapLocationWhy": "Your location is only used to move the map to you. It is not stored.",
+  "mapNoFix": "Couldn’t find your location. Try again",
+  "mapArea": "Go to the district you follow",
+  "mapBangkok": "Bangkok",
+  "mapPin": "{what}: {place}, {level}",
+  "mapQuakeDepth": "{km} km deep",
+  "mapQuakeFrom": "{km} km from {place}",
+  "mapRainUnit": "mm/h",
+  "unitCm": "cm"
 }

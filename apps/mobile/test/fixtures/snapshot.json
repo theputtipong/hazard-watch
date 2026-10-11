@@ -1,0 +1,253 @@
+{
+  "edge": {
+    "updatedAt": "2026-10-05T09:50:00Z",
+    "feeds": {
+      "pm25": {
+        "source": "air4thai",
+        "fetchedAt": "2026-10-05T09:50:00Z",
+        "ok": true,
+        "lastOkAt": "2026-10-05T09:50:00Z",
+        "items": [
+          {
+            "id": "pm-near",
+            "kind": "pm25",
+            "source": "air4thai",
+            "name": {
+              "th": "จุด pm-near",
+              "en": "Station pm-near"
+            },
+            "location": {
+              "lat": 13.755,
+              "lng": 100.5
+            },
+            "observedAt": "2026-10-05T09:40:00Z",
+            "value": 48.2,
+            "unit": "µg/m³",
+            "severity": "warn"
+          },
+          {
+            "id": "pm-far",
+            "kind": "pm25",
+            "source": "air4thai",
+            "name": {
+              "th": "จุด pm-far",
+              "en": "Station pm-far"
+            },
+            "location": {
+              "lat": 13.9,
+              "lng": 100.6
+            },
+            "observedAt": "2026-10-05T09:40:00Z",
+            "value": 12,
+            "unit": "µg/m³",
+            "severity": "ok"
+          }
+        ]
+      },
+      "quakesTmd": {
+        "source": "tmd",
+        "fetchedAt": "2026-10-05T09:50:00Z",
+        "ok": true,
+        "lastOkAt": "2026-10-05T09:50:00Z",
+        "items": [
+          {
+            "id": "q1",
+            "source": "tmd",
+            "magnitude": 5.1,
+            "depthKm": 10,
+            "location": {
+              "lat": 19.9,
+              "lng": 99
+            },
+            "place": {
+              "th": "อ.แม่สาย จ.เชียงราย",
+              "en": "Mae Sai, Chiang Rai"
+            },
+            "occurredAt": "2026-10-05T08:00:00Z"
+          }
+        ]
+      },
+      "quakesUsgs": {
+        "source": "usgs",
+        "fetchedAt": "2026-10-05T09:50:00Z",
+        "ok": true,
+        "lastOkAt": "2026-10-05T09:50:00Z",
+        "items": []
+      }
+    }
+  },
+  "runner": {
+    "updatedAt": "2026-10-05T09:45:00Z",
+    "feeds": {
+      "flood": {
+        "source": "bma-flood",
+        "fetchedAt": "2026-10-05T09:50:00Z",
+        "ok": true,
+        "lastOkAt": "2026-10-05T09:50:00Z",
+        "items": [
+          {
+            "id": "f1",
+            "kind": "flood",
+            "source": "bma-flood",
+            "name": {
+              "th": "จุด f1",
+              "en": "Station f1"
+            },
+            "location": {
+              "lat": 13.755,
+              "lng": 100.5
+            },
+            "observedAt": "2026-10-05T09:40:00Z",
+            "value": 25,
+            "unit": "cm",
+            "severity": "warn"
+          },
+          {
+            "id": "f2",
+            "kind": "flood",
+            "source": "bma-flood",
+            "name": {
+              "th": "จุด f2",
+              "en": "Station f2"
+            },
+            "location": {
+              "lat": 13.755,
+              "lng": 100.5
+            },
+            "observedAt": "2026-10-05T09:40:00Z",
+            "value": 5,
+            "unit": "cm",
+            "severity": "watch"
+          },
+          {
+            "id": "f3",
+            "kind": "flood",
+            "source": "bma-flood",
+            "name": {
+              "th": "จุด f3",
+              "en": "Station f3"
+            },
+            "location": {
+              "lat": 13.755,
+              "lng": 100.5
+            },
+            "observedAt": "2026-10-05T09:40:00Z",
+            "value": 0,
+            "unit": "cm",
+            "severity": "ok"
+          },
+          {
+            "id": "f4",
+            "kind": "flood",
+            "source": "bma-flood",
+            "name": {
+              "th": "จุด f4",
+              "en": "Station f4"
+            },
+            "location": {
+              "lat": 13.755,
+              "lng": 100.5
+            },
+            "observedAt": "2026-10-05T09:40:00Z",
+            "value": null,
+            "unit": "cm",
+            "severity": "ok",
+            "offline": true
+          }
+        ]
+      },
+      "rain": {
+        "source": "bma-rain",
+        "fetchedAt": "2026-10-05T09:50:00Z",
+        "ok": true,
+        "lastOkAt": "2026-10-05T09:50:00Z",
+        "items": [
+          {
+            "id": "r1",
+            "kind": "rain",
+            "source": "bma-rain",
+            "name": {
+              "th": "จุด r1",
+              "en": "Station r1"
+            },
+            "location": {
+              "lat": 13.76,
+              "lng": 100.52
+            },
+            "observedAt": "2026-10-05T09:40:00Z",
+            "value": 12.5,
+            "unit": "mm/h",
+            "severity": "watch"
+          }
+        ]
+      },
+      "waterlevel": {
+        "source": "thaiwater",
+        "fetchedAt": "2026-10-05T09:50:00Z",
+        "ok": true,
+        "lastOkAt": "2026-10-05T09:50:00Z",
+        "items": [
+          {
+            "id": "w1",
+            "kind": "waterlevel",
+            "source": "thaiwater",
+            "name": {
+              "th": "จุด w1",
+              "en": "Station w1"
+            },
+            "location": {
+              "lat": 13.76,
+              "lng": 100.52
+            },
+            "observedAt": "2026-10-05T09:40:00Z",
+            "value": 86,
+            "unit": "%",
+            "severity": "watch"
+          },
+          {
+            "id": "w2",
+            "kind": "waterlevel",
+            "source": "thaiwater",
+            "name": {
+              "th": "จุด w2",
+              "en": "Station w2"
+            },
+            "location": {
+              "lat": 13.9,
+              "lng": 100.6
+            },
+            "observedAt": "2026-10-05T09:40:00Z",
+            "value": 44,
+            "unit": "%",
+            "severity": "ok"
+          },
+          {
+            "id": "w-old",
+            "kind": "waterlevel",
+            "source": "thaiwater",
+            "name": {
+              "th": "จุด w-old",
+              "en": "Station w-old"
+            },
+            "location": {
+              "lat": 13.755,
+              "lng": 100.5
+            },
+            "observedAt": "2026-10-04T09:00:00Z",
+            "value": 130,
+            "unit": "%",
+            "severity": "danger"
+          }
+        ]
+      },
+      "radar": {
+        "source": "tmd",
+        "fetchedAt": "2026-10-05T07:00:00Z",
+        "ok": false,
+        "failingSince": "2026-10-05T07:00:00Z",
+        "lastOkAt": "2026-10-05T01:00:00Z",
+        "items": []
+      }
+    }
+  }
+}

@@ -339,7 +339,7 @@
   "@mapLocating": {
     "description": "map.locating"
   },
-  "mapLocationOff": "เปิดสิทธิ์ตำแหน่งในเบราว์เซอร์ก่อน แล้วกดอีกครั้ง",
+  "mapLocationOff": "เปิดสิทธิ์ตำแหน่งในการตั้งค่าเครื่องก่อน แล้วกดอีกครั้ง",
   "@mapLocationOff": {
     "description": "map.locationOff"
   },
@@ -1700,5 +1700,73 @@
   "settingsData": "ข้อมูล",
   "@settingsData": {
     "description": "settings.data"
+  },
+  "layerRain": "ฝนที่ตกอยู่",
+  "@layerRain": {
+    "description": "layer.rain"
+  },
+  "layerQuake": "แผ่นดินไหว",
+  "@layerQuake": {
+    "description": "layer.quake"
+  },
+  "mapLocationWhy": "ใช้ตำแหน่งเพื่อเลื่อนแผนที่มาหาคุณเท่านั้น ไม่มีการเก็บไว้",
+  "@mapLocationWhy": {
+    "description": "map.locationWhy"
+  },
+  "mapNoFix": "หาตำแหน่งไม่เจอ ลองอีกครั้ง",
+  "@mapNoFix": {
+    "description": "map.noFix"
+  },
+  "mapArea": "ไปที่เขตที่ติดตาม",
+  "@mapArea": {
+    "description": "map.area"
+  },
+  "mapBangkok": "กรุงเทพฯ",
+  "@mapBangkok": {
+    "description": "map.bangkok"
+  },
+  "mapPin": "{what} {place} ระดับ{level}",
+  "@mapPin": {
+    "description": "map.pin",
+    "placeholders": {
+      "what": {
+        "type": "String"
+      },
+      "place": {
+        "type": "String"
+      },
+      "level": {
+        "type": "String"
+      }
+    }
+  },
+  "mapQuakeDepth": "ลึก {km} กม.",
+  "@mapQuakeDepth": {
+    "description": "map.quakeDepth",
+    "placeholders": {
+      "km": {
+        "type": "String"
+      }
+    }
+  },
+  "mapQuakeFrom": "ห่างจาก{place} {km} กม.",
+  "@mapQuakeFrom": {
+    "description": "map.quakeFrom",
+    "placeholders": {
+      "place": {
+        "type": "String"
+      },
+      "km": {
+        "type": "String"
+      }
+    }
+  },
+  "mapRainUnit": "มม./ชม.",
+  "@mapRainUnit": {
+    "description": "map.rainUnit"
+  },
+  "unitCm": "ซม.",
+  "@unitCm": {
+    "description": "unit.cm"
   }
 }

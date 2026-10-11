@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
+import '../map/map_data.dart';
 import 'models.dart';
 
 /// Same public API as the web. Point at a local worker with
@@ -25,6 +26,9 @@ class NotSupportedException extends ApiException {}
 abstract interface class HazardApi {
   Future<AreaReport> area({String? districtId, double? lat, double? lng});
   Future<List<District>> districts();
+
+  /// Every point the web map draws.
+  Future<MapSnapshot> snapshot();
 }
 
 class HttpHazardApi implements HazardApi {
@@ -71,4 +75,8 @@ class HttpHazardApi implements HazardApi {
   Future<List<District>> districts() async => [
     for (final d in (await _get('/v1/districts', {}))! as List) District.fromJson(d as Map<String, dynamic>),
   ];
+
+  @override
+  Future<MapSnapshot> snapshot() async =>
+      MapSnapshot.fromJson((await _get('/v1/snapshot', {}))! as Map<String, dynamic>);
 }

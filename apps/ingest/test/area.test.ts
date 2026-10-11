@@ -7,6 +7,7 @@ import { buildAreaReport, districtAt, districtList, findDistrict } from '../src/
 // The mobile app's tests parse this exact response, so the two sides cannot drift.
 // Regenerate after changing the report: UPDATE_FIXTURES=1 pnpm --filter @hw/ingest test
 const CONTRACT = fileURLToPath(new URL('../../mobile/test/fixtures/area_report.json', import.meta.url));
+const SNAPSHOT_CONTRACT = fileURLToPath(new URL('../../mobile/test/fixtures/snapshot.json', import.meta.url));
 
 const now = new Date('2026-10-05T10:00:00Z');
 const phraNakhon = findDistrict('TH1001')!;
@@ -127,6 +128,13 @@ describe('buildAreaReport', () => {
     const json = `${JSON.stringify(report, null, 2)}\n`;
     if (process.env.UPDATE_FIXTURES) writeFileSync(CONTRACT, json);
     expect(readFileSync(CONTRACT, 'utf8')).toBe(json);
+  });
+
+  // The app's map reads /v1/snapshot, which serves this shape as stored.
+  it('matches the snapshot fixture the app map tests read', () => {
+    const json = `${JSON.stringify(snapshot, null, 2)}\n`;
+    if (process.env.UPDATE_FIXTURES) writeFileSync(SNAPSHOT_CONTRACT, json);
+    expect(readFileSync(SNAPSHOT_CONTRACT, 'utf8')).toBe(json);
   });
 });
 
