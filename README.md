@@ -118,6 +118,7 @@ cp apps/ingest/.dev.vars.example apps/ingest/.dev.vars   # add VAPID_PRIVATE_KEY
 pnpm --filter @hw/ingest exec wrangler d1 migrations apply hw-push --local
 cp apps/web/.env.example apps/web/.env.local
 pnpm --filter @hw/ingest dev        # http://localhost:8787 (curl /__scheduled to run the cron)
+#   use this script, not bare `wrangler dev`: it passes --local-upstream so localhost CORS origins survive the prod route
 INGEST_URL=http://localhost:8787 INGEST_TOKEN=dev-token-change-me pnpm --filter @hw/ingest runner
 pnpm --filter @hw/web dev           # http://localhost:3000
 # manual deploy (normally done by CI, see Deploy): pnpm --filter @hw/ingest run deploy, then pnpm --filter @hw/web run deploy
