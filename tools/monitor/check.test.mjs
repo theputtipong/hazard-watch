@@ -1,7 +1,7 @@
 // node --test tools/monitor/check.test.mjs
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { evaluate, loadConfig, plan } from './check.mjs';
+import { evaluate, issueBody, loadConfig, mdCode, mdText, plan } from './check.mjs';
 
 const config = { ...loadConfig(), ignore: ['flood'] };
 const now = new Date('2026-10-05T12:00:00Z');
@@ -66,4 +66,17 @@ test('unreachable API yields only the API issue, leaving feed issues alone', () 
   const results = evaluate({ now, config, apiError: 'HTTP 503' });
   assert.deepEqual(results.map((r) => [r.name, r.down]), [['api', true]]);
   assert.deepEqual(plan(results, [{ number: 3, name: 'radar' }]).map((a) => a.type), ['open']);
+});
+
+test('issue body keeps upstream error text inert', () => {
+  const error = 'boom ` @octocat ![x](https://evil.example/p.png) ``` -->';
+  const [down] = evaluate({ now, config, snapshot: snapshot({}, { 'rain-->x': feed({ ok: false, error, fetchedAt: minsAgo(999), lastOkAt: minsAgo(999) }) }) }).filter((r) => r.down);
+  const body = issueBody(down, config);
+  const reason = body.split('\n')[1];
+  assert.ok(!reason.includes('@octocat'), 'mention must be broken');
+  assert.ok(!reason.includes('![x]('), 'image must be escaped outside code');
+  assert.ok(body.includes(mdCode(error)));
+  assert.equal(body.split('\n')[0], '<!-- hw-monitor:rain--_x -->');
+  assert.equal(mdCode('a ``` b'), '```` a ``` b ````');
+  assert.equal(mdText('*x* @y\n`z`'), '\\*x\\* @​y \\`z\\`');
 });

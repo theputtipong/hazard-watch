@@ -9,7 +9,7 @@ import { t, type Lang } from '@hw/core/i18n';
 import { WEB } from '@/config';
 import { radarImageUrl } from '@/lib/api';
 import type { Layers } from '@/lib/layers';
-import { openCamera } from '@/lib/openCamera';
+import { openCamera, safeCameraUrl } from '@/lib/openCamera';
 import type { MapPalette } from '@/lib/prefs';
 import type { ZoneView } from '@/lib/useZones';
 import { RadarDrift } from './Wind';
@@ -68,7 +68,7 @@ export default function MapView({ lang, center, located, onLocate, layers, radar
               <Popup>
                 <PopupBody title={c.name[lang]}>
                   <a
-                    href={c.viewUrl}
+                    href={safeCameraUrl(c.viewUrl) ?? undefined}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="font-semibold"

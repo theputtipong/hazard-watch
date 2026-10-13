@@ -13,7 +13,12 @@ export type FeedMap = Partial<Record<FeedName, SourceResult<unknown>>>;
 export interface GroupSnapshot {
   updatedAt: string;
   feeds: FeedMap;
+  /** Runner group only: alerts from these feeds are not pushed before this time (set on a suspicious upload). */
+  pushHeldUntil?: string;
 }
+
+export const isPushHeld = (snapshot: GroupSnapshot | null | undefined, now: Date) =>
+  !!snapshot?.pushHeldUntil && Date.parse(snapshot.pushHeldUntil) > now.getTime();
 
 export async function readGroup(kv: KVNamespace, key: string): Promise<GroupSnapshot | null> {
   return kv.get<GroupSnapshot>(key, 'json');
@@ -40,9 +45,18 @@ export function mergeWithPrevious(next: FeedMap, prev: GroupSnapshot | null): Fe
   return out;
 }
 
-export async function writeGroup(kv: KVNamespace, key: string, feeds: FeedMap, now: Date): Promise<GroupSnapshot> {
-  const prev = await readGroup(kv, key);
+/** `prev` skips the KV read when the caller already has it; a hold still in force carries over unless `holdPushUntil` replaces it. */
+export async function writeGroup(
+  kv: KVNamespace,
+  key: string,
+  feeds: FeedMap,
+  now: Date,
+  opts: { prev?: GroupSnapshot | null; holdPushUntil?: Date } = {},
+): Promise<GroupSnapshot> {
+  const prev = opts.prev !== undefined ? opts.prev : await readGroup(kv, key);
   const snapshot: GroupSnapshot = { updatedAt: now.toISOString(), feeds: mergeWithPrevious(feeds, prev) };
+  if (opts.holdPushUntil) snapshot.pushHeldUntil = opts.holdPushUntil.toISOString();
+  else if (isPushHeld(prev, now)) snapshot.pushHeldUntil = prev!.pushHeldUntil;
   await kv.put(key, JSON.stringify(snapshot));
   return snapshot;
 }

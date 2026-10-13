@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 const CONFIG_PATH = new URL('./config.json', import.meta.url);
-const MARKER = (name) => `<!-- hw-monitor:${name} -->`;
+const MARKER = (name) => `<!-- hw-monitor:${String(name).replace(/[^\w-]/g, '_')} -->`;
 const MARKER_RE = /<!-- hw-monitor:([\w-]+) -->/;
 
 export function loadConfig(path = CONFIG_PATH) {
@@ -86,20 +86,37 @@ function issueTitle(config, name) {
   return `${config.titlePrefix}${name}`;
 }
 
-function issueBody(r, config) {
+/** Feed errors come from upstream servers, so they must not inject markdown, mentions or images into the issue. */
+export function mdText(value) {
+  return String(value)
+    .replace(/[\u0000-\u001f\u007f]+/g, ' ')
+    .replace(/[\\`*_{}[\]()<>#+!|~]/g, '\\$&')
+    // A zero-width space after @ stops GitHub turning the text into a mention.
+    .replace(/@/g, '@\u200b');
+}
+
+/** Code span whose fence is longer than any backtick run inside, so the text cannot close it early. */
+export function mdCode(value) {
+  const text = String(value).replace(/[\u0000-\u001f\u007f]+/g, ' ');
+  const longest = Math.max(0, ...(text.match(/`+/g) ?? []).map((run) => run.length));
+  const fence = '`'.repeat(longest + 1);
+  return `${fence} ${text} ${fence}`;
+}
+
+export function issueBody(r, config) {
   const d = r.details;
   const lines = [
     MARKER(r.name),
-    `**${r.reason}**`,
+    `**${mdText(r.reason)}**`,
     '',
-    `- feed: \`${r.name}\` (group: ${r.group})`,
-    r.since ? `- เริ่มมีปัญหา/ข้อมูลล่าสุด: ${r.since}` : '- ยังไม่เคยดึงข้อมูลสำเร็จ (หรือไม่ทราบเวลา)',
+    `- feed: ${mdCode(r.name)} (group: ${mdText(r.group)})`,
+    r.since ? `- เริ่มมีปัญหา/ข้อมูลล่าสุด: ${mdText(r.since)}` : '- ยังไม่เคยดึงข้อมูลสำเร็จ (หรือไม่ทราบเวลา)',
   ];
-  if (d.source) lines.push(`- source: ${d.source}`);
-  if (d.error) lines.push(`- error: \`${String(d.error).slice(0, 500)}\``);
-  if (d.lastOkAt) lines.push(`- lastOkAt: ${d.lastOkAt}`);
-  if (d.failingSince) lines.push(`- failingSince: ${d.failingSince}`);
-  if (d.groupUpdatedAt) lines.push(`- group updatedAt: ${d.groupUpdatedAt}`);
+  if (d.source) lines.push(`- source: ${mdText(d.source)}`);
+  if (d.error) lines.push(`- error: ${mdCode(String(d.error).slice(0, 500))}`);
+  if (d.lastOkAt) lines.push(`- lastOkAt: ${mdText(d.lastOkAt)}`);
+  if (d.failingSince) lines.push(`- failingSince: ${mdText(d.failingSince)}`);
+  if (d.groupUpdatedAt) lines.push(`- group updatedAt: ${mdText(d.groupUpdatedAt)}`);
   if (d.maxStaleMinutes != null) lines.push(`- threshold: ${d.maxStaleMinutes} นาที (อายุข้อมูล ${d.ageMinutes ?? '∞'} นาที)`);
   lines.push('', `เปิดโดย monitor อัตโนมัติ (${config.snapshotUrl}); ปิดเองเมื่อกลับมาปกติ. แก้ threshold / ignore ที่ \`tools/monitor/config.json\``);
   return lines.join('\n');

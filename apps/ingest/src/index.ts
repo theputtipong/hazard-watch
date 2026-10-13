@@ -1,14 +1,14 @@
 import { RADARS, type DashboardSnapshot } from '@hw/core';
 import { t } from '@hw/core/i18n';
-import { defaultContext, fetchWeather, FEEDS, REQUEST, type EdgeFeed, type RunnerFeed } from '@hw/sources';
+import { defaultContext, fetchWeather, FEEDS, REQUEST, type EdgeFeed } from '@hw/sources';
 import { Hono, type Context } from 'hono';
 import { cors } from 'hono/cors';
-import { INGEST } from './config';
-import { isPushEndpoint } from './push/notifier';
-import { cleanPrefs, type IncomingPrefs } from './push/prefs';
-import { DISTRICT_IDS, messageFor, notifierFor, sendAlerts, type PushEnv } from './push/run';
-import { deleteSubscription, getSubscription, markSent, sentSince, subscriptionId, upsertSubscription } from './push/store';
-import { KEYS, readGroup, unpackRadar, writeGroup, type FeedMap } from './store';
+import { INGEST, THAILAND_BOUNDS } from './config';
+import { parseEndpointBody, parseSubscribeBody, rateLimit, readJsonBody, type PushAction } from './push/guard';
+import { DISTRICTS, messageFor, notifierFor, sendAlerts, type PushEnv } from './push/run';
+import { deleteSubscription, getSubscription, markSent, recordDelivery, sentSince, subscriptionId, upsertSubscription } from './push/store';
+import { isPushHeld, KEYS, readGroup, unpackRadar, writeGroup, type FeedMap } from './store';
+import { parseRunnerPayload, suspiciousJump } from './validate';
 import { buildAreaReport, districtAt, districtList, findDistrict } from './area';
 import { buildSummary } from './summary';
 
@@ -21,8 +21,6 @@ export interface Env extends PushEnv {
   ALLOWED_ORIGINS: string;
   WEATHER_LIMITER?: RateLimit;
 }
-
-const RUNNER_FEEDS = Object.keys(FEEDS.runner) as RunnerFeed[];
 
 export async function runEdgeFeeds(env: Env, now = new Date()) {
   const ctx = defaultContext({ now });
@@ -54,17 +52,86 @@ async function dispatchRunner(env: Env, now = new Date()) {
   console.log('dispatch runner', res.status);
 }
 
-async function pushAfterUpdate(env: Env) {
+async function pushAfterUpdate(env: Env, now = new Date()) {
   const [edge, runner] = await Promise.all([readGroup(env.SNAPSHOTS, KEYS.edge), readGroup(env.SNAPSHOTS, KEYS.runner)]);
-  const stats = await sendAlerts(env, { edge, runner } as DashboardSnapshot);
-  console.log('push', JSON.stringify(stats));
+  // While a suspicious runner upload is held, edge alerts (PM2.5, quakes) still go out; held ones are sent once the hold ends.
+  const held = isPushHeld(runner, now);
+  const stats = await sendAlerts(env, { edge, runner: held ? null : runner } as DashboardSnapshot, now);
+  console.log('push', JSON.stringify({ ...stats, runnerHeld: held }));
   return stats;
+}
+
+/** Hashes both sides so the comparison takes the same time whatever the length or first differing byte. */
+export async function tokenMatches(header: string, token: string | undefined): Promise<boolean> {
+  if (!token) return false;
+  const digest = (s: string) => crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
+  const [a, b] = await Promise.all([digest(header), digest(`Bearer ${token}`)]);
+  // Workers provide timingSafeEqual; Node (tests) does not.
+  if (typeof crypto.subtle.timingSafeEqual === 'function') return crypto.subtle.timingSafeEqual(a, b);
+  const x = new Uint8Array(a);
+  const y = new Uint8Array(b);
+  let diff = 0;
+  for (let i = 0; i < x.length; i++) diff |= x[i]! ^ y[i]!;
+  return diff === 0;
+}
+
+const isLocalHost = (host: string) => host === 'localhost' || host === '127.0.0.1';
+
+/** localhost origins in ALLOWED_ORIGINS only apply when the worker itself runs locally (wrangler dev). */
+export function allowedOrigins(list: string, requestUrl: string): string[] {
+  const local = isLocalHost(new URL(requestUrl).hostname);
+  return list
+    .split(',')
+    .map((o) => o.trim())
+    .filter((o) => {
+      if (!o) return false;
+      try {
+        return local || !isLocalHost(new URL(o).hostname);
+      } catch {
+        return false;
+      }
+    });
+}
+
+/** Rounds to the ~1 km grid the web, extension and app already send, so finer coordinates are never used or cached. */
+function toCell(lat: number, lng: number) {
+  const d = REQUEST.weatherCoordDecimals;
+  return { lat: Number(lat.toFixed(d)), lng: Number(lng.toFixed(d)) };
+}
+
+const inThailand = ({ lat, lng }: { lat: number; lng: number }) =>
+  lat >= THAILAND_BOUNDS.minLat && lat <= THAILAND_BOUNDS.maxLat && lng >= THAILAND_BOUNDS.minLng && lng <= THAILAND_BOUNDS.maxLng;
+
+/**
+ * Global daily count of Open-Meteo calls, kept in the push guard's rate_limits table (D1 writes are cheap; a KV
+ * counter would spend the 1,000 writes/day the snapshots need). window_start holds the day's end, so the push
+ * cron's prune of windows older than 10 minutes leaves the row alone until the day is over.
+ * Fails open: a D1 outage should not take weather down.
+ */
+export async function takeWeatherQuota(db: D1Database, now = new Date(), cap: number = INGEST.weatherDailyCap): Promise<{ ok: boolean; retryAfter: number }> {
+  const nowSec = Math.floor(now.getTime() / 1000);
+  const dayEnd = nowSec - (nowSec % 86_400) + 86_400;
+  const retryAfter = dayEnd - nowSec;
+  try {
+    const row = await db.prepare('SELECT hits FROM rate_limits WHERE key = ?1 AND window_start = ?2').bind('weather:global', dayEnd).first<{ hits: number }>();
+    if ((row?.hits ?? 0) >= cap) return { ok: false, retryAfter };
+    await db
+      .prepare(
+        `INSERT INTO rate_limits (key, window_start, hits) VALUES (?1, ?2, 1)
+         ON CONFLICT(key) DO UPDATE SET hits = CASE WHEN window_start = ?2 THEN hits + 1 ELSE 1 END, window_start = ?2`,
+      )
+      .bind('weather:global', dayEnd)
+      .run();
+    return { ok: true, retryAfter };
+  } catch {
+    return { ok: true, retryAfter: 0 };
+  }
 }
 
 const app = new Hono<{ Bindings: Env }>();
 
 app.use('/v1/*', async (c, next) =>
-  cors({ origin: c.env.ALLOWED_ORIGINS.split(',').map((o) => o.trim()), allowMethods: ['GET', 'POST'], allowHeaders: ['content-type'] })(c, next),
+  cors({ origin: allowedOrigins(c.env.ALLOWED_ORIGINS, c.req.url), allowMethods: ['GET', 'POST'], allowHeaders: ['content-type'] })(c, next),
 );
 
 app.get('/', (c) => c.text('hw-ingest ok'));
@@ -115,7 +182,7 @@ app.get('/v1/area', async (c) => {
   const lng = Number(c.req.query('lng'));
   let district;
   if (id) district = findDistrict(id);
-  else if (Number.isFinite(lat) && Number.isFinite(lng) && c.req.query('lat') && c.req.query('lng')) district = districtAt({ lat, lng });
+  else if (Number.isFinite(lat) && Number.isFinite(lng) && c.req.query('lat') && c.req.query('lng')) district = districtAt(toCell(lat, lng));
   else return c.json({ error: 'district, or lat and lng, is required' }, 400);
   if (!district) return c.json({ error: id ? 'unknown district' : 'outside coverage' }, 404);
   // Cached per district, so every point inside it shares one entry.
@@ -128,92 +195,109 @@ app.get('/v1/area', async (c) => {
 app.get('/v1/weather', async (c) => {
   const lat = Number(c.req.query('lat'));
   const lng = Number(c.req.query('lng'));
-  if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) {
+  if (!c.req.query('lat') || !c.req.query('lng') || !Number.isFinite(lat) || !Number.isFinite(lng)) {
     return c.json({ error: 'lat and lng are required' }, 400);
   }
-  // One cache entry per ~1 km cell, and a per-IP limit on misses, so the Open-Meteo daily quota can't be drained.
-  const d = REQUEST.weatherCoordDecimals;
-  const cell = { lat: Number(lat.toFixed(d)), lng: Number(lng.toFixed(d)) };
+  // One cache entry per ~1 km cell inside Thailand, a per-IP limit and a global daily cap on misses, so the
+  // Open-Meteo daily quota can't be drained.
+  const cell = toCell(lat, lng);
+  if (!inThailand(cell)) return c.json({ error: 'outside coverage' }, 400);
   return edgeCached(c, cacheKey(c, `/v1/weather?lat=${cell.lat}&lng=${cell.lng}`), INGEST.cacheSeconds.weather, async () => {
     const ip = c.req.header('cf-connecting-ip') ?? 'unknown';
     if (c.env.WEATHER_LIMITER && !(await c.env.WEATHER_LIMITER.limit({ key: ip })).success) {
       return Response.json({ error: 'too many requests' }, { status: 429 });
     }
+    const quota = await takeWeatherQuota(c.env.PUSH_DB);
+    if (!quota.ok) return Response.json({ error: 'weather unavailable until tomorrow' }, { status: 503, headers: { 'retry-after': String(quota.retryAfter) } });
     return Response.json(await fetchWeather(defaultContext(), cell));
   });
 });
 
+const RADAR_CHECKED = 'x-radar-checked-at';
+
+/**
+ * The bundle keeps one frame per radar, so the cache key is the radar id alone and query strings can't force KV reads.
+ * `?t=<frame time>` only decides whether the cached copy is new enough: a newer `t` re-reads the bundle at most once
+ * per INGEST.radarRecheckSeconds.
+ */
 app.get('/v1/radar/:id', async (c) => {
   const id = c.req.param('id');
-  if (!(id in RADARS)) return c.json({ error: 'unknown radar' }, 404);
-  // Edge-cached per URL (?t=<frame time>) so the bundle is read from KV once per frame.
+  if (!Object.hasOwn(RADARS, id)) return c.json({ error: 'unknown radar' }, 404);
+  const wanted = Date.parse(c.req.query('t') ?? '');
+  const key = cacheKey(c, `/v1/radar/${id}`);
   const cache = caches.default;
-  const hit = await cache.match(c.req.raw);
-  if (hit) return withMaxAge(new Response(hit.body, hit), INGEST.cacheSeconds.radar);
-  const bundle = await c.env.SNAPSHOTS.get(KEYS.radarBundle, 'arrayBuffer');
-  const found = bundle ? unpackRadar(bundle, id) : null;
-  if (!found) return c.json({ error: 'no image yet' }, 404);
-  const res = new Response(found.png, {
+  let stored = await cache.match(key);
+  const recheck =
+    stored &&
+    wanted > Date.parse(stored.headers.get('x-radar-time') ?? '') &&
+    Date.now() - Number(stored.headers.get(RADAR_CHECKED) ?? 0) > INGEST.radarRecheckSeconds * 1000;
+  if (!stored || recheck) {
+    const bundle = await c.env.SNAPSHOTS.get(KEYS.radarBundle, 'arrayBuffer');
+    const found = bundle ? unpackRadar(bundle, id) : null;
+    if (found) {
+      stored = new Response(found.png, {
+        headers: {
+          'content-type': 'image/png',
+          'cache-control': `public, max-age=${INGEST.cacheSeconds.radar}`,
+          'x-radar-time': found.entry.time,
+          [RADAR_CHECKED]: String(Date.now()),
+        },
+      });
+      c.executionCtx.waitUntil(cache.put(key, stored.clone()));
+    }
+  }
+  if (!stored) return c.json({ error: 'no image yet' }, 404);
+  const time = stored.headers.get('x-radar-time') ?? '';
+  // An image older than the frame asked for must not stick in the browser cache under the newer URL.
+  const behind = wanted > Date.parse(time);
+  return new Response(stored.body, {
     headers: {
       'content-type': 'image/png',
-      'cache-control': `public, max-age=${INGEST.cacheSeconds.radar}`,
-      'x-radar-time': found.entry.time,
+      'cache-control': behind ? 'no-store' : `public, max-age=${INGEST.cacheSeconds.radar}`,
+      'x-radar-time': time,
       'access-control-allow-origin': '*',
       'access-control-expose-headers': 'x-radar-time',
     },
   });
-  c.executionCtx.waitUntil(cache.put(c.req.raw, res.clone()));
-  return res;
 });
 
 app.get('/v1/push/key', (c) => c.json({ publicKey: c.env.VAPID_PUBLIC_KEY }));
 
+async function limited(c: Context<{ Bindings: Env }>, action: PushAction) {
+  const rl = await rateLimit(c.env, c.req.header('cf-connecting-ip') ?? '', action);
+  return rl.ok ? null : c.json({ error: 'too many requests' }, 429, { 'retry-after': String(rl.retryAfter) });
+}
+
 app.post('/v1/push/subscribe', async (c) => {
-  const body = await c.req
-    .json<{
-      subscription?: { endpoint?: string; keys?: { p256dh?: string; auth?: string } };
-      lang?: string;
-      district?: string;
-      subdistrict?: string | null;
-      prefs?: IncomingPrefs;
-    }>()
-    .catch(() => null);
-  const endpoint = body?.subscription?.endpoint ?? '';
-  const { p256dh = '', auth = '' } = body?.subscription?.keys ?? {};
-  if (!isPushEndpoint(endpoint) || !p256dh || !auth || p256dh.length > 200 || auth.length > 100) {
-    return c.json({ error: 'invalid subscription' }, 400);
-  }
-  if (!body?.district || !DISTRICT_IDS.has(body.district)) return c.json({ error: 'unknown district' }, 400);
-  const { prefs, quakeMinMag, quakeMaxKm } = cleanPrefs(body.prefs);
-  const id = await upsertSubscription(
-    c.env.PUSH_DB,
-    {
-      endpoint,
-      p256dh,
-      auth,
-      lang: body.lang === 'en' ? 'en' : 'th',
-      district: body.district,
-      subdistrict: body.subdistrict?.startsWith(body.district) ? body.subdistrict : null,
-      prefs,
-      quake_min_mag: quakeMinMag,
-      quake_max_km: quakeMaxKm,
-    },
-    new Date(),
-  );
+  const tooMany = await limited(c, 'subscribe');
+  if (tooMany) return tooMany;
+  const body = await readJsonBody(c.req.raw);
+  if (!body.ok) return c.json({ error: body.error }, body.status);
+  const sub = parseSubscribeBody(body.value);
+  if (!sub.ok) return c.json({ error: sub.error }, sub.status);
+  const id = await upsertSubscription(c.env.PUSH_DB, sub.value, new Date());
   return c.json({ ok: true, id });
 });
 
 app.post('/v1/push/unsubscribe', async (c) => {
-  const body = await c.req.json<{ endpoint?: string }>().catch(() => null);
-  if (!body?.endpoint) return c.json({ error: 'endpoint required' }, 400);
-  await deleteSubscription(c.env.PUSH_DB, await subscriptionId(body.endpoint));
+  const tooMany = await limited(c, 'unsubscribe');
+  if (tooMany) return tooMany;
+  const body = await readJsonBody(c.req.raw);
+  if (!body.ok) return c.json({ error: body.error }, body.status);
+  const endpoint = parseEndpointBody(body.value);
+  if (!endpoint.ok) return c.json({ error: endpoint.error }, endpoint.status);
+  await deleteSubscription(c.env.PUSH_DB, await subscriptionId(endpoint.value));
   return c.json({ ok: true });
 });
 
 app.post('/v1/push/test', async (c) => {
-  const body = await c.req.json<{ endpoint?: string }>().catch(() => null);
-  if (!body?.endpoint) return c.json({ error: 'endpoint required' }, 400);
-  const sub = await getSubscription(c.env.PUSH_DB, await subscriptionId(body.endpoint));
+  const tooMany = await limited(c, 'test');
+  if (tooMany) return tooMany;
+  const body = await readJsonBody(c.req.raw);
+  if (!body.ok) return c.json({ error: body.error }, body.status);
+  const endpoint = parseEndpointBody(body.value);
+  if (!endpoint.ok) return c.json({ error: endpoint.error }, endpoint.status);
+  const sub = await getSubscription(c.env.PUSH_DB, await subscriptionId(endpoint.value));
   if (!sub) return c.json({ error: 'not subscribed' }, 404);
   const now = new Date();
   if ((await sentSince(c.env.PUSH_DB, sub.id, new Date(now.getTime() - 60_000))).has('test')) {
@@ -225,14 +309,13 @@ app.post('/v1/push/test', async (c) => {
     body: { th: t('alert.test.body', 'th'), en: t('alert.test.body', 'en') },
   };
   const result = await notifierFor(c.env).send(sub, messageFor(alert, sub, c.env.SITE_URL), 300);
-  if (result === 'gone') await deleteSubscription(c.env.PUSH_DB, sub.id);
-  else if (result === 'sent') await markSent(c.env.PUSH_DB, sub.id, 'test', now).run();
+  await recordDelivery(c.env.PUSH_DB, sub, result);
+  if (result === 'sent') await markSent(c.env.PUSH_DB, sub.id, 'test', now).run();
   return c.json({ result });
 });
 
 app.use('/ingest/*', async (c, next) => {
-  const auth = c.req.header('authorization') ?? '';
-  if (!c.env.INGEST_TOKEN || auth !== `Bearer ${c.env.INGEST_TOKEN}`) return c.json({ error: 'unauthorized' }, 401);
+  if (!(await tokenMatches(c.req.header('authorization') ?? '', c.env.INGEST_TOKEN))) return c.json({ error: 'unauthorized' }, 401);
   const size = Number(c.req.header('content-length') ?? 0);
   if (size > INGEST.maxUploadBytes) return c.json({ error: 'payload too large' }, 413);
   await next();
@@ -244,16 +327,23 @@ app.post('/ingest/run-edge', async (c) => {
 });
 
 app.post('/ingest/runner', async (c) => {
-  const body = await c.req.json<{ feeds: FeedMap }>();
-  const feeds: FeedMap = {};
-  for (const name of RUNNER_FEEDS) {
-    const result = body.feeds?.[name];
-    if (result && Array.isArray(result.items)) feeds[name] = result;
-  }
-  if (!Object.keys(feeds).length) return c.json({ error: 'no known feeds in payload' }, 400);
-  const snapshot = await writeGroup(c.env.SNAPSHOTS, KEYS.runner, feeds, new Date());
-  c.executionCtx.waitUntil(pushAfterUpdate(c.env));
-  return c.json({ ok: true, feeds: Object.keys(snapshot.feeds) });
+  const body = await readJsonBody(c.req.raw, INGEST.maxUploadBytes);
+  if (!body.ok) return c.json({ error: body.error }, body.status);
+  const now = new Date();
+  const parsed = parseRunnerPayload(body.value, now);
+  // Reasons can quote item values, so only the first few are logged.
+  if (parsed.dropped.length) console.log('runner dropped', parsed.dropped.length, JSON.stringify(parsed.dropped.slice(0, 10)));
+  if (!parsed.ok) return c.json({ error: parsed.error, dropped: parsed.dropped.length }, 400);
+  const prev = await readGroup(c.env.SNAPSHOTS, KEYS.runner);
+  const jump = suspiciousJump(prev?.feeds, parsed.feeds, DISTRICTS, now);
+  if (jump.suspicious) console.log('runner push held', JSON.stringify({ newDanger: jump.newDanger.length, districtsWithData: jump.districtsWithData }));
+  const snapshot = await writeGroup(c.env.SNAPSHOTS, KEYS.runner, parsed.feeds, now, {
+    prev,
+    holdPushUntil: jump.suspicious ? new Date(now.getTime() + INGEST.pushHoldMinutes * 60_000) : undefined,
+  });
+  const held = isPushHeld(snapshot, now);
+  if (!held) c.executionCtx.waitUntil(pushAfterUpdate(c.env, now));
+  return c.json({ ok: true, feeds: Object.keys(snapshot.feeds), dropped: parsed.dropped.length, held });
 });
 
 app.put('/ingest/radar-bundle', async (c) => {
