@@ -1,12 +1,73 @@
 import 'package:flutter/material.dart';
 
+import '../format.dart';
+import '../l10n/gen/app_localizations.dart';
+import '../screens/sources_screen.dart';
 import '../theme/hw_app_theme.dart';
 import 'severity.dart';
+import 'source_link.dart';
+
+/// Source ids behind an alert of [kind]: each reading kind comes from one adapter in packages/sources.
+List<String> alertSourceIds(String kind) => switch (kind) {
+  'flood' => const ['bma-flood'],
+  'rain' => const ['bma-rain'],
+  'water' => const ['thaiwater'],
+  'pm25' => const ['air4thai'],
+  'quake' => const ['tmd', 'usgs'],
+  _ => const [],
+};
+
+/// An [AlertCard] crediting where its data comes from, each source linked (Google Play requires it wherever
+/// government data is shown). A kind with no known source links the full sources list instead.
+AlertCard creditedAlertCard(
+  BuildContext context, {
+  required String kind,
+  required HwLevel level,
+  required String title,
+  String? body,
+  String? time,
+}) {
+  final l = AppLocalizations.of(context);
+  final ids = alertSourceIds(kind);
+  if (ids.isEmpty) {
+    return AlertCard(
+      level: level,
+      title: title,
+      body: body,
+      meta: time,
+      action: TextButton(
+        style: TextButton.styleFrom(
+          padding: EdgeInsets.zero,
+          minimumSize: const Size(HwSize.touchTarget, HwSize.touchTarget),
+        ),
+        onPressed: () => openSources(context),
+        child: Text(l.sourcesTitle),
+      ),
+    );
+  }
+  final names = {for (final id in ids) sourceName(l, id)};
+  final credit = '${l.commonSource} ${names.join(' · ')}';
+  return AlertCard(
+    level: level,
+    title: title,
+    body: body,
+    meta: [credit, ?time].join(' · '),
+    sources: [for (final id in ids) ?sourceRef(sourceName(l, id), id)],
+  );
+}
 
 /// Design system AlertCard (`.m-alert`): the whole card is `sev-*-soft`, no coloured edge. Titles already open with
 /// the level word, so the level reads without colour; the meter repeats it.
 class AlertCard extends StatelessWidget {
-  const AlertCard({super.key, required this.level, required this.title, this.body, this.meta, this.action});
+  const AlertCard({
+    super.key,
+    required this.level,
+    required this.title,
+    this.body,
+    this.meta,
+    this.sources = const [],
+    this.action,
+  });
 
   final HwLevel level;
   final String title;
@@ -14,6 +75,9 @@ class AlertCard extends StatelessWidget {
 
   /// Source and time, e.g. "อัปเดต 8 นาทีที่แล้ว".
   final String? meta;
+
+  /// Names in [meta] linked to their original source.
+  final List<SourceRef> sources;
   final Widget? action;
 
   @override
@@ -45,7 +109,7 @@ class AlertCard extends StatelessWidget {
                 if (meta != null)
                   Padding(
                     padding: const EdgeInsets.only(top: HwSize.space1),
-                    child: Text(meta!, style: text.bodySmall),
+                    child: SourceText(meta!, sources: sources, style: text.bodySmall),
                   ),
                 if (action != null)
                   Padding(

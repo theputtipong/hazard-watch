@@ -13,6 +13,7 @@ import '../theme/hw_app_theme.dart';
 import '../widgets/alert_card.dart';
 import '../widgets/severity.dart';
 import 'area_picker_screen.dart';
+import 'sources_screen.dart';
 
 /// Every current alert for the followed district, grouped by level, most severe first. Loads when the tab is shown
 /// (it stays built in the shell's IndexedStack) and on pull down.
@@ -202,7 +203,14 @@ class _AlertsScreenState extends State<AlertsScreen> {
                 ),
               ),
               for (final a in alerts.where((a) => a.level == level)) ...[
-                AlertCard(level: a.level, title: a.title.of(locale), body: a.body.of(locale), meta: _meta(l, a, now)),
+                creditedAlertCard(
+                  context,
+                  kind: a.kind,
+                  level: a.level,
+                  title: a.title.of(locale),
+                  body: a.body.of(locale),
+                  time: _meta(l, a, now),
+                ),
                 const SizedBox(height: HwSize.space3),
               ],
               const SizedBox(height: HwSize.space2),
@@ -211,6 +219,8 @@ class _AlertsScreenState extends State<AlertsScreen> {
               const SizedBox(height: HwSize.space2),
               Text(l.alertsNotifyOff, style: text.bodySmall!.copyWith(color: c.inkMuted)),
             ],
+            const SizedBox(height: HwSize.space6),
+            const NotGovernmentNote(),
           ],
         ),
       ),

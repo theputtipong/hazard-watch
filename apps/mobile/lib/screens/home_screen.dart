@@ -16,7 +16,9 @@ import '../widgets/feed_status.dart';
 import '../widgets/hw_card.dart';
 import '../widgets/reading_tile.dart';
 import '../widgets/river_gauge.dart';
+import '../widgets/source_link.dart';
 import 'area_picker_screen.dart';
+import 'sources_screen.dart';
 
 /// Home (design system app structure): district name → alerts → readings → data freshness. Pull down to reload.
 class HomeScreen extends StatefulWidget {
@@ -151,6 +153,8 @@ class _HomeScreenState extends State<HomeScreen> {
               onPressed: _pick,
               child: Text(l.locationPick),
             ),
+            const SizedBox(height: HwSize.space8),
+            const NotGovernmentNote(),
           ],
         ),
       );
@@ -209,7 +213,14 @@ class _HomeScreenState extends State<HomeScreen> {
       // Calm only when nothing shown is at caution or above (design system AlertCard rule).
       if (v.calm) CalmBox(text: l.extAllClear),
       for (final a in shown) ...[
-        AlertCard(level: a.level, title: a.title.of(locale), body: a.body.of(locale), meta: meta),
+        creditedAlertCard(
+          context,
+          kind: a.kind,
+          level: a.level,
+          title: a.title.of(locale),
+          body: a.body.of(locale),
+          time: meta,
+        ),
         const SizedBox(height: HwSize.space3),
       ],
       if (r.alerts.length > _maxAlerts && !_showAllAlerts)
@@ -226,6 +237,7 @@ class _HomeScreenState extends State<HomeScreen> {
         const SizedBox(height: HwSize.space3),
         HwCard(
           title: l.cardWater,
+          source: _riverSource(l, r.rivers),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             spacing: HwSize.space4,
@@ -247,7 +259,18 @@ class _HomeScreenState extends State<HomeScreen> {
           age: feedAgeText(l, v.feeds[i], now),
         ),
       ],
+      const SizedBox(height: HwSize.space6),
+      const NotGovernmentNote(),
     ];
+  }
+
+  Widget _riverSource(AppLocalizations l, List<AreaReading> rivers) {
+    final ids = {for (final g in rivers) g.source};
+    final names = [for (final id in ids) sourceName(l, id)];
+    return SourceText(
+      '${l.commonSource} ${names.join(' · ')}',
+      sources: [for (final id in ids) ?sourceRef(sourceName(l, id), id)],
+    );
   }
 
   String _metaFor(AppLocalizations l, AreaReading r, DateTime now, {bool onDevice = false}) {
@@ -277,6 +300,7 @@ class _HomeScreenState extends State<HomeScreen> {
       stale: r.stale,
       note: shownNote,
       meta: _metaFor(l, r, now, onDevice: onDevice),
+      sources: [?sourceRef(sourceName(l, r.source), r.source)],
       semantics: l.readingSemantics(what, place, r.stale ? '—' : value, r.level.label(locale), shownNote),
     );
   }
@@ -342,6 +366,7 @@ class _HomeScreenState extends State<HomeScreen> {
         l.extFloodCount('${f.flooded}', '${f.normal}'),
         if (v.floodOnDevice) l.readingOnDevice,
       ].join(' · '),
+      sources: [?sourceRef(l.sourceNameBma, 'bma-flood')],
       semantics: '${l.extFlood} $value ${l.readingFloodUnit}, ${l.levelSemantics(f.level.label(locale))}. $note',
     );
   }
@@ -357,6 +382,7 @@ class _HomeScreenState extends State<HomeScreen> {
       level: q.level,
       note: note,
       meta: '${l.sourceQuake} · ${clockText(l, q.occurredAt, now)}',
+      sources: [?sourceRef(l.sourceNameTmd, 'tmd'), ?sourceRef(l.sourceNameUsgs, 'usgs')],
       semantics: l.readingSemantics(l.cardQuake, q.place.of(locale), value, q.level.label(locale), note),
     );
   }

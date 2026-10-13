@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { isLang, t } from '@hw/core/i18n';
 import { privacy } from '@/content/privacy';
+import { sourceLinks } from '@/content/sources';
 
 export default async function PrivacyPage({ params }: PageProps<'/[lang]/privacy'>) {
   const { lang } = await params;
@@ -36,6 +37,26 @@ export default async function PrivacyPage({ params }: PageProps<'/[lang]/privacy
           </ul>
         </section>
       ))}
+      <section className="flex flex-col gap-2">
+        <h2 className="text-title font-semibold">{t('sources.title', lang)}</h2>
+        <ul className="list-disc space-y-1 pl-5 leading-relaxed">
+          {sourceLinks.map((s) => (
+            <li key={s.url}>
+              <a
+                href={s.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`${s.name[lang]}, ${t('sources.openLink', lang)}`}
+                className="text-accent underline underline-offset-4"
+              >
+                {s.name[lang]}
+              </a>{' '}
+              – {t(s.desc, lang)}
+            </li>
+          ))}
+        </ul>
+        <p className="leading-relaxed">{t('sources.disclaimer', lang)}</p>
+      </section>
     </main>
   );
 }

@@ -8,6 +8,7 @@ import 'package:vector_map_tiles/vector_map_tiles.dart';
 import 'package:vector_tile_renderer/vector_tile_renderer.dart' as vtr;
 
 import '../theme/hw_app_theme.dart';
+import '../widgets/source_link.dart';
 
 /// The web's map settings (WEB.map in apps/web/src/config.ts and the Greater Bangkok region in
 /// packages/core/src/regions.ts). test/map_test.dart fails if they drift.
@@ -22,6 +23,11 @@ abstract final class MapConfig {
 
   /// Covers both the vector tiles and the OSM fallback.
   static const attribution = 'OpenFreeMap · © OpenMapTiles · © OpenStreetMap contributors';
+  static const List<SourceRef> attributionLinks = [
+    (name: 'OpenFreeMap', url: 'https://openfreemap.org/'),
+    (name: 'OpenMapTiles', url: 'https://openmaptiles.org/'),
+    (name: 'OpenStreetMap contributors', url: 'https://www.openstreetmap.org/copyright'),
+  ];
 
   static const regionCenter = LatLng(13.7563, 100.5018);
   static const regionZoom = 11.0;
@@ -159,7 +165,11 @@ class BaseMapAttribution extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: HwSize.space1, vertical: 2),
         color: c.surface.withValues(alpha: 0.8),
-        child: Text(MapConfig.attribution, style: Theme.of(context).textTheme.labelSmall!.copyWith(color: c.inkMuted)),
+        child: SourceText(
+          MapConfig.attribution,
+          sources: MapConfig.attributionLinks,
+          style: Theme.of(context).textTheme.labelSmall!.copyWith(color: c.inkMuted),
+        ),
       ),
     );
   }

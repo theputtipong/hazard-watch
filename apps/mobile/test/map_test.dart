@@ -181,7 +181,8 @@ void main() {
       ];
       (edge['quakesUsgs'] as Map<String, dynamic>)['items'] = [
         _quake('big-usgs', 'usgs', 7.1, 19.95, 99.05, '2026-10-05T08:00:30Z'),
-        _quake('mid', 'usgs', 6.1, 16.0, 96.0, '2026-10-04T08:00:00Z'),
+        _quake('mid', 'usgs', 6.1, 16.0, 96.0, '2026-10-04T08:00:00Z')
+          ..['url'] = 'https://earthquake.usgs.gov/earthquakes/eventpage/mid',
       ];
       final quakes = _build(s).points.where((p) => p.layer == MapLayer.quake).toList();
       expect(quakes.map((q) => q.id), unorderedEquals(['big', 'mid']));
@@ -191,6 +192,8 @@ void main() {
       final mid = quakes.firstWhere((q) => q.id == 'mid');
       expect(mid.level, HwLevel.warning);
       expect(mid.name.th, 'At mid'); // USGS has no Thai text
+      expect(mid.url, 'https://earthquake.usgs.gov/earthquakes/eventpage/mid');
+      expect(big.url, isNull);
     });
 
     test("the phone's BMA copy replaces a failing server feed", () {
@@ -330,6 +333,7 @@ void main() {
       final tile = tester.widget<ReadingTile>(find.byType(ReadingTile));
       expect((tile.value, tile.unit, tile.level, tile.note), ('25', 'ซม.', HwLevel.warning, 'น้ำท่วม'));
       expect(tile.meta, startsWith('ข้อมูลจาก กทม. · เวลาวัด '));
+      expect(tile.sources, [(name: 'กทม.', url: 'https://weather.bangkok.go.th')]);
     });
 
     testWidgets('layer chips show and hide pins', (tester) async {

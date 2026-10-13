@@ -14,13 +14,18 @@ import 'package:hazardwatch/bma/rules.dart';
 import 'package:hazardwatch/location.dart';
 import 'package:hazardwatch/screens/alerts_screen.dart';
 import 'package:hazardwatch/screens/settings_screen.dart';
+import 'package:hazardwatch/screens/sources_screen.dart';
 import 'package:hazardwatch/settings.dart';
 import 'package:hazardwatch/theme/hw_theme.dart';
 import 'package:hazardwatch/widgets/alert_card.dart';
+import 'package:hazardwatch/widgets/source_link.dart';
 
 import 'support.dart';
 
 final t0 = DateTime.utc(2026, 10, 5, 10);
+
+/// Every tab stays built (IndexedStack), so name the alerts tab's list.
+final _alertsList = find.descendant(of: find.byType(AlertsScreen), matching: find.byType(Scrollable)).first;
 
 HazardAlert alert(String key, HwLevel level, {String kind = 'flood'}) => HazardAlert(
   key: key,
@@ -344,8 +349,36 @@ void main() {
       'Warning: street flooding in Phra Nakhon',
       'Warning: high PM2.5 in Phra Nakhon',
     ]);
-    expect(find.descendant(of: find.byType(AlertsScreen), matching: find.text('Updated 10 min ago')), findsNWidgets(2));
-    expect(find.text('Phone notifications are off. You can turn them on in Settings'), findsOneWidget);
+    // Play policy: each alert credits its source, linked to the original page.
+    final credits = find.descendant(of: cards, matching: find.byType(SourceText));
+    expect(tester.widgetList<SourceText>(credits).map((t) => t.text), [
+      'Data from BMA · Updated 10 min ago',
+      'Data from Pollution Control Department · Updated 10 min ago',
+    ]);
+    final links = find.descendant(of: cards, matching: find.byType(SourceLink));
+    expect(tester.widgetList<SourceLink>(links).map((s) => s.url), [
+      'https://weather.bangkok.go.th',
+      'https://air4thai.pcd.go.th',
+    ]);
+    final notifyOff = find.text('Phone notifications are off. You can turn them on in Settings');
+    await tester.scrollUntilVisible(notifyOff, 300, scrollable: _alertsList);
+    expect(notifyOff, findsOneWidget);
+    await tester.scrollUntilVisible(find.byType(NotGovernmentNote), 300, scrollable: _alertsList);
+    expect(find.byType(NotGovernmentNote), findsOneWidget);
+  });
+
+  testWidgets('an alert whose source is unknown links the sources list', (tester) async {
+    final j = fixtureJson();
+    ((j['alerts'] as List).first as Map<String, dynamic>)['kind'] = 'other';
+    await pumpApp(tester, api: FakeApi(report: j), lang: 'en');
+    await tester.tap(find.text('Alerts'));
+    await tester.pumpAndSettle();
+    final cards = find.descendant(of: find.byType(AlertsScreen), matching: find.byType(AlertCard));
+    final button = find.descendant(of: cards, matching: find.widgetWithText(TextButton, 'Data sources'));
+    expect(button, findsOneWidget);
+    await tester.tap(button);
+    await tester.pumpAndSettle();
+    expect(find.byType(SourcesScreen), findsOneWidget);
   });
 
   testWidgets('alerts tab says so when there are none', (tester) async {
