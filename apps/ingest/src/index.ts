@@ -7,7 +7,7 @@ import { INGEST, THAILAND_BOUNDS } from './config';
 import { parseEndpointBody, parseSubscribeBody, rateLimit, readJsonBody, type PushAction } from './push/guard';
 import { DISTRICTS, messageFor, notifierFor, sendAlerts, type PushEnv } from './push/run';
 import { deleteSubscription, getSubscription, markSent, recordDelivery, sentSince, subscriptionId, upsertSubscription } from './push/store';
-import { isPushHeld, KEYS, readGroup, unpackRadar, writeGroup, type FeedMap } from './store';
+import { isPushHeld, KEYS, readGroup, readRadarBundle, unpackRadar, writeGroup, type FeedMap } from './store';
 import { parseRunnerPayload, suspiciousJump } from './validate';
 import { buildAreaReport, districtAt, districtList, findDistrict } from './area';
 import { buildSummary } from './summary';
@@ -348,16 +348,8 @@ app.post('/ingest/runner', async (c) => {
 
 app.put('/ingest/radar-bundle', async (c) => {
   const body = await c.req.arrayBuffer();
-  const headerLength = body.byteLength >= 4 ? new DataView(body).getUint32(0) : 0;
-  let valid = headerLength > 0 && 4 + headerLength <= body.byteLength;
-  if (valid) {
-    try {
-      valid = Array.isArray(JSON.parse(new TextDecoder().decode(new Uint8Array(body, 4, headerLength))).radars);
-    } catch {
-      valid = false;
-    }
-  }
-  if (!valid) return c.json({ error: 'bad radar bundle' }, 400);
+  const parsed = readRadarBundle(body);
+  if (!parsed || parsed.dropped > 0) return c.json({ error: 'bad radar bundle' }, 400);
   await c.env.SNAPSHOTS.put(KEYS.radarBundle, body);
   return c.json({ ok: true });
 });
