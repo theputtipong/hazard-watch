@@ -1497,6 +1497,54 @@
   "@footerCredits": {
     "description": "footer.credits"
   },
+  "sourcesTitle": "แหล่งข้อมูล",
+  "@sourcesTitle": {
+    "description": "sources.title"
+  },
+  "sourcesIntro": "ข้อมูลในแอปมาจากหน่วยงานเหล่านี้ แตะเพื่อเปิดเว็บไซต์ต้นทาง",
+  "@sourcesIntro": {
+    "description": "sources.intro"
+  },
+  "sourcesDisclaimer": "เฝ้าระวังภัย (HazardWatch) เป็นแอปอิสระ ไม่ได้เป็นของหรือเป็นตัวแทนของหน่วยงานรัฐใด ประกาศเตือนภัยอย่างเป็นทางการ ให้ติดตามจากช่องทางของหน่วยงานโดยตรง",
+  "@sourcesDisclaimer": {
+    "description": "sources.disclaimer"
+  },
+  "sourcesEmergency": "เหตุฉุกเฉิน โทร 1784 (กรมป้องกันและบรรเทาสาธารณภัย) หรือ 191",
+  "@sourcesEmergency": {
+    "description": "sources.emergency"
+  },
+  "sourcesOpenLink": "เปิดเว็บไซต์ต้นทาง",
+  "@sourcesOpenLink": {
+    "description": "sources.openLink"
+  },
+  "sourcesDescTmd": "สภาพอากาศและแผ่นดินไหว",
+  "@sourcesDescTmd": {
+    "description": "sources.desc.tmd"
+  },
+  "sourcesDescAir4thai": "ค่าฝุ่น PM2.5",
+  "@sourcesDescAir4thai": {
+    "description": "sources.desc.air4thai"
+  },
+  "sourcesDescBma": "น้ำท่วมและปริมาณฝนในกรุงเทพฯ",
+  "@sourcesDescBma": {
+    "description": "sources.desc.bma"
+  },
+  "sourcesDescThaiwater": "ระดับน้ำและเรดาร์ฝน",
+  "@sourcesDescThaiwater": {
+    "description": "sources.desc.thaiwater"
+  },
+  "sourcesDescUsgs": "แผ่นดินไหวทั่วโลก",
+  "@sourcesDescUsgs": {
+    "description": "sources.desc.usgs"
+  },
+  "sourcesDescGistda": "ข้อมูลจากดาวเทียม",
+  "@sourcesDescGistda": {
+    "description": "sources.desc.gistda"
+  },
+  "sourcesDescOpenMeteo": "พยากรณ์อากาศ",
+  "@sourcesDescOpenMeteo": {
+    "description": "sources.desc.openMeteo"
+  },
   "levelSemantics": "ระดับ {level}",
   "@levelSemantics": {
     "description": "level.semantics",

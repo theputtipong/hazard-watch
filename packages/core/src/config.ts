@@ -56,8 +56,13 @@ export interface AlertConfig {
   push: {
     kinds: PushKind[];
     cooldownHours: number;
-    /** Keeps one run inside Cloudflare Worker limits. */
+    /** Most push-service requests one run makes, whatever the plan; also capped by `maxSubrequests`. */
     maxPerRun: number;
+    /**
+     * Outgoing fetches one Worker invocation may make, counting the cron's own feed and GitHub fetches.
+     * Workers Free allows 50 (Paid 10,000); kept under it because a fetch past the cap throws.
+     */
+    maxSubrequests: number;
     ttlSeconds: number;
     /** The only values the server accepts for a personal quake limit. */
     quakeChoices: { minMagnitude: number[]; maxDistanceKm: number[] };
@@ -117,6 +122,7 @@ export const DEFAULT_CONFIG: AlertConfig = {
     kinds: ['flood', 'rain', 'water', 'pm25', 'quake'],
     cooldownHours: 3,
     maxPerRun: 500,
+    maxSubrequests: 40,
     ttlSeconds: 3600,
     quakeChoices: { minMagnitude: [5, 6, 7], maxDistanceKm: [500, 1000, 1500] },
   },

@@ -2,7 +2,7 @@
 
 import { DEFAULT_CONFIG, type CctvCamera } from '@hw/core';
 import { t, type Lang } from '@hw/core/i18n';
-import { openCamera } from '@/lib/openCamera';
+import { openCamera, safeCameraUrl } from '@/lib/openCamera';
 
 export function CctvList({ lang, cameras }: { lang: Lang; cameras: (CctvCamera & { km: number })[] }) {
   if (!cameras.length) return null;
@@ -18,7 +18,7 @@ export function CctvList({ lang, cameras }: { lang: Lang; cameras: (CctvCamera &
         {cameras.map((cam) => (
           <li key={cam.id}>
             <a
-              href={cam.viewUrl}
+              href={safeCameraUrl(cam.viewUrl) ?? undefined}
               target="_blank"
               rel="noopener noreferrer"
               onClick={(e) => {

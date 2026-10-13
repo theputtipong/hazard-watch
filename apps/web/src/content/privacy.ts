@@ -3,7 +3,7 @@ import type { Lang } from '@hw/core/i18n';
 /** PDPA notice. Draft: have it legally reviewed before a public launch. */
 export const privacy: Record<Lang, { updated: string; sections: { heading: string; body: string[] }[] }> = {
   th: {
-    updated: 'ปรับปรุงล่าสุด 11 ตุลาคม 2569',
+    updated: 'ปรับปรุงล่าสุด 13 ตุลาคม 2569',
     sections: [
       {
         heading: 'สรุปสั้น ๆ',
@@ -20,6 +20,15 @@ export const privacy: Record<Lang, { updated: string; sections: { heading: strin
           'รหัสเขต/อำเภอ และแขวง/ตำบล (ถ้ามี) เช่น TH1028 — ไม่ใช่พิกัด',
           'ภาษา และเรื่องที่คุณเลือกรับแจ้งเตือน (เช่น น้ำท่วม ฝุ่น) รวมถึงระดับฝุ่นที่ต้องการให้แจ้ง และขนาด/ระยะของแผ่นดินไหวที่ต้องการให้แจ้ง',
           'บันทึกว่าส่งการแจ้งเตือนเรื่องใดไปแล้ว เพื่อไม่ให้ส่งซ้ำ (ลบอัตโนมัติภายในไม่กี่ชั่วโมง)',
+          'เวลาที่สมัครและแก้ไขล่าสุด และจำนวนครั้งที่ส่งไม่สำเร็จติดกัน',
+        ],
+      },
+      {
+        heading: 'บันทึกของเซิร์ฟเวอร์และการป้องกันการใช้งานผิดวัตถุประสงค์',
+        body: [
+          'เราไม่เก็บบันทึกคำขอ (request log) ที่มีพิกัดหรือหมายเลข IP ของคุณ',
+          'เพื่อกันการสมัคร/ยกเลิกการแจ้งเตือนถี่ผิดปกติ เราเก็บค่าแฮช (SHA-256) ของหมายเลข IP ของคุณ (สำหรับ IPv6 ใช้เฉพาะส่วนเครือข่าย /64) คู่กับจำนวนคำขอในช่วง 10 นาที ใช้เพื่อการนี้เท่านั้น และลบอัตโนมัติภายในประมาณครึ่งชั่วโมง',
+          'คำขอดูสภาพอากาศถูกจำกัดจำนวนต่อหมายเลข IP ด้วยระบบของ Cloudflare โดยเราไม่ได้เก็บหมายเลข IP ไว้',
         ],
       },
       {
@@ -31,7 +40,7 @@ export const privacy: Record<Lang, { updated: string; sections: { heading: strin
       {
         heading: 'ผู้ที่เกี่ยวข้องกับข้อมูล',
         body: [
-          'ระบบทำงานบน Cloudflare (เก็บข้อมูลการแจ้งเตือน)',
+          'ระบบทำงานบน Cloudflare ซึ่งเห็นหมายเลข IP ของคุณเช่นเดียวกับผู้ให้บริการโฮสต์เว็บทั่วไป และเก็บข้อมูลการแจ้งเตือน',
           'ข้อมูลสภาพอากาศและลมมาจาก Open-Meteo ซึ่งได้รับพิกัดแบบปัดเศษ (ประมาณ 1 กม.) และหมายเลข IP ของเซิร์ฟเวอร์เรา ไม่ใช่ของคุณ',
           'แผนที่พื้นหลังโหลดจาก OpenFreeMap (บริการสาธารณะ) ซึ่งจะเห็นหมายเลข IP ของคุณและบริเวณแผนที่ที่คุณเปิดดู (ซึ่งอาจอยู่ใกล้ที่ที่คุณอยู่) แต่ไม่ได้รับพิกัด GPS ของคุณ และไม่ใช้คุกกี้',
           'การแจ้งเตือนถูกส่งผ่านบริการของผู้ผลิตเบราว์เซอร์ เช่น Google, Apple, Mozilla, Microsoft',
@@ -41,7 +50,7 @@ export const privacy: Record<Lang, { updated: string; sections: { heading: strin
       {
         heading: 'การเก็บรักษาและการลบ',
         body: [
-          'เก็บจนกว่าคุณจะปิดการแจ้งเตือน หรือเบราว์เซอร์ยกเลิกการรับ (เราจะลบอัตโนมัติเมื่อส่งไม่ได้)',
+          'เก็บจนกว่าคุณจะปิดการแจ้งเตือน หรือเบราว์เซอร์ยกเลิกการรับ เราลบอัตโนมัติเมื่อบริการส่งการแจ้งเตือนแจ้งว่าการรับนี้ไม่มีอยู่แล้ว หรือเมื่อส่งไม่สำเร็จ 3 ครั้งติดกัน',
           'กด "ปิดการแจ้งเตือน" ในหน้าหลักเพื่อลบข้อมูลของคุณทันที',
         ],
       },
@@ -61,6 +70,7 @@ export const privacy: Record<Lang, { updated: string; sections: { heading: strin
           'การแจ้งเตือนในแอปสร้างขึ้นบนเครื่องของคุณ: ประมาณทุก 15 นาที แอปขอข้อมูลสาธารณะของเขต/อำเภอที่เลือกจาก API ของเรา (ส่งเพียงรหัสเขต ไม่ใช่พิกัด) เราไม่เก็บข้อมูลการรับแจ้งเตือนของผู้ใช้แอปไว้ที่เซิร์ฟเวอร์',
           'ในกรุงเทพฯ แอปอาจโหลดข้อมูลน้ำท่วมและฝนจากเว็บไซต์ของ กทม. โดยตรง ซึ่งจะเห็นหมายเลข IP ของคุณ แต่ไม่ได้รับตำแหน่งของคุณ',
           'แผนที่พื้นหลังโหลดจาก OpenFreeMap (หรือ OpenStreetMap ถ้า OpenFreeMap ใช้งานไม่ได้) ซึ่งจะเห็นหมายเลข IP ของคุณและบริเวณแผนที่ที่คุณเปิดดู',
+          'เมื่อคุณกดลิงก์แหล่งข้อมูล แอปเปิดเว็บไซต์ของหน่วยงานในเบราว์เซอร์ โดยแอปไม่ได้ส่งข้อมูลใดไปให้',
           'ไม่มีบัญชีผู้ใช้ ไม่มีโฆษณา ไม่มีตัวติดตาม และไม่มีเครื่องมือวิเคราะห์หรือรายงานข้อผิดพลาด',
         ],
       },
@@ -68,7 +78,7 @@ export const privacy: Record<Lang, { updated: string; sections: { heading: strin
     ],
   },
   en: {
-    updated: 'Last updated 11 October 2026',
+    updated: 'Last updated 13 October 2026',
     sections: [
       {
         heading: 'In short',
@@ -85,6 +95,15 @@ export const privacy: Record<Lang, { updated: string; sections: { heading: strin
           'District and subdistrict codes (e.g. TH1028) — not coordinates.',
           'Your language, the alert topics you chose (e.g. flooding, PM2.5), your PM2.5 alert level and your earthquake alert level (magnitude and distance).',
           'A record of which alerts were sent, so they are not repeated (deleted automatically within hours).',
+          'When you subscribed and last changed it, and a count of failed deliveries in a row.',
+        ],
+      },
+      {
+        heading: 'Server logs and abuse protection',
+        body: [
+          'We do not keep request logs with your coordinates or IP address.',
+          'To stop alert sign-ups and sign-outs being abused, we keep a hashed (SHA-256) form of your IP address (for IPv6, only the /64 network part) with a count of requests per 10 minutes. It is used for nothing else and deleted automatically within about half an hour.',
+          'Weather requests are limited per IP address by Cloudflare’s rate limiting; we do not store the address.',
         ],
       },
       {
@@ -96,7 +115,7 @@ export const privacy: Record<Lang, { updated: string; sections: { heading: strin
       {
         heading: 'Who handles the data',
         body: [
-          'The service runs on Cloudflare (stores alert subscriptions).',
+          'The service runs on Cloudflare, which sees your IP address as any web host does, and stores alert subscriptions.',
           'Weather and wind come from Open-Meteo, which receives coordinates rounded to about 1 km and our server’s IP address, not yours.',
           'The background map is loaded from OpenFreeMap (a public service), which sees your IP address and the map area you view (which may be near where you are), but not your GPS coordinates, and sets no cookies.',
           'Notifications are delivered through browser vendors’ push services, e.g. Google, Apple, Mozilla, Microsoft.',
@@ -106,7 +125,7 @@ export const privacy: Record<Lang, { updated: string; sections: { heading: strin
       {
         heading: 'Retention and deletion',
         body: [
-          'Kept until you turn alerts off or your browser cancels the subscription (we delete it automatically when delivery fails).',
+          'Kept until you turn alerts off or your browser cancels the subscription. We delete it automatically when the push service says it no longer exists, or after 3 failed deliveries in a row.',
           'Tap "Turn off alerts" on the main page to delete your data immediately.',
         ],
       },
@@ -126,6 +145,7 @@ export const privacy: Record<Lang, { updated: string; sections: { heading: strin
           'Alerts in the app are created on your device: about every 15 minutes it fetches public data for your chosen district from our API (the district code only, not coordinates). We store nothing about app users’ alerts on our server.',
           'In Bangkok the app may load flood and rain data straight from the BMA website, which sees your IP address but not your location.',
           'The background map is loaded from OpenFreeMap (or OpenStreetMap if OpenFreeMap is unavailable), which sees your IP address and the map area you view.',
+          'Tapping a data source link opens the agency’s website in your browser; the app sends it nothing.',
           'There is no account, no ads, no trackers, and no analytics or crash-reporting tools.',
         ],
       },

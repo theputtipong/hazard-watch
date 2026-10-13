@@ -330,4 +330,25 @@ export const messages = {
     th: 'ข้อมูลจาก กรมอุตุนิยมวิทยา · สำนักการระบายน้ำ กทม. · สสน. (ThaiWater) · กรมควบคุมมลพิษ · GISTDA · USGS · Open-Meteo · ขอบเขตพื้นที่: กรุงเทพมหานคร, geoBoundaries, OCHA/กรมแผนที่ทหาร · แผนที่ OpenFreeMap © OpenMapTiles ข้อมูลจากผู้ร่วมพัฒนา OpenStreetMap',
     en: 'Data: TMD · BMA Drainage Dept. · HII ThaiWater · PCD · GISTDA · USGS · Open-Meteo · Boundaries: BMA, geoBoundaries, OCHA/RTSD · Map: OpenFreeMap © OpenMapTiles, data from OpenStreetMap contributors',
   },
+  'sources.title': { th: 'แหล่งข้อมูล', en: 'Data sources' },
+  'sources.intro': {
+    th: 'ข้อมูลในแอปมาจากหน่วยงานเหล่านี้ แตะเพื่อเปิดเว็บไซต์ต้นทาง',
+    en: 'The data comes from these agencies. Tap one to open the original source.',
+  },
+  'sources.disclaimer': {
+    th: 'เฝ้าระวังภัย (HazardWatch) เป็นแอปอิสระ ไม่ได้เป็นของหรือเป็นตัวแทนของหน่วยงานรัฐใด ประกาศเตือนภัยอย่างเป็นทางการ ให้ติดตามจากช่องทางของหน่วยงานโดยตรง',
+    en: 'HazardWatch is an independent app. It is not affiliated with or acting for any government agency. For official warnings, check the agencies’ own channels.',
+  },
+  'sources.emergency': {
+    th: 'เหตุฉุกเฉิน โทร 1784 (กรมป้องกันและบรรเทาสาธารณภัย) หรือ 191',
+    en: 'In an emergency, call 1784 (DDPM) or 191',
+  },
+  'sources.openLink': { th: 'เปิดเว็บไซต์ต้นทาง', en: 'Open original source' },
+  'sources.desc.tmd': { th: 'สภาพอากาศและแผ่นดินไหว', en: 'Weather and earthquakes' },
+  'sources.desc.air4thai': { th: 'ค่าฝุ่น PM2.5', en: 'PM2.5 levels' },
+  'sources.desc.bma': { th: 'น้ำท่วมและปริมาณฝนในกรุงเทพฯ', en: 'Bangkok flooding and rain gauges' },
+  'sources.desc.thaiwater': { th: 'ระดับน้ำและเรดาร์ฝน', en: 'Water levels and rain radar' },
+  'sources.desc.usgs': { th: 'แผ่นดินไหวทั่วโลก', en: 'Earthquakes worldwide' },
+  'sources.desc.gistda': { th: 'ข้อมูลจากดาวเทียม', en: 'Satellite data' },
+  'sources.desc.openMeteo': { th: 'พยากรณ์อากาศ', en: 'Weather forecasts' },
 } as const satisfies Record<string, { th: string; en: string }>;

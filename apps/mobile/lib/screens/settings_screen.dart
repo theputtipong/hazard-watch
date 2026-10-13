@@ -11,6 +11,7 @@ import '../settings.dart';
 import '../theme/hw_app_theme.dart';
 import '../widgets/hw_card.dart';
 import 'area_picker_screen.dart';
+import 'sources_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({
@@ -96,6 +97,17 @@ class SettingsScreen extends StatelessWidget {
                   onSelectionChanged: (v) => settings.locale = Locale(v.first),
                 ),
               ],
+            ),
+          ),
+          const SizedBox(height: HwSize.space3),
+          HwCard(
+            child: ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(Icons.info_outline_rounded, color: c.inkMuted),
+              title: Text(l.sourcesTitle, style: text.bodyLarge),
+              subtitle: Text(l.sourcesIntro),
+              trailing: Icon(Icons.chevron_right_rounded, color: c.inkMuted),
+              onTap: () => openSources(context),
             ),
           ),
         ],

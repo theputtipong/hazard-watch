@@ -7,7 +7,8 @@
   "workers_dev": true,
   "compatibility_date": "2026-09-01",
   "compatibility_flags": ["nodejs_compat"],
-  "observability": { "enabled": true },
+  // No invocation logs: request URLs carry ?lat=&lng=, and the privacy page says coordinates are not stored.
+  "observability": { "enabled": true, "redact_query_string": true, "logs": { "enabled": true, "invocation_logs": false } },
   "triggers": { "crons": ["*/10 * * * *"] },
   "kv_namespaces": [
     { "binding": "SNAPSHOTS", "id": "377230799e294be5a12ecc9ca7a9b0f3" }
@@ -17,10 +18,10 @@
   ],
   // Misses on /v1/weather per IP; protects the Open-Meteo free quota (10,000 calls/day).
   "ratelimits": [
-    { "name": "WEATHER_LIMITER", "namespace_id": "1001", "simple": { "limit": 30, "period": 60 } }
+    { "name": "WEATHER_LIMITER", "namespace_id": "1001", "simple": { "limit": 10, "period": 60 } }
   ],
   "vars": {
-    "ALLOWED_ORIGINS": "https://hazard.pdouvch.com,https://pdouvch.com,https://hw-web.pdouvch.workers.dev,http://localhost:3000",
+    "ALLOWED_ORIGINS": "https://hazard.pdouvch.com,https://pdouvch.com,https://hw-web.pdouvch.workers.dev",
     // Private key is the VAPID_PRIVATE_KEY secret.
     "VAPID_PUBLIC_KEY": "BGx4EhUOVhaclyTgFL44N865zJfC1EOgnfJyErvG5q7WXOkhFiTB9QRCIkc3AQmfO_9apt7ON0xi4Q4KxhdJLjQ",
     "VAPID_SUBJECT": "https://hazard.pdouvch.com",

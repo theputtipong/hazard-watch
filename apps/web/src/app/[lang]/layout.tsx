@@ -21,6 +21,7 @@ export async function generateMetadata({ params }: LayoutProps<'/[lang]'>): Prom
   if (!isLang(lang)) return {};
   const title = t('app.name', lang);
   const description = t('app.tagline', lang);
+  const image = { url: `/og/og-${lang}.png`, width: 1200, height: 630, alt: `${title} · ${description}` };
   return {
     metadataBase: new URL(WEB.siteUrl),
     title,
@@ -33,9 +34,9 @@ export async function generateMetadata({ params }: LayoutProps<'/[lang]'>): Prom
       description,
       locale: lang === 'th' ? 'th_TH' : 'en_US',
       url: `/${lang}`,
-      images: [{ url: '/icons/icon-512.png', width: 512, height: 512, alt: title }],
+      images: [image],
     },
-    twitter: { card: 'summary', title, description, images: ['/icons/icon-512.png'] },
+    twitter: { card: 'summary_large_image', title, description, images: [image] },
   };
 }
 

@@ -1,10 +1,13 @@
 /** Load only via import(): MapLibre is large and browser-only, so it stays out of SSR and the initial bundle. */
 import 'maplibre-gl/dist/maplibre-gl.css';
 import L from 'leaflet';
-import type { Map as GlMap, ExpressionSpecification } from 'maplibre-gl';
+import { setWorkerUrl, type Map as GlMap, type ExpressionSpecification } from 'maplibre-gl';
 import '@maplibre/maplibre-gl-leaflet';
 import type { Lang } from '@hw/core/i18n';
 import { WEB } from '@/config';
+
+// MapLibre 6 cannot locate its worker from inside a bundle; this form makes Next emit it as a hashed asset.
+setWorkerUrl(new URL('maplibre-gl/dist/maplibre-gl-worker.mjs', import.meta.url).toString());
 
 export interface VectorBaseMap {
   layer: L.MaplibreGL;

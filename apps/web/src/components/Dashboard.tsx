@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { activeRegions, DEFAULT_CONFIG, groupByZone, isStale, summarizeZone, zoneCenter, type DashboardSnapshot, type WeatherNow } from '@hw/core';
 import { t, type Lang, type MessageKey } from '@hw/core/i18n';
 import { WEB } from '@/config';
+import { mapCredits } from '@/content/sources';
 import { fetchSnapshot, fetchWeather } from '@/lib/api';
 import { radarFor, radarGroups } from '@/lib/radar';
 import { floodCounts, nearest, quakeSummary, uniqueBy } from '@/lib/derive';
@@ -27,6 +28,7 @@ import { CctvList } from './CctvList';
 import { FeedStatus } from './FeedStatus';
 import { FloodCard, Pm25Card, QuakeCard, WaterLevelCard, WeatherCard } from './HazardCards';
 import { Header } from './Header';
+import { SourceLinks } from './SourceLinks';
 import type { LayerKey, Layers } from '@/lib/layers';
 
 const MapView = dynamic(() => import('./MapView'), { ssr: false, loading: () => <div className="h-[420px] bg-surface-sunken sm:h-[520px]" /> });
@@ -362,7 +364,9 @@ export function Dashboard({ lang, initialArea }: { lang: Lang; initialArea?: str
       <footer className="mx-auto flex max-w-[1360px] flex-wrap items-center justify-between gap-4 px-4 pb-8 text-caption text-ink-muted sm:px-6">
         <span className="flex flex-[1_1_520px] flex-col gap-1">
           <span>{t('app.coverage', lang, { regions: activeRegions().map((r) => r.name[lang]).join(', ') })}</span>
-          <span>{t('footer.credits', lang)}</span>
+          <SourceLinks lang={lang} />
+          <span>{mapCredits[lang]}</span>
+          <span>{t('sources.disclaimer', lang)}</span>
           <Link href={`/${lang}/privacy`} className="inline-flex min-h-11 items-center self-start text-accent underline underline-offset-4">
             {t('privacy.title', lang)}
           </Link>

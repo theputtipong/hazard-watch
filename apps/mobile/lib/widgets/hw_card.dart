@@ -11,7 +11,9 @@ class HwCard extends StatelessWidget {
   final Widget child;
   final Widget? status;
   final String? note;
-  final String? source;
+
+  /// Usually a [SourceText] crediting where the data comes from.
+  final Widget? source;
 
   static const _raisedLight = [BoxShadow(color: Color(0x0F0F1B2E), offset: Offset(0, 1), blurRadius: 2)];
 
@@ -58,7 +60,7 @@ class HwCard extends StatelessWidget {
                 ),
                 child: Text(note!, style: text.labelLarge),
               ),
-            if (source != null) Text(source!, style: text.bodySmall),
+            ?source,
           ],
         ),
       ),

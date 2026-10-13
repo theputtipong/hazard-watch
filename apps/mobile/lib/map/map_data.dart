@@ -55,6 +55,7 @@ class MapPoint {
     this.onDevice = false,
     this.depthKm,
     this.km,
+    this.url,
   });
 
   final String id;
@@ -75,6 +76,9 @@ class MapPoint {
   /// Quakes only: depth, and distance from the place the severity was judged for.
   final double? depthKm;
   final double? km;
+
+  /// Quakes only: the source's page for this event, when it gives one.
+  final String? url;
 }
 
 /// The server's BMA copy is missing, failing or older than [DeviceBma.maxAge], so the phone should fetch its own.
@@ -173,7 +177,17 @@ MapData buildMapData(
 /// Recent quakes within reach of the reference point; TMD and USGS reports of one event count once (mergeQuakes in
 /// packages/core/src/alerts.ts, which keeps TMD for its Thai text).
 List<MapPoint> quakePoints(MapSnapshot s, {required double refLat, required double refLng, required DateTime now}) {
-  ({String id, String source, double mag, double? depth, double lat, double lng, LocalizedText place, DateTime at})
+  ({
+    String id,
+    String source,
+    double mag,
+    double? depth,
+    double lat,
+    double lng,
+    LocalizedText place,
+    DateTime at,
+    String? url,
+  })
   parse(Map<String, dynamic> q) {
     final loc = q['location'] as Map<String, dynamic>;
     return (
@@ -185,6 +199,7 @@ List<MapPoint> quakePoints(MapSnapshot s, {required double refLat, required doub
       lng: (loc['lng'] as num).toDouble(),
       place: LocalizedText.fromJson(q['place'] as Map<String, dynamic>),
       at: DateTime.parse(q['occurredAt'] as String),
+      url: q['url'] as String?,
     );
   }
 
@@ -219,6 +234,7 @@ List<MapPoint> quakePoints(MapSnapshot s, {required double refLat, required doub
             at: q.at,
             depthKm: q.depth,
             km: km,
+            url: q.url,
           ),
   ];
 }

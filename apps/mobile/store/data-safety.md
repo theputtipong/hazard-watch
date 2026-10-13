@@ -10,6 +10,8 @@ SDK). Re-check this whenever a feature or dependency is added; server push alert
 | Approximate location (Android `ACCESS_COARSE_LOCATION`, iOS low accuracy), only when the person taps "use my location" | `GET /v1/area?lat=&lng=` on api.hazard.pdouvch.com, once, to find the district | No. The answer is cached by district id, not by coordinates; Cloudflare request logs are not kept by us |
 | Chosen district id | `GET /v1/area?district=` | No |
 | Nothing personal | weather.bangkok.go.th (BMA flood/rain feeds, fetched by the phone when our server's copy is stale) | BMA sees the phone's IP address, like any website |
+| Nothing personal | tiles.openfreemap.org (Map tab base map; tile.openstreetmap.org only as a fallback) | The tile server sees the phone's IP address and the map area being viewed, like any website |
+| Nothing | Agency website from a "Data from ..." link or Settings → Data sources, opened in the browser only when tapped | The app sends nothing; the website sees the visit like any other |
 | Language, theme, colour mode, followed district | On the device only (shared preferences) | Device only; removed on uninstall |
 
 Like the web and extension, the app rounds coordinates to two decimals (about 1 km) before sending them

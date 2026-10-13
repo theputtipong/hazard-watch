@@ -13,6 +13,7 @@ import '../map/map_markers.dart';
 import '../settings.dart';
 import '../theme/hw_app_theme.dart';
 import '../widgets/reading_tile.dart';
+import '../widgets/source_link.dart';
 
 /// The web map's hazards on OpenFreeMap tiles: street flooding, rain, canal levels, PM2.5 and earthquakes, coloured by
 /// severity. Tap a pin for its reading. Loads only once the tab is first opened.
@@ -537,6 +538,7 @@ class PointSheet extends StatelessWidget {
                   stale: p.stale,
                   note: note,
                   meta: meta,
+                  sources: [?sourceRef(sourceName(l, p.source), p.source, url: p.url)],
                   semantics: l.readingSemantics(what, place, p.stale ? '—' : value, p.level.label(locale), note),
                 ),
               ],

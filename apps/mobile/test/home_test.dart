@@ -7,6 +7,7 @@ import 'package:hazardwatch/screens/home_screen.dart';
 import 'package:hazardwatch/theme/hw_app_theme.dart';
 import 'package:hazardwatch/widgets/alert_card.dart';
 import 'package:hazardwatch/widgets/reading_tile.dart';
+import 'package:hazardwatch/widgets/source_link.dart';
 
 import 'support.dart';
 
@@ -35,6 +36,8 @@ void main() {
 
       final titles = tester.widgetList<AlertCard>(find.byType(AlertCard)).map((a) => a.title).toList();
       expect(titles, ['ระวังมาก: น้ำท่วมบนถนนที่พระนคร', 'ระวังมาก: ฝุ่นเยอะที่พระนคร']);
+      final credits = find.descendant(of: find.byType(AlertCard), matching: find.byType(SourceLink));
+      expect(tester.widgetList<SourceLink>(credits).map((s) => s.label), ['กทม.', 'กรมควบคุมมลพิษ']);
       // Something is at caution or above, so the calm message must not show.
       expect(find.text('แถวนี้ตอนนี้ปกติดี'), findsNothing);
 
@@ -44,9 +47,13 @@ void main() {
       expect(find.text('ฝุ่นเยอะ ถ้าออกนอกบ้านควรใส่หน้ากาก'), findsOneWidget);
       // Clock text is in the device's time zone; CI runs in UTC.
       expect(
-        find.textContaining(RegExp(r'^ข้อมูลจาก กรมควบคุมมลพิษ · \d\d:\d\d\u00a0น\. · 0\.2 กม\.$')),
-        findsOneWidget,
+        tester.widgetList<SourceText>(find.byType(SourceText)).map((s) => s.text),
+        contains(matches(RegExp(r'^ข้อมูลจาก กรมควบคุมมลพิษ · \d\d:\d\d\u00a0น\. · 0\.2 กม\.$'))),
       );
+      // Play policy: every credited source is a link to its original page.
+      final pcd = tester.widget<SourceLink>(find.widgetWithText(SourceLink, 'กรมควบคุมมลพิษ'));
+      expect(pcd.url, 'https://air4thai.pcd.go.th');
+      expect(tester.getSize(find.byWidget(pcd)).height, greaterThanOrEqualTo(HwSize.touchTarget));
       expect(find.text('น้ำสูง ยังไม่ล้น · 86%'), findsOneWidget);
 
       await tester.scrollUntilVisible(find.text('เรดาร์ฝน'), 300, scrollable: _homeList);

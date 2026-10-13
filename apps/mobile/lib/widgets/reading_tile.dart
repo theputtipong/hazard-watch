@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../theme/hw_app_theme.dart';
 import 'severity.dart';
+import 'source_link.dart';
 
 /// Design system list card (`.m-list`): ReadingTiles stacked in one card, divided by `line`.
 class ReadingList extends StatelessWidget {
@@ -45,6 +46,7 @@ class ReadingTile extends StatelessWidget {
     required this.level,
     required this.note,
     required this.meta,
+    this.sources = const [],
     required this.semantics,
     this.stale = false,
     this.onTap,
@@ -60,6 +62,9 @@ class ReadingTile extends StatelessWidget {
   /// "ข้อมูลจาก ThaiWater · 17:00 น. · 3.1 กม."
   final String meta;
 
+  /// Names in [meta] linked to their original source.
+  final List<SourceRef> sources;
+
   /// The whole row read as one sentence.
   final String semantics;
   final bool stale;
@@ -69,53 +74,60 @@ class ReadingTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.hw;
     final text = Theme.of(context).textTheme;
-    return Semantics(
-      label: semantics,
-      button: onTap != null,
-      excludeSemantics: true,
-      child: InkWell(
-        onTap: onTap,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: HwSize.touchTarget),
-          child: Padding(
-            padding: const EdgeInsets.all(HwSize.space4),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              spacing: 2,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  spacing: HwSize.space3,
+    return InkWell(
+      onTap: onTap,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: HwSize.touchTarget),
+        child: Padding(
+          padding: const EdgeInsets.all(HwSize.space4),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            spacing: 2,
+            children: [
+              // The links stay outside so screen readers can still reach them.
+              Semantics(
+                label: semantics,
+                button: onTap != null,
+                excludeSemantics: true,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  spacing: 2,
                   children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        spacing: 2,
-                        children: [
-                          Text(label, style: text.labelLarge!.copyWith(color: c.inkMuted)),
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.baseline,
-                            textBaseline: TextBaseline.alphabetic,
-                            spacing: HwSize.space2,
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      spacing: HwSize.space3,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            spacing: 2,
                             children: [
-                              Text(
-                                stale ? '—' : value,
-                                style: text.headlineMedium!.copyWith(color: stale ? c.inkMuted : null),
+                              Text(label, style: text.labelLarge!.copyWith(color: c.inkMuted)),
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.baseline,
+                                textBaseline: TextBaseline.alphabetic,
+                                spacing: HwSize.space2,
+                                children: [
+                                  Text(
+                                    stale ? '—' : value,
+                                    style: text.headlineMedium!.copyWith(color: stale ? c.inkMuted : null),
+                                  ),
+                                  if (unit != null && !stale)
+                                    Text(unit!, style: text.labelLarge!.copyWith(color: c.inkMuted)),
+                                ],
                               ),
-                              if (unit != null && !stale)
-                                Text(unit!, style: text.labelLarge!.copyWith(color: c.inkMuted)),
                             ],
                           ),
-                        ],
-                      ),
+                        ),
+                        if (!stale) SeverityBadge(level: level),
+                      ],
                     ),
-                    if (!stale) SeverityBadge(level: level),
+                    Text(note, style: text.bodyLarge),
                   ],
                 ),
-                Text(note, style: text.bodyLarge),
-                Text(meta, style: text.bodySmall),
-              ],
-            ),
+              ),
+              SourceText(meta, sources: sources, style: text.bodySmall),
+            ],
           ),
         ),
       ),
