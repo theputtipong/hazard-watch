@@ -1,13 +1,22 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <uses-permission android:name="android.permission.INTERNET"/>
     <!-- Only to find which district the person is in; coarse is enough and nothing is stored. -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
     <!-- Android 13+: asked from Settings when the person turns on alerts. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <!-- No foreground services: location is one getCurrentPosition call and the alert check is plain periodic
+         work (no expedited or foreground workers), so the plugin-declared services would only add Play
+         foreground-service declarations. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" tools:node="remove"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" tools:node="remove"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SHORT_SERVICE" tools:node="remove"/>
     <application
         android:label="HazardWatch"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:allowBackup="false"
+        android:fullBackupContent="false">
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -31,12 +40,23 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <service android:name="com.baseflow.geolocator.GeolocatorLocationService" tools:node="remove"/>
+        <service android:name="androidx.work.impl.foreground.SystemForegroundService" tools:node="remove"/>
     </application>
     <!-- Package visibility: Flutter's ProcessTextPlugin queries PROCESS_TEXT activities. -->
     <queries>
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
+        </intent>
+        <!-- url_launcher: open source websites in the browser and emergency numbers in the dialer. -->
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="https"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.DIAL"/>
+            <data android:scheme="tel"/>
         </intent>
     </queries>
 </manifest>

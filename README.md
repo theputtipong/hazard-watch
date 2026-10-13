@@ -38,6 +38,8 @@ add the extension. Every platform reads the same public API, so the data, alert 
 - Install from Chrome's menu ("Install app" / "Add to Home screen").
 - Push alerts work in the browser or the installed app.
 - Read-aloud needs a Thai voice in Text-to-speech settings (the page explains how).
+- Native app (`apps/mobile`): Data sources screen with links to the original sources and a notice that the app is not
+  a government service.
 
 ### iOS / iPadOS (Safari / installed PWA)
 
@@ -45,6 +47,8 @@ add the extension. Every platform reads the same public API, so the data, alert 
 - **Push alerts need the site added to the Home Screen first** (Share → Add to Home Screen, iOS 16.4 or later).
   In a normal Safari tab the alert card explains this instead of offering the button.
 - A Thai voice is built in for read-aloud.
+- Native app (`apps/mobile`): Data sources screen with links to the original sources and a notice that the app is not
+  a government service.
 
 ### Desktop browser extension (Chrome, Edge)
 

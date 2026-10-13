@@ -1,7 +1,11 @@
 # Store listing (Google Play and App Store)
 
-Describe only what the current build does. The Map and Alerts tabs still show "coming soon"; add them here when
-they ship (and note that Apple may reject a build whose tabs are placeholders, see `README.md`).
+Describe only what the current build does (four tabs: Home, Map, Alerts, Settings).
+
+Google Play treats the app as showing government information, so the listing must (Misleading Claims policy):
+link to each original source, say clearly that HazardWatch is independent and not a government app, and never word
+the data as "official". Keep the URLs below in line with `packages/core/src/sources-meta.ts`. See
+`policy-resubmit.md` for the 2026 rejection and the resubmission steps.
 
 Images: `icon-512.png` (Play hi-res icon), `feature-graphic-1024x500.png` (Play feature graphic). The App Store icon
 is the 1024 px icon inside the app. Screenshots still have to be taken (see `README.md`).
@@ -13,10 +17,10 @@ is the 1024 px icon inside the app. Screenshots still have to be taken (see `REA
 **App Store subtitle** (30): `ฝน น้ำท่วม ฝุ่น แผ่นดินไหว`
 
 **Play short description** (80):
-`ดูฝนหนัก น้ำท่วมถนน ฝุ่น PM2.5 และแผ่นดินไหวในเขตของคุณ จากข้อมูลทางการ`
+`ดูฝนหนัก น้ำท่วมถนน ฝุ่น PM2.5 แผ่นดินไหวในเขตคุณ จากข้อมูลเปิดของหน่วยงานรัฐ`
 
 **App Store promotional text** (170):
-`เลือกเขตที่อยากติดตาม แล้วดูว่าแถวนั้นมีฝนหนัก น้ำท่วมถนน ฝุ่น หรือแผ่นดินไหวไหม จากหน่วยงานทางการ ไม่ต้องสมัครสมาชิก`
+`เลือกเขตที่อยากติดตาม แล้วดูว่าแถวนั้นมีฝนหนัก น้ำท่วมถนน ฝุ่น หรือแผ่นดินไหวไหม รวมข้อมูลเปิดจากหน่วยงานรัฐ แอปอิสระ ไม่ต้องสมัครสมาชิก`
 
 **Full description / คำอธิบาย** (Play 4000, App Store 4000):
 
@@ -37,8 +41,16 @@ HazardWatch (เฝ้าระวังภัย) บอกว่าเขต/�
 • ไม่มีบัญชีผู้ใช้ ไม่มีโฆษณา ไม่มีตัวติดตาม
 • ตำแหน่งใช้หาเขตเท่านั้น ไม่ถูกเก็บไว้
 
-ข้อมูลจาก กรมอุตุนิยมวิทยา กรมควบคุมมลพิษ กรุงเทพมหานคร ThaiWater และ USGS
-HazardWatch ไม่ใช่หน่วยงานรัฐ ในเหตุฉุกเฉินให้ทำตามประกาศของหน่วยงานในพื้นที่ และโทร 1784 (ปภ.) หรือ 191
+แหล่งข้อมูล
+แอปรวมข้อมูลเปิดจากหน่วยงานเหล่านี้ ทุกการ์ดในแอปมีลิงก์ "ข้อมูลจาก ..." ไปยังต้นทาง และดูรายชื่อพร้อมลิงก์ทั้งหมดได้ที่ ตั้งค่า → แหล่งข้อมูล
+• กรมอุตุนิยมวิทยา (สภาพอากาศและแผ่นดินไหว): https://www.tmd.go.th
+• กรมควบคุมมลพิษ Air4Thai (ค่าฝุ่น PM2.5): https://air4thai.pcd.go.th
+• กรุงเทพมหานคร (น้ำท่วมและปริมาณฝนในกรุงเทพฯ): https://weather.bangkok.go.th
+• สถาบันสารสนเทศทรัพยากรน้ำ ThaiWater (ระดับน้ำและเรดาร์ฝน): https://www.thaiwater.net
+• USGS (แผ่นดินไหวทั่วโลก): https://earthquake.usgs.gov
+
+ข้อจำกัดความรับผิดชอบ
+HazardWatch (เฝ้าระวังภัย) เป็นแอปอิสระ ไม่ได้เป็นของ ไม่ได้รับการรับรอง และไม่ได้เป็นตัวแทนของหน่วยงานรัฐใด ประกาศเตือนภัยอย่างเป็นทางการ ให้ติดตามจากช่องทางของหน่วยงานโดยตรง ในเหตุฉุกเฉินให้ทำตามประกาศของหน่วยงานในพื้นที่ และโทร 1784 (ปภ.) หรือ 191
 ```
 
 **App Store keywords** (100 bytes, Thai is 3 bytes per character, so keep it short):
@@ -54,7 +66,7 @@ HazardWatch ไม่ใช่หน่วยงานรัฐ ในเหต�
 `Heavy rain, street flooding, PM2.5 dust and earthquakes for your Thai district.`
 
 **App Store promotional text** (170):
-`Pick a district and see whether heavy rain, street flooding, dust or an earthquake needs your attention, from official Thai sources. No account needed.`
+`Pick a district to see if heavy rain, street flooding, dust or an earthquake needs your attention, using public data from Thai agencies. Independent app, no account.`
 
 **Full description:**
 
@@ -75,9 +87,16 @@ Private
 • No account, no ads, no trackers
 • Your location is only used to find your district and is not stored
 
-Data from the Thai Meteorological Department, Pollution Control Department, Bangkok Metropolitan Administration,
-ThaiWater and USGS. HazardWatch is not a government service. In an emergency follow local authorities' instructions
-and call 1784 (DDPM) or 191.
+Data sources
+The app uses public data from these agencies. Every card in the app has a "Data from ..." link to the original source, and Settings → Data sources lists them all with links.
+• Thai Meteorological Department (weather and earthquakes): https://www.tmd.go.th
+• Pollution Control Department, Air4Thai (PM2.5 levels): https://air4thai.pcd.go.th
+• Bangkok Metropolitan Administration (Bangkok flooding and rain gauges): https://weather.bangkok.go.th
+• Hydro-Informatics Institute, ThaiWater (water levels and rain radar): https://www.thaiwater.net
+• USGS (earthquakes worldwide): https://earthquake.usgs.gov
+
+Disclaimer
+HazardWatch is an independent app and is not affiliated with, endorsed by, or representing any government entity. For official warnings, check the agencies' own channels. In an emergency follow local authorities' instructions and call 1784 (DDPM) or 191.
 ```
 
 **App Store keywords** (100): `flood,rain,PM2.5,air quality,earthquake,Bangkok,Thailand,weather,warning,dust`

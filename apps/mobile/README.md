@@ -24,6 +24,10 @@ iOS and Android app: an extra channel next to the web, PWA and extension, readin
   a new alert, a level that rose, or a new earthquake inside the person's magnitude/distance choice
   (`push.quakeChoices`). What was sent is kept in shared_preferences; the rules are in `lib/alerts/notify_rules.dart`
   (3 h cooldown and PM2.5 threshold as Web Push, checked against `packages/core/src/config.ts` by a test).
+- Data sources: every data card, alert card and map sheet credits its source with a "Data from X" link to the agency's
+  site, and Settings → Data sources lists every source with its link (`lib/sources_meta.g.dart`, generated from
+  `packages/core/src/sources-meta.ts`) plus the notice that the app is not a government service (Google Play's
+  Misleading Claims policy, see `store/policy-resubmit.md`).
 - Keys and signing files are never committed (see `.gitignore`).
 
 ```sh
@@ -36,19 +40,27 @@ flutter build apk --release
 
 - Android: release builds are signed with the Play upload key when a `key.properties` is found (`HW_KEY_PROPERTIES`,
   or `android/key.properties`, gitignored) with `storePassword`, `keyPassword`, `keyAlias` and `storeFile` (relative
-  to the properties file). Without it they fall back to the debug key, which Play rejects. The key lives in the
-  owner's offline backup, not in the repo.
+  to the properties file). The key lives in the owner's offline backup, not in the repo. Without it a release APK
+  falls back to the debug key (fine for testing, not for Play), but a release AAB stops with a `GradleException`
+  instead of being signed with the debug key; the Gradle property `requireUploadKey` extends that to release APKs.
 
   ```sh
-  HW_KEY_PROPERTIES=/path/to/key.properties flutter build appbundle --release
+  HW_KEY_PROPERTIES=/path/to/key.properties flutter build appbundle --release --obfuscate --split-debug-info=build/symbols
   ```
+
+  Store builds are obfuscated; keep `build/symbols` of each upload (CI keeps it 90 days as
+  `hazardwatch-android-symbols-<run>`) to read crash stack traces with `flutter symbolize`. Play only accepts a
+  version code higher than every earlier upload, rejected ones included. A local build uses the `+N` in
+  `pubspec.yaml`; a CI build (`hazardwatch-android-aab-<run>`) uses the run number, which is far higher, so once a CI
+  AAB has been uploaded keep using CI (or raise `+N` past that run number). Both are signed with the same upload key.
 
 - iOS: `flutter build ipa --release` once a signing team is set in Xcode.
 - Launcher icons and Play graphics: `node tools/icons/make-icons.mjs`. Store text, data-safety answers and the manual
   store steps: `store/`.
 
-CI: `.github/workflows/mobile.yml` (analyze, test, debug-signed APK artifact, iOS build without signing, and a
-signed AAB artifact in `android-release` once these repository secrets exist):
+CI: `.github/workflows/mobile.yml` (analyze, test, then one `android` job that builds the debug-signed APK artifact
+and, outside pull requests, the signed AAB plus symbols artifacts once these repository secrets exist). The iOS build
+without signing runs only on manual dispatch or `v*` tags.
 
 ```sh
 base64 -i upload.jks | gh secret set ANDROID_KEYSTORE_BASE64 --repo theputtipong/hazard-watch
