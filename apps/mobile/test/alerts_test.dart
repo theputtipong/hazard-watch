@@ -370,7 +370,11 @@ void main() {
   testWidgets('an alert whose source is unknown links the sources list', (tester) async {
     final j = fixtureJson();
     ((j['alerts'] as List).first as Map<String, dynamic>)['kind'] = 'other';
-    await pumpApp(tester, api: FakeApi(report: j), lang: 'en');
+    await pumpApp(
+      tester,
+      api: FakeApi(report: j),
+      lang: 'en',
+    );
     await tester.tap(find.text('Alerts'));
     await tester.pumpAndSettle();
     final cards = find.descendant(of: find.byType(AlertsScreen), matching: find.byType(AlertCard));
