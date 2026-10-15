@@ -58,7 +58,7 @@ flutter build apk --release
 - Launcher icons and Play graphics: `node tools/icons/make-icons.mjs`. Store text, data-safety answers and the manual
   store steps: `store/`.
 
-CI: `.github/workflows/mobile.yml` (analyze, test, then one `android` job that builds the debug-signed APK artifact
+CI: `.github/workflows/check-build-mobile.yml` (analyze, test, then one `android` job that builds the debug-signed APK artifact
 and, outside pull requests, the signed AAB plus symbols artifacts once these repository secrets exist). The iOS build
 without signing runs only on manual dispatch or `v*` tags.
 

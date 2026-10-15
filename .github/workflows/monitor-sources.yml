@@ -1,5 +1,5 @@
 # Needs no extra secrets: uses only the built-in GITHUB_TOKEN.
-name: "Monitor: data source outages"
+name: Monitor Sources
 
 on:
   schedule:

@@ -1,4 +1,4 @@
-name: "Web, API & extension: check and deploy"
+name: Check & Deploy Web/API
 
 on:
   push:

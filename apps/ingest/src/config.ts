@@ -13,7 +13,7 @@ export const INGEST = {
    * Multiple of the 10-min cron; 40 keeps the private repo within 2,000 free Actions min/month (~1,320 + monitor ~360).
    */
   runnerDispatchEveryMinutes: 40,
-  runnerWorkflow: 'ingest-runner.yml',
+  runnerWorkflow: 'fetch-feeds.yml',
   /** Cloudflare sometimes fires a cron twice (~30 s apart); skip dispatch if a run started this recently. */
   runnerDispatchDedupeMinutes: 5,
   /** Hours between fetches; the BMA data agreement allows at most one CCTV list fetch a day. */

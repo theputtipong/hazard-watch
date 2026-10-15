@@ -1,5 +1,5 @@
 # Runs on GitHub because BMA and ThaiWater block Cloudflare IPs.
-name: "Ingest: fetch feeds that block Cloudflare"
+name: Fetch Feeds
 
 on:
   schedule:

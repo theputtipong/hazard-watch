@@ -85,9 +85,10 @@ packages/
             colours for Leaflet, and the palettes the Flutter app's own design system is checked against (plus its
             colour-blind mode); `test` fails if a generated file is stale.
 .github/workflows/
-  ingest-runner.yml  Fetches feeds that block Cloudflare IPs (BMA, ThaiWater) and pushes them to ingest.
-  ci.yml             Typecheck, lint, tests; on main also deploys what changed (see Deploy).
-  monitor.yml        Source-outage check every 2 h; opens/closes `outage` issues (tools/monitor).
+  check-deploy-web.yml    Typecheck, lint, tests; on main also deploys what changed (see Deploy).
+  check-build-mobile.yml  Flutter analyze, tests and Android/iOS builds (apps/mobile).
+  fetch-feeds.yml         Fetches feeds that block Cloudflare IPs (BMA, ThaiWater) and pushes them to ingest.
+  monitor-sources.yml     Source-outage check every 2 h; opens/closes `outage` issues (tools/monitor).
 ```
 
 ## Data flow
@@ -102,7 +103,7 @@ packages/
 | CCTV list | BMA Traffic | GitHub Actions, once a day (`INGEST.runnerFeedEveryHours`) | pins + link to source only |
 | Base map | OpenFreeMap vector tiles via MapLibre GL in Leaflet (`positron` / `dark`, follows the theme; labels in the page language) | browser | config in `WEB.map.openfreemap`; free public instance, no key; falls back to OSM raster automatically without WebGL or if the style fails to load |
 
-GitHub's own schedule for `ingest-runner.yml` runs hours late, so the ingest cron starts it with `workflow_dispatch`
+GitHub's own schedule for `fetch-feeds.yml` runs hours late, so the ingest cron starts it with `workflow_dispatch`
 every `INGEST.runnerDispatchEveryMinutes` (40, to stay inside the 2,000 free Actions minutes of a private repo).
 That needs the Worker secret `GITHUB_DISPATCH_TOKEN`: a fine-grained token for this repo only, with
 *Actions: Read and write* (GitHub answers 403 if the permission or repo is missing, 401 if the token is wrong).
@@ -129,7 +130,7 @@ pnpm test && pnpm typecheck
 
 ## Deploy
 
-Pushing to `main` runs `.github/workflows/ci.yml`: checks first, then only the parts that changed are deployed.
+Pushing to `main` runs `.github/workflows/check-deploy-web.yml`: checks first, then only the parts that changed are deployed.
 
 | Job | Runs when | Does |
 |---|---|---|
@@ -213,7 +214,7 @@ of the two. River/canal level: 70/100/120 % of bank-full (70/100 from ThaiWater)
 
 ## Monitoring
 
-`.github/workflows/monitor.yml` runs `tools/monitor/check.mjs` every 2 hours (to stay inside the free Actions minutes) (and on demand via *Run workflow*).
+`.github/workflows/monitor-sources.yml` runs `tools/monitor/check.mjs` every 2 hours (to stay inside the free Actions minutes) (and on demand via *Run workflow*).
 It reads `/v1/snapshot` and treats a feed as down when its last successful fetch (`lastOkAt`, kept by the ingest
 store across failures; `failingSince` marks the first failure) is older than the feed's threshold.
 

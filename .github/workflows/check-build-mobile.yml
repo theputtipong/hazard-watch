@@ -1,6 +1,6 @@
-name: "Mobile app: check and build"
+name: Check & Build Mobile
 
-# Generated tokens and strings are checked for staleness by `pnpm test` in ci.yml.
+# Generated tokens and strings are checked for staleness by `pnpm test` in check-deploy-web.yml.
 on:
   push:
     branches: [main]
@@ -10,13 +10,13 @@ on:
       - 'apps/mobile/**'
       - 'packages/tokens/**'
       - 'packages/core/src/i18n/**'
-      - '.github/workflows/mobile.yml'
+      - '.github/workflows/check-build-mobile.yml'
   pull_request:
     paths:
       - 'apps/mobile/**'
       - 'packages/tokens/**'
       - 'packages/core/src/i18n/**'
-      - '.github/workflows/mobile.yml'
+      - '.github/workflows/check-build-mobile.yml'
   workflow_dispatch:
 
 permissions:
