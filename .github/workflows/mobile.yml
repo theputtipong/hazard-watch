@@ -1,4 +1,4 @@
-name: mobile
+name: "Mobile app: check and build"
 
 # Generated tokens and strings are checked for staleness by `pnpm test` in ci.yml.
 on:

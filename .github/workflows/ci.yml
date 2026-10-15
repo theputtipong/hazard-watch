@@ -1,4 +1,4 @@
-name: ci
+name: "Web, API & extension: check and deploy"
 
 on:
   push:
