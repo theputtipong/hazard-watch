@@ -391,7 +391,8 @@ class _MapScreenState extends State<MapScreen> {
             title: '${eventName(l, e.category)}: ${e.title}',
             lines: [if (e.windKts != null) '${numberText(e.windKts!)} kt', clockText(l, e.updatedAt, now)],
             credit: NasaAttribution.eonet,
-            link: e.url,
+            // The event's own EONET page when the feed gives one, else EONET itself.
+            source: sourceRef('NASA EONET ↗', 'nasa-eonet', url: e.url),
           ),
           child: Center(child: EventPin(category: e.category)),
         ),
@@ -408,38 +409,43 @@ class _MapScreenState extends State<MapScreen> {
         clockText(l, f.at, now),
       ],
       credit: NasaAttribution.firms,
+      source: sourceRef('NASA FIRMS ↗', 'nasa-firms'),
     );
   }
 
-  Future<void> _showSheet({required String title, required List<String> lines, required String credit, String? link}) =>
-      showModalBottomSheet<void>(
-        context: context,
-        showDragHandle: true,
-        builder: (context) {
-          final text = Theme.of(context).textTheme;
-          final c = context.hw;
-          return SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(HwSize.space4, 0, HwSize.space4, HwSize.space4),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                spacing: HwSize.space2,
-                children: [
-                  Semantics(header: true, child: Text(title, style: text.titleLarge)),
-                  for (final line in lines) Text(line, style: text.bodyLarge),
-                  if (link != null)
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: SourceLink(label: 'NASA EONET ↗', url: link),
-                    ),
-                  Text(credit, style: text.bodySmall!.copyWith(color: c.inkMuted)),
-                ],
-              ),
-            ),
-          );
-        },
+  Future<void> _showSheet({
+    required String title,
+    required List<String> lines,
+    required String credit,
+    SourceRef? source,
+  }) => showModalBottomSheet<void>(
+    context: context,
+    showDragHandle: true,
+    builder: (context) {
+      final text = Theme.of(context).textTheme;
+      final c = context.hw;
+      return SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(HwSize.space4, 0, HwSize.space4, HwSize.space4),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            spacing: HwSize.space2,
+            children: [
+              Semantics(header: true, child: Text(title, style: text.titleLarge)),
+              for (final line in lines) Text(line, style: text.bodyLarge),
+              if (source != null)
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: SourceLink(label: source.name, url: source.url),
+                ),
+              Text(credit, style: text.bodySmall!.copyWith(color: c.inkMuted)),
+            ],
+          ),
+        ),
       );
+    },
+  );
 
   String _areaName(AppLocalizations l, Locale locale) => widget.settings.district?.name.of(locale) ?? l.mapBangkok;
 }
@@ -698,6 +704,7 @@ String nasaRasterDate(AppLocalizations l, NasaLayer layer, DateTime now) {
 }
 
 /// Credits (and the raster's day) for the NASA layers that are on, bottom-left so the map buttons stay clear.
+/// Google Play requires the government source to be linked wherever its data is credited.
 class _NasaCredits extends StatelessWidget {
   const _NasaCredits({required this.state, required this.snapshot, required this.now});
 
@@ -719,7 +726,12 @@ class _NasaCredits extends StatelessWidget {
           key: const ValueKey('nasa-credits'),
           padding: const EdgeInsets.symmetric(horizontal: HwSize.space1, vertical: 2),
           color: c.surface.withValues(alpha: 0.8),
-          child: Text(text, style: Theme.of(context).textTheme.labelSmall!.copyWith(color: c.inkMuted)),
+          // Each NASA name links to its site; the credit text itself is unchanged.
+          child: SourceText(
+            text,
+            sources: nasaSourceRefs,
+            style: Theme.of(context).textTheme.labelSmall!.copyWith(color: c.inkMuted),
+          ),
         ),
       ),
     );
@@ -753,6 +765,13 @@ class NasaLayerSheet extends StatelessWidget {
       return [if (at != null) clockText(l, at, now), credit].join(' · ');
     }
 
+    // Below its switch, not as the switch's subtitle: a switch tile merges its children into one toggle, which would
+    // swallow the link for screen readers and taps.
+    Widget credit(String text) => Padding(
+      padding: const EdgeInsets.only(bottom: HwSize.space2),
+      child: SourceText(text, sources: nasaSourceRefs, style: note),
+    );
+
     return SafeArea(
       child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(HwSize.space4, 0, HwSize.space4, HwSize.space4),
@@ -763,30 +782,30 @@ class NasaLayerSheet extends StatelessWidget {
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               title: Text(nasaLayerName(l, 'firms')),
-              subtitle: state.firms ? Text(feedNote('fires', NasaAttribution.firms), style: note) : null,
               value: state.firms,
               onChanged: (v) => onChanged(state.copyWith(firms: v)),
             ),
+            if (state.firms) credit(feedNote('fires', NasaAttribution.firms)),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               title: Text(nasaLayerName(l, 'events')),
-              subtitle: state.events ? Text(feedNote('events', NasaAttribution.eonet), style: note) : null,
               value: state.events,
               onChanged: (v) => onChanged(state.copyWith(events: v)),
             ),
+            if (state.events) credit(feedNote('events', NasaAttribution.eonet)),
             const Divider(),
-            for (final id in nasaRasterIds)
+            for (final id in nasaRasterIds) ...[
               SwitchListTile(
                 key: ValueKey('nasa-raster:$id'),
                 contentPadding: EdgeInsets.zero,
                 title: Text(nasaLayerName(l, id)),
-                subtitle: state.raster == id
-                    ? Text('${nasaRasterDate(l, nasaLayers[id]!, now)} · ${nasaLayers[id]!.attribution}', style: note)
-                    : null,
                 value: state.raster == id,
                 // One raster at a time; turning the active one off leaves none.
                 onChanged: (v) => onChanged(state.copyWith(raster: () => v ? id : null)),
               ),
+              if (state.raster == id)
+                credit('${nasaRasterDate(l, nasaLayers[id]!, now)} · ${nasaLayers[id]!.attribution}'),
+            ],
             if (state.anyOn)
               Padding(
                 padding: const EdgeInsets.only(top: HwSize.space2),

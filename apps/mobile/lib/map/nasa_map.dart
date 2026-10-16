@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../l10n/gen/app_localizations.dart';
 import '../theme/hw_app_theme.dart';
+import '../widgets/source_link.dart';
 import 'base_map.dart';
 import 'map_data.dart';
 import 'nasa_layers.g.dart';
@@ -379,4 +380,12 @@ List<String> nasaCredits(NasaLayerState s) => [
   if (s.firms && !(s.raster != null && nasaLayers[s.raster]!.attribution.contains(NasaAttribution.firms)))
     NasaAttribution.firms,
   if (s.events) NasaAttribution.eonet,
+];
+
+/// The NASA names inside the credit lines above, each linked to its own site (ids in lib/sources_meta.g.dart), in the
+/// order they appear in a credit line. Pass to [SourceText] with the credit text: the visible text stays NASA's own.
+List<SourceRef> get nasaSourceRefs => [
+  ?sourceRef('NASA EOSDIS GIBS / Worldview', 'nasa-gibs'),
+  ?sourceRef('NASA FIRMS', 'nasa-firms'),
+  ?sourceRef('NASA EONET', 'nasa-eonet'),
 ];

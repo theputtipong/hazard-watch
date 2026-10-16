@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:hazardwatch/api/hazard_api.dart';
 import 'package:hazardwatch/api/models.dart';
 import 'package:hazardwatch/bma/bma_parse.dart';
@@ -18,8 +19,10 @@ import 'package:hazardwatch/map/nasa_layers.g.dart';
 import 'package:hazardwatch/map/nasa_map.dart';
 import 'package:hazardwatch/screens/map_screen.dart';
 import 'package:hazardwatch/settings.dart';
+import 'package:hazardwatch/sources_meta.g.dart';
 import 'package:hazardwatch/theme/hw_app_theme.dart';
 import 'package:hazardwatch/widgets/reading_tile.dart';
+import 'package:hazardwatch/widgets/source_link.dart';
 
 import 'support.dart';
 
@@ -588,6 +591,14 @@ void main() {
       return (store, tiles);
     }
 
+    /// The source links inside [of], as (label, url).
+    List<(String, String)> links(WidgetTester tester, Finder of) => [
+      for (final link in tester.widgetList<SourceLink>(find.descendant(of: of, matching: find.byType(SourceLink))))
+        (link.label, link.url),
+    ];
+
+    final credits = find.byKey(const ValueKey('nasa-credits'));
+
     Future<void> openSheet(WidgetTester tester) async {
       await tester.tap(find.byKey(const ValueKey('nasa-button')));
       await tester.pumpAndSettle();
@@ -604,7 +615,8 @@ void main() {
       expect(circles.map((c) => c.hitValue!.id), ['fire-near', 'fire-far']);
       expect(find.byType(EventPin), findsNothing);
       expect(find.byType(TileLayer), findsNothing);
-      expect(find.textContaining(NasaAttribution.firms), findsOneWidget);
+      expect(find.descendant(of: credits, matching: find.textContaining('Fires: ')), findsOneWidget);
+      expect(links(tester, credits), [('NASA FIRMS', sourceUrl('nasa-firms'))]);
       expect(tester.widget<FlutterMap>(find.byType(FlutterMap)).options.minZoom, NasaMapConfig.worldMinZoom);
       // The existing hazard pins are untouched.
       expect(find.byKey(const ValueKey('f1')), findsOneWidget);
@@ -620,6 +632,24 @@ void main() {
       expect(find.descendant(of: sheet, matching: find.text('จุดความร้อน (ไฟ)')), findsOneWidget);
       expect(find.descendant(of: sheet, matching: find.text('FRP 12 MW · N20')), findsOneWidget);
       expect(find.descendant(of: sheet, matching: find.text(NasaAttribution.firms)), findsOneWidget);
+      // NASA is US-government data: the sheet links FIRMS itself (Google Play's source-link rule).
+      expect(sourceUrl('nasa-firms'), 'https://firms.modaps.eosdis.nasa.gov');
+      expect(links(tester, sheet), [('NASA FIRMS ↗', sourceUrl('nasa-firms'))]);
+      final semantics = tester.getSemantics(find.descendant(of: sheet, matching: find.byType(SourceLink)));
+      expect(semantics.flagsCollection.isLink, isTrue);
+      expect(semantics.label, startsWith('NASA FIRMS ↗, '));
+    });
+
+    testWidgets('a storm sheet links its EONET page', (tester) async {
+      await pumpNasaMap(tester, saved: const NasaLayerState(firms: false, events: true));
+      // Out of the district view at first, so bring the storm in.
+      MapController.of(tester.element(find.byType(MarkerLayer).first)).move(const LatLng(16, 112), 6);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(EventPin));
+      await tester.pumpAndSettle();
+      expect(links(tester, find.byType(BottomSheet)), [
+        ('NASA EONET ↗', 'https://eonet.gsfc.nasa.gov/api/v3/events/EONET_1'),
+      ]);
     });
 
     testWidgets('the layer sheet turns on one raster at a time with its day and credit, and remembers it', (
@@ -632,7 +662,16 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('nasa-raster:flood')));
       await tester.pumpAndSettle();
       expect(store.saved, const NasaLayerState(firms: true, events: false, raster: 'flood'));
-      expect(find.textContaining(nasaLayers['flood']!.attribution), findsWidgets);
+      // The credit under the active raster links GIBS (and keeps the rest of NASA's credit line as text).
+      final sheet = find.byType(NasaLayerSheet);
+      expect(
+        find.descendant(of: sheet, matching: find.textContaining('Flood: NASA LANCE MODIS/VIIRS')),
+        findsOneWidget,
+      );
+      expect(links(tester, sheet), [
+        ('NASA FIRMS', sourceUrl('nasa-firms')),
+        ('NASA EOSDIS GIBS / Worldview', sourceUrl('nasa-gibs')),
+      ]);
 
       await tester.tap(find.byKey(const ValueKey('nasa-raster:fireWms')));
       await tester.pumpAndSettle();
@@ -644,13 +683,27 @@ void main() {
       // Flood at zoom 12 asked GIBS for level-9 tiles (overzoom), then the fire raster for yesterday's day.
       expect(tiles.urls.first, contains('/GoogleMapsCompatible_Level9/9/'));
       expect(tiles.urls.last, contains('time=${gibsUtcYesterday(fixtureNow)}'));
-      // Data date and NASA credit on the map itself.
-      final credits = tester.widget<Text>(
-        find.descendant(of: find.byKey(const ValueKey('nasa-credits')), matching: find.byType(Text)),
-      );
-      expect(credits.data, contains('ภาพดาวเทียมวันที่'));
-      expect(credits.data, contains(NasaAttribution.gibs));
-      expect(credits.data, contains(NasaAttribution.firms));
+      // Data date and NASA credit on the map itself, each NASA source a link to its site.
+      expect(find.descendant(of: credits, matching: find.textContaining('ภาพดาวเทียมวันที่')), findsOneWidget);
+      expect(find.descendant(of: credits, matching: find.textContaining('Imagery: ')), findsOneWidget);
+      expect(sourceUrl('nasa-gibs'), 'https://worldview.earthdata.nasa.gov');
+      expect(links(tester, credits), [
+        ('NASA EOSDIS GIBS / Worldview', sourceUrl('nasa-gibs')),
+        ('NASA FIRMS', sourceUrl('nasa-firms')),
+      ]);
+      final gibs = tester.getSemantics(find.widgetWithText(SourceLink, 'NASA EOSDIS GIBS / Worldview'));
+      expect(gibs.flagsCollection.isLink, isTrue);
+      expect(gibs.label, startsWith('NASA EOSDIS GIBS / Worldview, '));
+      final opened = <Uri>[];
+      final realLaunchLink = launchLink;
+      launchLink = (uri) async {
+        opened.add(uri);
+        return true;
+      };
+      addTearDown(() => launchLink = realLaunchLink);
+      await tester.tap(find.widgetWithText(SourceLink, 'NASA EOSDIS GIBS / Worldview'));
+      await tester.pumpAndSettle();
+      expect(opened, [Uri.parse(sourceUrl('nasa-gibs')!)]);
     });
 
     testWidgets('events show storms with their track; all NASA off removes the credits', (tester) async {
@@ -659,7 +712,7 @@ void main() {
       expect(find.byType(EventPin), findsNothing); // the storm is outside the district view
       final track = tester.widget<PolylineLayer>(find.byType(PolylineLayer));
       expect(track.polylines.single.points.length, 2);
-      expect(find.textContaining(NasaAttribution.eonet), findsOneWidget);
+      expect(links(tester, credits), [('NASA EONET', sourceUrl('nasa-eonet'))]);
 
       await openSheet(tester);
       await tester.tap(find.widgetWithText(SwitchListTile, 'พายุและภัยทั่วโลก'));
