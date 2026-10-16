@@ -1,3 +1,4 @@
+import { DEFAULT_VIEW, distanceKm } from '@hw/core';
 import { describe, expect, it } from 'vitest';
 import { buildSummary } from '../src/summary';
 
@@ -64,6 +65,14 @@ describe('buildSummary', () => {
       now,
     );
     expect(s.quake).toMatchObject({ magnitude: 4.7, place: { en: 'near' }, severity: 'ok' });
+  });
+
+  // The active region is all of Thailand now; its centre is ~100 km from Bangkok and must not be the reference.
+  it('measures quake distance from Bangkok (the default view), not the region centre', () => {
+    const at = { lat: 15.0, lng: 99.0 };
+    const s = buildSummary({ updatedAt: '2026-10-05T15:50:00Z', feeds: { quakesTmd: feed([quake('q', 4.0, at.lat, at.lng)]) } }, null, now);
+    expect(s.quake?.distanceKm).toBe(Math.round(distanceKm(DEFAULT_VIEW.center, at)));
+    expect(s.quake?.distanceKm).not.toBe(Math.round(distanceKm({ lat: 13.0, lng: 101.0 }, at)));
   });
 
   it('reports the newest update time and feed health', () => {

@@ -1,5 +1,6 @@
 import {
   DEFAULT_CONFIG,
+  DEFAULT_VIEW,
   distanceKm,
   isStale,
   quakeAlertFloor,
@@ -42,6 +43,9 @@ function worstReading(list: Observation[]): SummaryReading | null {
 
 export function buildSummary(edge: GroupSnapshot | null, runner: GroupSnapshot | null, now = new Date(), cfg = DEFAULT_CONFIG): Summary {
   const region = regionFor(null);
+  // The region is now all of Thailand and its centre sits ~100 km from Bangkok, which would skew every quake
+  // distance; measure from the default view (Bangkok), the area this summary speaks for.
+  const from = DEFAULT_VIEW.center;
   const feeds = { ...edge?.feeds, ...runner?.feeds };
 
   const pm25 = liveReadings(feeds.pm25?.items, cfg, now);
@@ -53,7 +57,7 @@ export function buildSummary(edge: GroupSnapshot | null, runner: GroupSnapshot |
   const since = now.getTime() - QUAKE_WINDOW_HOURS * 3_600_000;
   const { maxDistanceKm } = quakeAlertFloor(cfg);
   const quake = ([...(feeds.quakesTmd?.items ?? []), ...(feeds.quakesUsgs?.items ?? [])] as Earthquake[])
-    .filter((q) => new Date(q.occurredAt).getTime() >= since && distanceKm(region.center, q.location) <= maxDistanceKm)
+    .filter((q) => new Date(q.occurredAt).getTime() >= since && distanceKm(from, q.location) <= maxDistanceKm)
     // TMD first, so on equal magnitude its Thai place name wins over USGS.
     .reduce<Earthquake | null>((best, q) => (best && best.magnitude >= q.magnitude ? best : q), null);
 
@@ -72,8 +76,8 @@ export function buildSummary(edge: GroupSnapshot | null, runner: GroupSnapshot |
           magnitude: quake.magnitude,
           place: quake.place,
           occurredAt: quake.occurredAt,
-          distanceKm: Math.round(distanceKm(region.center, quake.location)),
-          severity: quakeSeverity(quake, region.center, cfg),
+          distanceKm: Math.round(distanceKm(from, quake.location)),
+          severity: quakeSeverity(quake, from, cfg),
         }
       : null,
     feeds: { ok: results.filter((r) => r?.ok).length, total: results.length },

@@ -17,6 +17,9 @@ const Map<String, SourceMeta> sourceMeta = {
   'thaiwater': SourceMeta(id: 'thaiwater', url: 'https://www.thaiwater.net', gov: true),
   'usgs': SourceMeta(id: 'usgs', url: 'https://earthquake.usgs.gov', gov: true),
   'gistda': SourceMeta(id: 'gistda', url: 'https://www.gistda.or.th', gov: true),
+  'nasa-firms': SourceMeta(id: 'nasa-firms', url: 'https://firms.modaps.eosdis.nasa.gov', gov: true),
+  'nasa-eonet': SourceMeta(id: 'nasa-eonet', url: 'https://eonet.gsfc.nasa.gov', gov: true),
+  'nasa-gibs': SourceMeta(id: 'nasa-gibs', url: 'https://worldview.earthdata.nasa.gov', gov: true),
   'open-meteo': SourceMeta(id: 'open-meteo', url: 'https://open-meteo.com', gov: false),
 };
 

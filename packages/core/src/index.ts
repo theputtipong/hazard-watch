@@ -10,3 +10,4 @@ export * from './quakePlace';
 export * from './feeds';
 export * from './sources-meta';
 export * from './relay';
+export * from './nasa';

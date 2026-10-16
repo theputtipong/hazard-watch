@@ -62,8 +62,43 @@ const snapshot = {
   },
 } as unknown as DashboardSnapshot;
 
+// NASA feeds ride on a copy so snapshot.json (the map fixture) stays as it was.
+const fire = (id: string, at: { lat: number; lng: number }, detectedAt = '2026-10-05T06:30:00Z') => ({
+  id,
+  location: at,
+  detectedAt,
+  frp: 4.2,
+  confidence: 'nominal',
+  satellite: 'N20',
+  day: true,
+});
+const nasaFeeds = {
+  fires: feed('nasa-firms', [
+    fire('fire-near', near),
+    fire('fire-out', far), // ~20 km, still inside the 25 km fire radius
+    fire('fire-far', { lat: 14.5, lng: 101.0 }), // ~95 km
+    fire('fire-old', near, '2026-10-04T06:00:00Z'), // older than 24 h
+  ]),
+  events: feed('nasa-eonet', [
+    {
+      id: 'EONET_1',
+      category: 'severeStorms',
+      title: 'Typhoon Test',
+      location: { lat: 16.0, lng: 103.0 },
+      track: [
+        { at: '2026-10-05T00:00:00Z', location: { lat: 15.5, lng: 104.0 }, windKts: 60 },
+        { at: '2026-10-05T06:00:00Z', location: { lat: 16.0, lng: 103.0 }, windKts: 55 },
+      ],
+      updatedAt: '2026-10-05T06:00:00Z',
+      url: 'https://www.gdacs.org/report.aspx?eventid=1',
+    },
+    { id: 'EONET_2', category: 'volcanoes', title: 'Far Volcano', location: { lat: -6.1, lng: 105.4 }, track: [], updatedAt: '2026-10-01T00:00:00Z', url: null },
+  ]),
+};
+const withNasa = { ...snapshot, runner: { ...snapshot.runner!, feeds: { ...snapshot.runner!.feeds, ...nasaFeeds } } } as unknown as DashboardSnapshot;
+
 describe('buildAreaReport', () => {
-  const report = buildAreaReport(snapshot, phraNakhon, now);
+  const report = buildAreaReport(withNasa, phraNakhon, now);
 
   it('names the district and its province', () => {
     expect(report.district).toMatchObject({ id: 'TH1001', name: { th: 'พระนคร', en: 'Phra Nakhon' }, province: { th: 'กรุงเทพมหานคร' } });
@@ -124,6 +159,15 @@ describe('buildAreaReport', () => {
     expect(rivers(123, 'danger')).toMatchObject({ severity: 'ok', calm: false, alerts: [] });
   });
 
+  it('adds NASA fires and events near the district centre, display only', () => {
+    expect(report.nasa?.fires).toMatchObject({ count: 2, radiusKm: 25 });
+    expect(report.nasa?.events.map((e) => [e.id, e.windKts])).toEqual([['EONET_1', 55]]);
+  });
+
+  it('leaves nasa null when neither NASA feed exists', () => {
+    expect(buildAreaReport(snapshot, phraNakhon, now).nasa).toBeNull();
+  });
+
   it('matches the contract fixture the app tests read', () => {
     const json = `${JSON.stringify(report, null, 2)}\n`;
     if (process.env.UPDATE_FIXTURES) writeFileSync(CONTRACT, json);
@@ -141,12 +185,15 @@ describe('buildAreaReport', () => {
 describe('districts', () => {
   it('lists every district with its province, Thai order', () => {
     const list = districtList();
-    expect(list.length).toBe(79);
+    expect(list.length).toBe(928);
     expect(list.every((d) => d.province)).toBe(true);
+    expect(new Set(list.map((d) => d.province!.th)).size).toBe(77);
   });
 
-  it('finds the district at a point, or none outside coverage', () => {
+  it('finds the district at a point nationwide, or none outside Thailand', () => {
     expect(districtAt(inside)?.properties.id).toBe('TH1001');
-    expect(districtAt({ lat: 18.79, lng: 98.98 })).toBeNull();
+    // Mueang Chiang Mai: outside the old Bangkok-metro coverage, inside the nationwide one.
+    expect(districtAt({ lat: 18.79, lng: 98.98 })?.properties.id).toBe('TH5001');
+    expect(districtAt({ lat: 10.0, lng: 90.0 })).toBeNull();
   });
 });

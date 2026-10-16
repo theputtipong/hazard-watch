@@ -1,0 +1,409 @@
+{
+ "title": "EONET Events",
+ "description": "Natural events from EONET.",
+ "link": "https://eonet.gsfc.nasa.gov/api/v3/events",
+ "events": [
+  {
+   "id": "EONET_25290",
+   "title": "Hurricane Trudy",
+   "description": null,
+   "link": "https://eonet.gsfc.nasa.gov/api/v3/events/EONET_25290",
+   "closed": null,
+   "categories": [
+    {
+     "id": "severeStorms",
+     "title": "Severe Storms"
+    }
+   ],
+   "sources": [
+    {
+     "id": "JTWC",
+     "url": "https://www.metoc.navy.mil/jtwc/products/ep2126.tcw"
+    }
+   ],
+   "geometry": [
+    {
+     "magnitudeValue": 45.0,
+     "magnitudeUnit": "kts",
+     "date": "2026-10-14T12:00:00Z",
+     "type": "Point",
+     "coordinates": [
+      -99.2,
+      11.3
+     ]
+    },
+    {
+     "magnitudeValue": 55.0,
+     "magnitudeUnit": "kts",
+     "date": "2026-10-14T18:00:00Z",
+     "type": "Point",
+     "coordinates": [
+      -99.7,
+      11.7
+     ]
+    },
+    {
+     "magnitudeValue": 55.0,
+     "magnitudeUnit": "kts",
+     "date": "2026-10-15T00:00:00Z",
+     "type": "Point",
+     "coordinates": [
+      -100.5,
+      12.1
+     ]
+    },
+    {
+     "magnitudeValue": 65.0,
+     "magnitudeUnit": "kts",
+     "date": "2026-10-15T06:00:00Z",
+     "type": "Point",
+     "coordinates": [
+      -101.2,
+      12.6
+     ]
+    },
+    {
+     "magnitudeValue": 80.0,
+     "magnitudeUnit": "kts",
+     "date": "2026-10-15T12:00:00Z",
+     "type": "Point",
+     "coordinates": [
+      -101.6,
+      12.9
+     ]
+    },
+    {
+     "magnitudeValue": 80.0,
+     "magnitudeUnit": "kts",
+     "date": "2026-10-15T18:00:00Z",
+     "type": "Point",
+     "coordinates": [
+      -101.6,
+      13.5
+     ]
+    }
+   ]
+  },
+  {
+   "id": "EONET_25094",
+   "title": "Hurricane Simon",
+   "description": null,
+   "link": "https://eonet.gsfc.nasa.gov/api/v3/events/EONET_25094",
+   "closed": null,
+   "categories": [
+    {
+     "id": "severeStorms",
+     "title": "Severe Storms"
+    }
+   ],
+   "sources": [
+    {
+     "id": "JTWC",
+     "url": "https://www.metoc.navy.mil/jtwc/products/ep2026.tcw"
+    }
+   ],
+   "geometry": [
+    {
+     "magnitudeValue": 85.0,
+     "magnitudeUnit": "kts",
+     "date": "2026-10-14T12:00:00Z",
+     "type": "Point",
+     "coordinates": [
+      -108,
+      19.8
+     ]
+    },
+    {
+     "magnitudeValue": 75.0,
+     "magnitudeUnit": "kts",
+     "date": "2026-10-14T18:00:00Z",
+     "type": "Point",
+     "coordinates": [
+      -108.3,
+      19.5
+     ]
+    },
+    {
+     "magnitudeValue": 55.0,
+     "magnitudeUnit": "kts",
+     "date": "2026-10-15T00:00:00Z",
+     "type": "Point",
+     "coordinates": [
+      -108.5,
+      19.2
+     ]
+    },
+    {
+     "magnitudeValue": 55.0,
+     "magnitudeUnit": "kts",
+     "date": "2026-10-15T06:00:00Z",
+     "type": "Point",
+     "coordinates": [
+      -108.5,
+      19.2
+     ]
+    },
+    {
+     "magnitudeValue": 50.0,
+     "magnitudeUnit": "kts",
+     "date": "2026-10-15T12:00:00Z",
+     "type": "Point",
+     "coordinates": [
+      -108,
+      19.2
+     ]
+    },
+    {
+     "magnitudeValue": 45.0,
+     "magnitudeUnit": "kts",
+     "date": "2026-10-15T18:00:00Z",
+     "type": "Point",
+     "coordinates": [
+      -108.2,
+      19.2
+     ]
+    }
+   ]
+  },
+  {
+   "id": "EONET_25063",
+   "title": "Hurricane Isaias",
+   "description": null,
+   "link": "https://eonet.gsfc.nasa.gov/api/v3/events/EONET_25063",
+   "closed": null,
+   "categories": [
+    {
+     "id": "severeStorms",
+     "title": "Severe Storms"
+    }
+   ],
+   "sources": [
+    {
+     "id": "NOAA_NHC",
+     "url": "https://www.nhc.noaa.gov/archive/2026/ISAIAS.shtml"
+    }
+   ],
+   "geometry": [
+    {
+     "magnitudeValue": 30.0,
+     "magnitudeUnit": "kts",
+     "date": "2026-10-10T09:00:00Z",
+     "type": "Point",
+     "coordinates": [
+      -86.5,
+      32
+     ]
+    },
+    {
+     "magnitudeValue": 30.0,
+     "magnitudeUnit": "kts",
+     "date": "2026-10-10T15:00:00Z",
+     "type": "Point",
+     "coordinates": [
+      -86.8,
+      32.8
+     ]
+    },
+    {
+     "magnitudeValue": 25.0,
+     "magnitudeUnit": "kts",
+     "date": "2026-10-10T21:00:00Z",
+     "type": "Point",
+     "coordinates": [
+      -86.9,
+      33.5
+     ]
+    },
+    {
+     "magnitudeValue": 20.0,
+     "magnitudeUnit": "kts",
+     "date": "2026-10-11T03:00:00Z",
+     "type": "Point",
+     "coordinates": [
+      -86.7,
+      35
+     ]
+    },
+    {
+     "magnitudeValue": 20.0,
+     "magnitudeUnit": "kts",
+     "date": "2026-10-11T09:00:00Z",
+     "type": "Point",
+     "coordinates": [
+      -85.9,
+      35.4
+     ]
+    },
+    {
+     "magnitudeValue": 20.0,
+     "magnitudeUnit": "kts",
+     "date": "2026-10-11T15:00:00Z",
+     "type": "Point",
+     "coordinates": [
+      -84,
+      37.5
+     ]
+    }
+   ]
+  },
+  {
+   "id": "EONET_20710",
+   "title": "Nevados del Chillan Volcano, Chile",
+   "description": null,
+   "link": "https://eonet.gsfc.nasa.gov/api/v3/events/EONET_20710",
+   "closed": null,
+   "categories": [
+    {
+     "id": "volcanoes",
+     "title": "Volcanoes"
+    }
+   ],
+   "sources": [
+    {
+     "id": "SIVolcano",
+     "url": "https://volcano.si.edu/volcano.cfm?vn=357070"
+    }
+   ],
+   "geometry": [
+    {
+     "magnitudeValue": null,
+     "magnitudeUnit": null,
+     "date": "2026-06-15T00:00:00Z",
+     "type": "Point",
+     "coordinates": [
+      -71.378,
+      -36.868
+     ]
+    }
+   ]
+  },
+  {
+   "id": "EONET_20409",
+   "title": "Telica Volcano, Nicaragua",
+   "description": null,
+   "link": "https://eonet.gsfc.nasa.gov/api/v3/events/EONET_20409",
+   "closed": null,
+   "categories": [
+    {
+     "id": "volcanoes",
+     "title": "Volcanoes"
+    }
+   ],
+   "sources": [
+    {
+     "id": "SIVolcano",
+     "url": "https://volcano.si.edu/volcano.cfm?vn=344040"
+    }
+   ],
+   "geometry": [
+    {
+     "magnitudeValue": null,
+     "magnitudeUnit": null,
+     "date": "2026-05-30T00:00:00Z",
+     "type": "Point",
+     "coordinates": [
+      -86.84,
+      12.606
+     ]
+    }
+   ]
+  },
+  {
+   "id": "EONET_20392",
+   "title": "Ivao Group Volcano, Russia",
+   "description": null,
+   "link": "https://eonet.gsfc.nasa.gov/api/v3/events/EONET_20392",
+   "closed": null,
+   "categories": [
+    {
+     "id": "volcanoes",
+     "title": "Volcanoes"
+    }
+   ],
+   "sources": [
+    {
+     "id": "SIVolcano",
+     "url": "https://volcano.si.edu/volcano.cfm?vn=290111"
+    }
+   ],
+   "geometry": [
+    {
+     "magnitudeValue": null,
+     "magnitudeUnit": null,
+     "date": "2026-05-29T00:00:00Z",
+     "type": "Point",
+     "coordinates": [
+      149.6762,
+      45.7593
+     ]
+    }
+   ]
+  },
+  {
+   "id": "EONET_20395",
+   "title": "Titan Ridge Volcano, Papua New Guinea",
+   "description": null,
+   "link": "https://eonet.gsfc.nasa.gov/api/v3/events/EONET_20395",
+   "closed": null,
+   "categories": [
+    {
+     "id": "volcanoes",
+     "title": "Volcanoes"
+    }
+   ],
+   "sources": [
+    {
+     "id": "EO",
+     "url": "https://science.nasa.gov/earth/earth-observatory/new-eruption-in-the-bismarck-sea/"
+    },
+    {
+     "id": "SIVolcano",
+     "url": "https://volcano.si.edu/volcano.cfm?vn=250030"
+    }
+   ],
+   "geometry": [
+    {
+     "magnitudeValue": null,
+     "magnitudeUnit": null,
+     "date": "2026-05-28T00:00:00Z",
+     "type": "Point",
+     "coordinates": [
+      147.78,
+      -3.03
+     ]
+    }
+   ]
+  },
+  {
+   "id": "EONET_20411",
+   "title": "Kikai Volcano, Japan",
+   "description": null,
+   "link": "https://eonet.gsfc.nasa.gov/api/v3/events/EONET_20411",
+   "closed": null,
+   "categories": [
+    {
+     "id": "volcanoes",
+     "title": "Volcanoes"
+    }
+   ],
+   "sources": [
+    {
+     "id": "SIVolcano",
+     "url": "https://volcano.si.edu/volcano.cfm?vn=282060"
+    }
+   ],
+   "geometry": [
+    {
+     "magnitudeValue": null,
+     "magnitudeUnit": null,
+     "date": "2026-05-17T00:00:00Z",
+     "type": "Point",
+     "coordinates": [
+      130.305,
+      30.793
+     ]
+    }
+   ]
+  }
+ ]
+}

@@ -1,21 +1,26 @@
 import {
   DEFAULT_CONFIG,
+  FIRE_BOUNDS,
   groupByZone,
   isStale,
   RADARS,
   SEVERITIES,
   type AlertConfig,
   type CctvCamera,
+  type FireHotspot,
   type HazardKind,
   type LatLng,
   type LocalizedText,
+  type NasaEvent,
+  type NasaEventCategory,
   type Observation,
   type RadarFrame,
   type SourceId,
   type SourceResult,
   type ZoneFeature,
+  type ZoneIndex,
 } from '@hw/core';
-import { ENDPOINTS, type RunnerFeed } from '@hw/sources';
+import { ENDPOINTS, EVENT_CAP, FIRE_CAP, TRACK_CAP, type RunnerFeed } from '@hw/sources';
 import type { FeedMap } from './store';
 
 // Anyone holding INGEST_TOKEN can write these feeds, and they reach every push subscriber and the web/app UI.
@@ -100,15 +105,19 @@ function text(v: unknown, field: string): LocalizedText {
   return { th: str(v.th, `${field}.th`, MAX.name), en: str(v.en, `${field}.en`, MAX.name) };
 }
 
-function location(v: unknown): LatLng {
-  if (!isRecord(v)) return fail('location: expected {lat, lng}');
+type Bounds = { minLat: number; maxLat: number; minLng: number; maxLng: number };
+/** EONET events are worldwide (world map layer), so only the globe limits them. */
+const WORLD: Bounds = { minLat: -90, maxLat: 90, minLng: -180, maxLng: 180 };
+
+function location(v: unknown, field = 'location', box: Bounds = THAILAND): LatLng {
+  if (!isRecord(v)) return fail(`${field}: expected {lat, lng}`);
   return {
-    lat: num(v.lat, 'location.lat', [THAILAND.minLat, THAILAND.maxLat]),
-    lng: num(v.lng, 'location.lng', [THAILAND.minLng, THAILAND.maxLng]),
+    lat: num(v.lat, `${field}.lat`, [box.minLat, box.maxLat]),
+    lng: num(v.lng, `${field}.lng`, [box.minLng, box.maxLng]),
   };
 }
 
-function url(v: unknown, field: string, origins: Set<string>): string {
+function url(v: unknown, field: string, origins: Set<string> | 'https'): string {
   const s = str(v, field, MAX.url);
   let u: URL;
   try {
@@ -116,7 +125,9 @@ function url(v: unknown, field: string, origins: Set<string>): string {
   } catch {
     return fail(`${field}: not a URL`);
   }
-  if (u.username || u.password || !origins.has(u.origin)) return fail(`${field}: host not allowed`);
+  // EONET links point at many agencies (JTWC, NHC, Smithsonian...), so those are limited to https rather than a host list.
+  const allowed = origins === 'https' ? u.protocol === 'https:' : origins.has(u.origin);
+  if (u.username || u.password || !allowed) return fail(`${field}: host not allowed`);
   return u.href;
 }
 
@@ -185,12 +196,63 @@ const camera: ItemCheck = (raw) => {
   return out;
 };
 
+const FIRE_CONFIDENCE: readonly FireHotspot['confidence'][] = ['low', 'nominal', 'high'];
+const FIRE_SATELLITES: readonly FireHotspot['satellite'][] = ['N20', 'N21', 'SNPP', 'MODIS'];
+const EVENT_CATEGORIES: readonly NasaEventCategory[] = ['severeStorms', 'volcanoes', 'floods', 'landslides'];
+/** Largest single-pixel FRP on record is a few thousand MW; this only stops absurd values. */
+const FRP_RANGE: [number, number] = [0, 50_000];
+/** Strongest cyclones peak near 190 kts. */
+const WIND_KTS_RANGE: [number, number] = [0, 300];
+
+const fire: ItemCheck = (raw, now) => {
+  if (!isRecord(raw)) return fail('item: expected object');
+  if (!FIRE_CONFIDENCE.includes(raw.confidence as FireHotspot['confidence'])) return fail('confidence: unknown');
+  if (!FIRE_SATELLITES.includes(raw.satellite as FireHotspot['satellite'])) return fail('satellite: unknown');
+  if (typeof raw.day !== 'boolean') return fail('day: expected boolean');
+  return {
+    id: str(raw.id, 'id', MAX.id),
+    location: location(raw.location, 'location', FIRE_BOUNDS),
+    detectedAt: time(raw.detectedAt, 'detectedAt', now),
+    frp: raw.frp === null ? null : num(raw.frp, 'frp', FRP_RANGE),
+    confidence: raw.confidence as FireHotspot['confidence'],
+    satellite: raw.satellite as FireHotspot['satellite'],
+    day: raw.day,
+  } satisfies FireHotspot;
+};
+
+const nasaEvent: ItemCheck = (raw, now) => {
+  if (!isRecord(raw)) return fail('item: expected object');
+  if (!EVENT_CATEGORIES.includes(raw.category as NasaEventCategory)) return fail('category: unknown');
+  if (!Array.isArray(raw.track)) return fail('track: expected array');
+  if (raw.track.length > TRACK_CAP) return fail(`track: more than ${TRACK_CAP} points`);
+  const track = raw.track.map((p, i) => {
+    if (!isRecord(p)) return fail(`track[${i}]: expected object`);
+    return {
+      at: time(p.at, `track[${i}].at`, now),
+      location: location(p.location, `track[${i}].location`, WORLD),
+      windKts: p.windKts === null ? null : num(p.windKts, `track[${i}].windKts`, WIND_KTS_RANGE),
+    };
+  });
+  return {
+    id: str(raw.id, 'id', MAX.id),
+    category: raw.category as NasaEventCategory,
+    title: str(raw.title, 'title', MAX.name),
+    location: location(raw.location, 'location', WORLD),
+    track,
+    updatedAt: time(raw.updatedAt, 'updatedAt', now),
+    url: raw.url === null ? null : url(raw.url, 'url', 'https'),
+  } satisfies NasaEvent;
+};
+
 export const RUNNER_SPEC: Record<RunnerFeed, FeedSpec> = {
   flood: { source: 'bma-flood', maxItems: 2000, item: observation('flood', 'bma-flood') },
   rain: { source: 'bma-rain', maxItems: 2000, item: observation('rain', 'bma-rain') },
   waterlevel: { source: 'thaiwater', maxItems: 5000, item: observation('waterlevel', 'thaiwater') },
   radar: { source: 'thaiwater', maxItems: 100, item: radarFrame },
   cctv: { source: 'bma-traffic', maxItems: 5000, item: camera },
+  // Display only: not in ALERT_FEEDS, so they never drive pushes or suspiciousJump.
+  fires: { source: 'nasa-firms', maxItems: FIRE_CAP, item: fire },
+  events: { source: 'nasa-eonet', maxItems: EVENT_CAP, item: nasaEvent },
 };
 
 export interface Dropped {
@@ -285,7 +347,7 @@ function readings(feeds: FeedMap, cfg: AlertConfig, now: Date): Observation[] {
   );
 }
 
-function dangerByDistrict(list: Observation[], districts: ZoneFeature[]) {
+function dangerByDistrict(list: Observation[], districts: ZoneFeature[] | ZoneIndex) {
   const groups = groupByZone(list, districts);
   const withData = [...groups].filter(([, inside]) => inside.length).map(([id]) => id);
   const danger = new Set(withData.filter((id) => groups.get(id)!.some((o) => o.severity === 'danger')));
@@ -299,7 +361,7 @@ function dangerByDistrict(list: Observation[], districts: ZoneFeature[]) {
 export function suspiciousJump(
   prev: FeedMap | null | undefined,
   next: FeedMap,
-  districts: ZoneFeature[],
+  districts: ZoneFeature[] | ZoneIndex,
   now: Date = new Date(),
   limits: { minNewDanger: number; minShare: number } = JUMP_LIMITS,
   cfg: AlertConfig = DEFAULT_CONFIG,

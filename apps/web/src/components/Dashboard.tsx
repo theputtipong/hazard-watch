@@ -3,13 +3,23 @@
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
-import { activeRegions, DEFAULT_CONFIG, groupByZone, isStale, summarizeZone, zoneCenter, type DashboardSnapshot, type WeatherNow } from '@hw/core';
+import {
+  activeRegions,
+  DEFAULT_CONFIG,
+  groupByZone,
+  isStale,
+  nasaNear,
+  summarizeZone,
+  zoneCenter,
+  type DashboardSnapshot,
+  type WeatherNow,
+} from '@hw/core';
 import { t, type Lang, type MessageKey } from '@hw/core/i18n';
 import { WEB } from '@/config';
 import { mapCredits } from '@/content/sources';
 import { fetchSnapshot, fetchWeather } from '@/lib/api';
 import { radarFor, radarGroups } from '@/lib/radar';
-import { floodCounts, nearest, quakeSummary, uniqueBy } from '@/lib/derive';
+import { floodCounts, LOCAL_KM, nearest, quakeSummary, uniqueBy, withinKm } from '@/lib/derive';
 import { feedFreshness, freshnessNote } from '@/lib/freshness';
 import { useLocation } from '@/lib/useLocation';
 import { useZones } from '@/lib/useZones';
@@ -27,13 +37,24 @@ import { LoadStateContext, type LoadState } from '@/lib/loadState';
 import { CctvList } from './CctvList';
 import { FeedStatus } from './FeedStatus';
 import { FloodCard, Pm25Card, QuakeCard, WaterLevelCard, WeatherCard } from './HazardCards';
+import { NasaCard } from './NasaCard';
 import { Header } from './Header';
 import { SourceLinks } from './SourceLinks';
 import type { LayerKey, Layers } from '@/lib/layers';
 
 const MapView = dynamic(() => import('./MapView'), { ssr: false, loading: () => <div className="h-[420px] bg-surface-sunken sm:h-[520px]" /> });
 
-const LAYER_LABEL: Record<LayerKey, MessageKey> = { zones: 'zone.layer', radar: 'layer.radar', flood: 'layer.flood', water: 'layer.water', pm25: 'layer.pm25', cctv: 'layer.cctv' };
+// NASA point layers are listed ahead of layers.ts gaining them (s03-map-1); only keys present in `layers` show.
+const LAYER_LABEL: Partial<Record<LayerKey | 'firms' | 'events', MessageKey>> = {
+  zones: 'zone.layer',
+  radar: 'layer.radar',
+  flood: 'layer.flood',
+  water: 'layer.water',
+  pm25: 'layer.pm25',
+  cctv: 'layer.cctv',
+  firms: 'layer.nasa.firms',
+  events: 'layer.nasa.events',
+};
 
 export function Dashboard({ lang, initialArea }: { lang: Lang; initialArea?: string | null }) {
   const { location: deviceLocation, status, locate } = useLocation();
@@ -83,10 +104,10 @@ export function Dashboard({ lang, initialArea }: { lang: Lang; initialArea?: str
     ],
     [snapshot],
   );
-  const zones = useZones(readings, initialArea, loadPickedArea);
-  const focusZone = zones.selected ?? zones.path.at(-1) ?? null;
   // Location off: the area picked on the map stands in for the device position.
   const located = status === 'granted';
+  const zones = useZones(readings, initialArea, loadPickedArea, located ? deviceLocation : null);
+  const focusZone = zones.selected ?? zones.path.at(-1) ?? null;
   const pickedZone = located ? null : focusZone;
   const location = useMemo(() => (pickedZone ? zoneCenter(pickedZone) : deviceLocation), [pickedZone, deviceLocation]);
 
@@ -107,11 +128,17 @@ export function Dashboard({ lang, initialArea }: { lang: Lang; initialArea?: str
     const cfg = DEFAULT_CONFIG;
     const fresh = <T extends { observedAt: string }>(items: T[]) => items.filter((o) => !isStale(o.observedAt, cfg));
     const quakeFeeds = [snapshot?.edge?.feeds.quakesTmd, snapshot?.edge?.feeds.quakesUsgs];
+    const fires = snapshot?.runner?.feeds.fires;
+    const events = snapshot?.runner?.feeds.events;
+    // FIRMS lags ~3 h by design, so only a failed fetch is worth a note, not age.
+    const firesFresh = feedFreshness(fires, cfg, new Date(), (f: { detectedAt?: string }) => f.detectedAt);
+    // Bangkok-only feeds: outside their reach the card is left out rather than showing Bangkok's numbers.
+    const floodLocal = withinKm(flood, location, LOCAL_KM.flood);
     return {
       waterStations: water,
       nearestWater: nearest(fresh(water.filter((o) => o.value !== null)), location)[0] ?? null,
       highWater: fresh(water)
-        .filter((o) => o.value !== null && o.value >= cfg.waterLevel.watchPct)
+        .filter((o) => o.value !== null && o.value >= cfg.waterLevel.watchPct && withinKm([o], location, LOCAL_KM.water))
         .sort((a, b) => b.value! - a.value!),
       notes: {
         pm25: freshnessNote(feedFreshness(snapshot?.edge?.feeds.pm25, cfg), lang),
@@ -127,14 +154,21 @@ export function Dashboard({ lang, initialArea }: { lang: Lang; initialArea?: str
       nearestPm: nearest(fresh(pm.filter((s) => s.value !== null)), location)[0] ?? null,
       floodPoints: flood,
       // A failed fetch must never read as "normal".
-      floodAvailable: fresh(flood).length > 0,
+      floodAvailable: floodLocal && fresh(flood).length > 0,
+      floodLocal,
       quakeAvailable: !!(snapshot?.edge?.feeds.quakesTmd?.items.length || snapshot?.edge?.feeds.quakesUsgs?.items.length),
       // Stale readings are only faded on the map, never counted.
       counts: floodCounts(fresh(flood)),
       nearestFlooded: nearest(fresh(flood).filter((p) => !p.offline && (p.severity === 'warn' || p.severity === 'danger')), location)[0] ?? null,
       cameras: cams,
       // Several cameras often share one junction name; list each junction once.
-      nearCams: uniqueBy(nearest(cams, location, cams.length), (c) => c.name.th).slice(0, WEB.nearbyCameras),
+      nearCams: uniqueBy(
+        nearest(cams, location, cams.length).filter((c) => c.km <= LOCAL_KM.cctv),
+        (c) => c.name.th,
+      ).slice(0, WEB.nearbyCameras),
+      nasa: fires || events ? nasaNear(fires?.items ?? [], events?.items ?? [], location) : null,
+      nasaAt: firesFresh?.at ?? events?.fetchedAt ?? null,
+      nasaNote: firesFresh?.state === 'failed' ? freshnessNote(firesFresh, lang) : undefined,
       quakes: quakeSummary(snapshot, location, DEFAULT_CONFIG),
     };
   }, [snapshot, location, lang]);
@@ -163,11 +197,18 @@ export function Dashboard({ lang, initialArea }: { lang: Lang; initialArea?: str
       subdistrict: picked.find((z) => z.properties.level === 3) ?? null,
     };
   }, [located, deviceLocation, zones]);
+  // "Right now" speaks for the province of the area in view (Bangkok by default), not the whole country.
+  const areaZone = located ? alertArea.district : pickedZone;
+  const province = useMemo(
+    () => (areaZone ? zones.byId(areaZone.properties.id.slice(0, 4)) : zones.provinceAt(location)),
+    [areaZone, zones, location],
+  );
+  const regionName = province ? zoneLabel(province, lang) : activeRegions().map((r) => r.name[lang]).join(', ');
   const spoken = useMemo(
     () =>
       spokenSummary({
         lang,
-        area: activeRegions().map((r) => r.name[lang]).join(', '),
+        area: regionName,
         updatedAt,
         weather,
         pm: view.nearestPm,
@@ -176,7 +217,7 @@ export function Dashboard({ lang, initialArea }: { lang: Lang; initialArea?: str
         quakes: { available: view.quakeAvailable, alerts: view.quakes.alerts },
         focus: focusZone ? { name: zoneLabel(focusZone, lang), summary: zones.focusSummary } : null,
       }),
-    [lang, updatedAt, weather, view, focusZone, zones.focusSummary],
+    [lang, regionName, updatedAt, weather, view, focusZone, zones.focusSummary],
   );
   const radarIds = (snapshot?.runner?.feeds.radar?.items ?? []).map((f) => f.radarId);
   const radarId = radarChoice ?? radarFor(location, radarIds, WEB.map.defaultRadar);
@@ -185,11 +226,13 @@ export function Dashboard({ lang, initialArea }: { lang: Lang; initialArea?: str
   const clock = (iso: string) =>
     new Date(iso).toLocaleTimeString(lang === 'th' ? 'th-TH' : 'en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok' });
   const summaryLines = useMemo(() => {
-    const regionName = activeRegions()
-      .map((r) => r.name[lang])
-      .join(', ');
-    const lines = [{ label: t('area.now', lang), area: regionName, summary: summarizeZone(readings, DEFAULT_CONFIG) }];
-    const mine = located ? alertArea.district : pickedZone;
+    const regionReadings = province ? (groupByZone(readings, [province]).get(province.properties.id) ?? []) : readings;
+    const mine = areaZone;
+    // A picked province is already the "right now" line; don't say it twice.
+    const lines =
+      mine && mine.properties.id === province?.properties.id
+        ? []
+        : [{ label: t('area.now', lang), area: regionName, summary: summarizeZone(regionReadings, DEFAULT_CONFIG) }];
     if (mine) {
       const inside = groupByZone(readings, [mine]).get(mine.properties.id) ?? [];
       lines.unshift({
@@ -199,7 +242,7 @@ export function Dashboard({ lang, initialArea }: { lang: Lang; initialArea?: str
       });
     }
     return lines;
-  }, [readings, located, alertArea, pickedZone, lang]);
+  }, [readings, located, areaZone, province, regionName, lang]);
   const toggle = (key: LayerKey) => setLayers((l) => ({ ...l, [key]: !l[key] }));
 
   return (
@@ -272,7 +315,9 @@ export function Dashboard({ lang, initialArea }: { lang: Lang; initialArea?: str
         <section aria-label={t('map.title', lang)} className="min-w-0 flex-[999_1_560px] overflow-hidden rounded-card border border-line bg-surface">
           <div className="flex flex-wrap items-center gap-2 border-b border-line px-3.5 py-3">
             <strong className="mr-1.5 text-title">{t('map.layers', lang)}</strong>
-            {(Object.keys(LAYER_LABEL) as LayerKey[]).map((key) => (
+            {(Object.keys(LAYER_LABEL) as LayerKey[])
+              .filter((key) => typeof layers[key] === 'boolean')
+              .map((key) => (
               <button
                 key={key}
                 type="button"
@@ -282,7 +327,7 @@ export function Dashboard({ lang, initialArea }: { lang: Lang; initialArea?: str
                   layers[key] ? 'border-ink bg-ink text-on-ink' : 'border-line-control bg-surface text-ink'
                 }`}
               >
-                {t(LAYER_LABEL[key], lang)}
+                {t(LAYER_LABEL[key]!, lang)}
               </button>
             ))}
           </div>
@@ -303,6 +348,8 @@ export function Dashboard({ lang, initialArea }: { lang: Lang; initialArea?: str
             zones={zones}
             palette={palette}
             dark={prefs.dark}
+            fires={snapshot?.runner?.feeds.fires ?? null}
+            events={snapshot?.runner?.feeds.events ?? null}
           />
           {layers.radar && (
             <div className="flex flex-wrap items-center gap-2 border-t border-line px-3.5 py-2.5 text-body">
@@ -346,9 +393,13 @@ export function Dashboard({ lang, initialArea }: { lang: Lang; initialArea?: str
         <aside className="flex min-w-0 flex-[1_1_340px] flex-col gap-3.5 max-lg:order-first">
           <WeatherCard lang={lang} weather={weather} />
           <Pm25Card lang={lang} station={view.nearestPm} note={view.notes.pm25} />
-          <FloodCard lang={lang} counts={view.counts} nearestFlooded={view.nearestFlooded} available={view.floodAvailable} note={view.notes.flood} />
+          {/* Until the snapshot arrives the card shows "loading"; after, only where BMA sensors reach. */}
+          {(!snapshot || view.floodLocal) && (
+            <FloodCard lang={lang} counts={view.counts} nearestFlooded={view.nearestFlooded} available={view.floodAvailable} note={view.notes.flood} />
+          )}
           <QuakeCard lang={lang} alerts={view.quakes.alerts} latest={view.quakes.latestRegional} available={view.quakeAvailable} note={view.notes.quake} />
           <WaterLevelCard lang={lang} nearest={view.nearestWater} high={view.highWater} note={view.notes.water} />
+          <NasaCard lang={lang} near={view.nasa} updatedAt={view.nasaAt} note={view.nasaNote} />
           <AlertsCard lang={lang} district={alertArea.district} subdistrict={alertArea.subdistrict} />
         </aside>
 
@@ -363,7 +414,7 @@ export function Dashboard({ lang, initialArea }: { lang: Lang; initialArea?: str
       </main>
       <footer className="mx-auto flex max-w-[1360px] flex-wrap items-center justify-between gap-4 px-4 pb-8 text-caption text-ink-muted sm:px-6">
         <span className="flex flex-[1_1_520px] flex-col gap-1">
-          <span>{t('app.coverage', lang, { regions: activeRegions().map((r) => r.name[lang]).join(', ') })}</span>
+          <span>{t('app.coverageAll', lang)}</span>
           <SourceLinks lang={lang} />
           <span>{mapCredits[lang]}</span>
           <span>{t('sources.disclaimer', lang)}</span>

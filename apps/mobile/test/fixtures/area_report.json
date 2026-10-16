@@ -13,7 +13,7 @@
     },
     "center": {
       "lat": 13.75565,
-      "lng": 100.49867
+      "lng": 100.49865
     }
   },
   "severity": "warn",
@@ -127,6 +127,24 @@
     "km": 702,
     "severity": "ok"
   },
+  "nasa": {
+    "fires": {
+      "count": 2,
+      "nearestKm": 2.4,
+      "radiusKm": 25
+    },
+    "events": [
+      {
+        "id": "EONET_1",
+        "category": "severeStorms",
+        "title": "Typhoon Test",
+        "km": 366.8,
+        "updatedAt": "2026-10-05T06:00:00Z",
+        "windKts": 55,
+        "url": "https://www.gdacs.org/report.aspx?eventid=1"
+      }
+    ]
+  },
   "feeds": [
     {
       "topic": "flood",
@@ -160,6 +178,18 @@
     },
     {
       "topic": "quakes",
+      "state": "live",
+      "lastOkAt": "2026-10-05T09:50:00Z",
+      "failingSince": null
+    },
+    {
+      "topic": "fires",
+      "state": "live",
+      "lastOkAt": "2026-10-05T09:50:00Z",
+      "failingSince": null
+    },
+    {
+      "topic": "events",
       "state": "live",
       "lastOkAt": "2026-10-05T09:50:00Z",
       "failingSince": null

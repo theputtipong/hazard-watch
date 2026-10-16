@@ -1,8 +1,8 @@
 import { t, type Lang } from './i18n';
 import type { DashboardSnapshot, SourceResult } from './types';
 
-/** Design system FeedStatus order; both quake sources count as one topic. */
-export const FEED_TOPICS = ['flood', 'rain', 'waterlevel', 'radar', 'pm25', 'quakes'] as const;
+/** Design system FeedStatus order; both quake sources count as one topic. NASA topics go last: they are context, not alerts. */
+export const FEED_TOPICS = ['flood', 'rain', 'waterlevel', 'radar', 'pm25', 'quakes', 'fires', 'events'] as const;
 export type FeedTopic = (typeof FEED_TOPICS)[number];
 
 /** Must match the group limits in tools/monitor/config.json. */
@@ -23,6 +23,9 @@ const SOURCES: Record<FeedTopic, { group: 'edge' | 'runner'; feeds: string[] }> 
   radar: { group: 'runner', feeds: ['radar'] },
   pm25: { group: 'edge', feeds: ['pm25'] },
   quakes: { group: 'edge', feeds: ['quakesTmd', 'quakesUsgs'] },
+  // Fetched by the runner: FIRMS CSVs are too big to parse inside the Worker's CPU budget.
+  fires: { group: 'runner', feeds: ['fires'] },
+  events: { group: 'runner', feeds: ['events'] },
 };
 
 const RANK = { live: 0, stale: 1, down: 2 } as const;

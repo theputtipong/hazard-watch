@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { SOURCE_META, type SourceId } from '../src';
 
-const ALL: SourceId[] = ['open-meteo', 'tmd', 'air4thai', 'gistda', 'usgs', 'bma-flood', 'bma-rain', 'bma-traffic', 'thaiwater'];
+const ALL: SourceId[] = ['open-meteo', 'tmd', 'air4thai', 'gistda', 'usgs', 'bma-flood', 'bma-rain', 'bma-traffic', 'thaiwater', 'nasa-firms', 'nasa-eonet', 'nasa-gibs'];
 
 describe('SOURCE_META', () => {
   it('has an entry for every source, keyed by its own id', () => {

@@ -1,7 +1,7 @@
 import namesFile from '../../../web/public/geo/names.json';
 import { isPushEndpoint } from './notifier';
 import { cleanPrefs, type IncomingPrefs } from './prefs';
-import { DISTRICT_IDS } from './run';
+import { DISTRICT_IDS } from '../geo';
 import type { SubscriptionPrefs, SubscriptionRow } from './store';
 
 /** A real subscribe body is ~600 bytes; unsubscribe/test bodies are smaller. */

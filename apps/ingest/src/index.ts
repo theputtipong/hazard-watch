@@ -5,7 +5,8 @@ import { Hono, type Context } from 'hono';
 import { cors } from 'hono/cors';
 import { INGEST, THAILAND_BOUNDS } from './config';
 import { parseEndpointBody, parseSubscribeBody, rateLimit, readJsonBody, type PushAction } from './push/guard';
-import { DISTRICTS, messageFor, notifierFor, sendAlerts, type PushEnv } from './push/run';
+import { DISTRICT_INDEX } from './geo';
+import { messageFor, notifierFor, sendAlerts, type PushEnv } from './push/run';
 import { deleteSubscription, getSubscription, markSent, recordDelivery, sentSince, subscriptionId, upsertSubscription } from './push/store';
 import { keepRecentRelay, relayFeed, relayIsFresh } from './relay';
 import { isPushHeld, KEYS, readGroup, readRadarBundle, unpackRadar, writeGroup, type FeedMap, type GroupSnapshot } from './store';
@@ -323,7 +324,7 @@ async function writeRunnerFeeds(
   now: Date,
   label: 'runner' | 'relay',
 ): Promise<{ snapshot: GroupSnapshot; held: boolean }> {
-  const jump = suspiciousJump(prev?.feeds, feeds, DISTRICTS, now);
+  const jump = suspiciousJump(prev?.feeds, feeds, DISTRICT_INDEX, now);
   if (jump.suspicious) console.log(`${label} push held`, JSON.stringify({ newDanger: jump.newDanger.length, districtsWithData: jump.districtsWithData }));
   const snapshot = await writeGroup(c.env.SNAPSHOTS, KEYS.runner, feeds, now, {
     prev,

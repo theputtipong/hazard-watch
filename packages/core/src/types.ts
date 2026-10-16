@@ -84,7 +84,44 @@ export type SourceId =
   | 'bma-flood'
   | 'bma-rain'
   | 'bma-traffic'
-  | 'thaiwater';
+  | 'thaiwater'
+  | 'nasa-firms'
+  | 'nasa-eonet'
+  | 'nasa-gibs';
+
+/** One FIRMS row, kept compact because the snapshot can hold thousands in the burning season. */
+export interface FireHotspot {
+  /** `${sat}:${lat}:${lng}:${acqUtc}`: stable across fetches so overlapping files dedupe. */
+  id: string;
+  /** Rounded to 3 decimals (~100 m), finer than the 375 m pixel is noise. */
+  location: LatLng;
+  /** ISO UTC from acq_date + acq_time. */
+  detectedAt: string;
+  /** Fire radiative power, MW. */
+  frp: number | null;
+  /** MODIS 0–100 is mapped: <30 low, <80 nominal, else high. */
+  confidence: 'low' | 'nominal' | 'high';
+  satellite: 'N20' | 'N21' | 'SNPP' | 'MODIS';
+  day: boolean;
+}
+
+export type NasaEventCategory = 'severeStorms' | 'volcanoes' | 'floods' | 'landslides';
+
+/** One open EONET event; wildfires are left out because FIRMS covers them. */
+export interface NasaEvent {
+  /** EONET id, e.g. EONET_1234. */
+  id: string;
+  category: NasaEventCategory;
+  /** English only from EONET; the UI prefixes a localized category word. */
+  title: string;
+  /** Latest geometry point (a polygon becomes its centroid). */
+  location: LatLng;
+  /** Up to 40 newest points, storms only. */
+  track: { at: string; location: LatLng; windKts: number | null }[];
+  updatedAt: string;
+  /** sources[0].url, https only. */
+  url: string | null;
+}
 
 export interface SourceResult<T> {
   source: SourceId;
@@ -115,5 +152,7 @@ export interface DashboardSnapshot {
     waterlevel?: SourceResult<Observation>;
     radar?: SourceResult<RadarFrame>;
     cctv?: SourceResult<CctvCamera>;
+    fires?: SourceResult<FireHotspot>;
+    events?: SourceResult<NasaEvent>;
   }> | null;
 }

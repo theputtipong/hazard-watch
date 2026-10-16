@@ -2,9 +2,28 @@
 
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { CircleMarker, GeoJSON, ImageOverlay, MapContainer, Marker, Popup, TileLayer, Tooltip, useMap, useMapEvents } from 'react-leaflet';
-import { DEFAULT_CONFIG, isStale, RADARS, regionFor, type CctvCamera, type LatLng, type Observation, type Severity, type WeatherNow, type ZoneFeature } from '@hw/core';
+import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { CircleMarker, GeoJSON, ImageOverlay, MapContainer, Marker, Polyline, Popup, TileLayer, Tooltip, useMap, useMapEvents, WMSTileLayer } from 'react-leaflet';
+import {
+  DEFAULT_CONFIG,
+  DEFAULT_VIEW,
+  isStale,
+  NASA_ATTRIBUTION,
+  NASA_LAYERS,
+  RADARS,
+  regionFor,
+  zoneCenter,
+  type CctvCamera,
+  type FireHotspot,
+  type LatLng,
+  type NasaEvent,
+  type NasaLayerId,
+  type Observation,
+  type Severity,
+  type SourceResult,
+  type WeatherNow,
+  type ZoneFeature,
+} from '@hw/core';
 import { t, type Lang } from '@hw/core/i18n';
 import { WEB } from '@/config';
 import { radarImageUrl } from '@/lib/api';
@@ -13,7 +32,8 @@ import { openCamera, safeCameraUrl } from '@/lib/openCamera';
 import type { MapPalette } from '@/lib/prefs';
 import type { ZoneView } from '@/lib/useZones';
 import { RadarDrift } from './Wind';
-import { cctvIcon, floodIcon, LEGEND_GLYPH, pm25Icon, waterIcon, youIcon } from './mapIcons';
+import { cctvIcon, eventIcon, floodIcon, LEGEND_GLYPH, pm25Icon, waterIcon, youIcon } from './mapIcons';
+import { gibsDataDate, NASA_RASTER_IDS, toLeaflet, useNasaLayers, type NasaLayerState } from '@/lib/nasaLayers';
 import { zoneLabel } from '@/lib/zoneText';
 import type { VectorBaseMap } from '@/lib/vectorBaseMap';
 
@@ -35,17 +55,29 @@ interface Props {
   zones: ZoneView;
   palette: MapPalette;
   dark: boolean;
+  /** runner.feeds.fires from /v1/snapshot (FIRMS hotspots). Optional so the map works before the feed exists. */
+  fires?: SourceResult<FireHotspot> | null;
+  /** runner.feeds.events from /v1/snapshot (open NASA EONET events). */
+  events?: SourceResult<NasaEvent> | null;
 }
 
-const Z = { cctv: 100, pm25: 200, water: 250, flood: 300, you: 1000 } as const;
+const Z = { event: 50, cctv: 100, pm25: 200, water: 250, flood: 300, you: 1000 } as const;
 const FLOOD_RANK: Record<Severity, number> = { ok: 0, watch: 1, warn: 2, danger: 3 };
 const fade = (o: Observation) => (isStale(o.observedAt, DEFAULT_CONFIG) ? WEB.map.staleOpacity : 1);
 
-export default function MapView({ lang, center, located, onLocate, layers, radarId, radarTime, radarFocus, weather, floodPoints, pmStations, cameras, waterStations, zones, palette, dark }: Props) {
+/** Lets the map be dragged sideways forever (worldCopyJump) but not past the poles into grey. */
+const WORLD_BOUNDS: L.LatLngBoundsExpression = [
+  [-85.05, -100_000],
+  [85.05, 100_000],
+];
+
+export default function MapView({ lang, center, located, onLocate, layers, radarId, radarTime, radarFocus, weather, floodPoints, pmStations, cameras, waterStations, zones, palette, dark, fires, events }: Props) {
   const bounds = RADARS[radarId]?.bounds;
-  const startZoom = regionFor(center).zoom;
-  const [zoom, setZoom] = useState(startZoom);
+  // First view: GPS fix, else the picked area, else Bangkok. Never the country centre (regionFor(null)).
+  const [start] = useState(() => startView(center, located, zones.selected ?? zones.path.at(-1) ?? null));
+  const [zoom, setZoom] = useState(start.zoom);
   const [map, setMap] = useState<L.Map | null>(null);
+  const [nasa, setNasa] = useNasaLayers();
   const showCams = layers.cctv && zoom >= WEB.map.cctvMinZoom;
   const online = floodPoints.filter((p) => !p.offline);
   const normal = online.filter((p) => p.severity === 'ok');
@@ -53,14 +85,29 @@ export default function MapView({ lang, center, located, onLocate, layers, radar
 
   return (
     <div className="relative">
-      <MapContainer ref={setMap} center={[center.lat, center.lng]} zoom={startZoom} maxZoom={WEB.map[WEB.map.tileProvider].maxZoom} scrollWheelZoom className="h-[420px] w-full sm:h-[520px]">
+      <MapContainer
+        ref={setMap}
+        {...(start.bounds ? { bounds: start.bounds, boundsOptions: { padding: [WEB.zones.fitPadding, WEB.zones.fitPadding] } } : { center: [start.center.lat, start.center.lng], zoom: start.zoom })}
+        minZoom={WEB.map.worldMinZoom}
+        maxZoom={WEB.map[WEB.map.tileProvider].maxZoom}
+        worldCopyJump
+        maxBounds={WORLD_BOUNDS}
+        maxBoundsViscosity={1}
+        scrollWheelZoom
+        className="h-[420px] w-full sm:h-[520px]"
+      >
         <BaseTiles dark={dark} lang={lang} />
+        {nasa.raster && <GibsLayer id={nasa.raster} />}
         <ZoomWatcher onZoom={setZoom} />
         <FollowFirstFix center={center} located={located} />
         <FlyToRadar radarId={radarId} focus={radarFocus} />
         <FitToFocus focus={zones.selected ?? zones.path.at(-1) ?? null} depth={zones.path.length} center={center} />
         {layers.zones && <ZoneLayer lang={lang} zones={zones} palette={palette} />}
         {layers.radar && bounds && <ImageOverlay key={`${radarId}:${radarTime}`} url={radarImageUrl(radarId, radarTime ?? undefined)} bounds={bounds} opacity={WEB.map.radarOpacity} />}
+        {nasa.events && <EventLayer lang={lang} items={events?.items ?? []} />}
+        {nasa.firms && <FireLayer lang={lang} items={fires?.items ?? []} zoom={zoom} />}
+        {nasa.firms && <Credit text={NASA_ATTRIBUTION.firms} />}
+        {nasa.events && <Credit text={NASA_ATTRIBUTION.eonet} />}
 
         {showCams &&
           cameras.map((c) => (
@@ -166,7 +213,8 @@ export default function MapView({ lang, center, located, onLocate, layers, radar
         )}
       </MapContainer>
       {map && <MapButtons map={map} lang={lang} center={center} located={located} onLocate={onLocate} />}
-      <Legend lang={lang} layers={layers} palette={palette} />
+      <Legend lang={lang} layers={layers} palette={palette} nasa={nasa} />
+      <NasaControl lang={lang} nasa={nasa} onChange={setNasa} fires={fires ?? null} events={events ?? null} />
       {layers.radar && <RadarDrift lang={lang} weather={weather} />}
       {layers.cctv && !showCams && (
         <p className="pointer-events-none absolute bottom-6 left-1/2 z-[1000] -translate-x-1/2 rounded-full bg-ink/85 px-3 py-1 text-caption text-on-ink">
@@ -304,6 +352,8 @@ function FitToFocus({ focus, depth, center }: { focus: ZoneFeature | null; depth
 
 function ZoomWatcher({ onZoom }: { onZoom: (zoom: number) => void }) {
   const map = useMapEvents({ zoomend: () => onZoom(map.getZoom()) });
+  // Starting from bounds picks the zoom without a zoomend.
+  useEffect(() => onZoom(map.getZoom()), [map, onZoom]);
   return null;
 }
 
@@ -416,7 +466,7 @@ function Glyph({ bg, paths, size = 18, children }: { bg: string; paths?: string;
   );
 }
 
-function Legend({ lang, layers, palette }: { lang: Lang; layers: Layers; palette: MapPalette }) {
+function Legend({ lang, layers, palette, nasa }: { lang: Lang; layers: Layers; palette: MapPalette; nasa: NasaLayerState }) {
   const [open, setOpen] = useState(() => window.innerWidth >= WEB.map.legendOpenMinWidth);
   const c = palette.severity;
   const row = 'flex items-center gap-2';
@@ -484,6 +534,228 @@ function Legend({ lang, layers, palette }: { lang: Lang; layers: Layers; palette
               {t('layer.cctv', lang)}
             </span>
           )}
+          {nasa.firms && (
+            <span className={row}>
+              <Glyph bg={WEB.map.fireColor} paths={LEGEND_GLYPH.flame} />
+              {t('layer.nasa.firms', lang)}
+            </span>
+          )}
+          {nasa.events && (
+            <span className={row}>
+              <Glyph bg={WEB.map.eventColor} paths={LEGEND_GLYPH.storm} />
+              {t('layer.nasa.events', lang)}
+            </span>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+function startView(center: LatLng, located: boolean, focus: ZoneFeature | null): { center: LatLng; zoom: number; bounds?: L.LatLngBoundsExpression } {
+  if (located) return { center, zoom: WEB.map.locateZoom - 1 };
+  if (focus) {
+    const [minLng, minLat, maxLng, maxLat] = focus.properties.bbox;
+    return {
+      center: zoneCenter(focus),
+      zoom: DEFAULT_VIEW.zoom,
+      bounds: [
+        [minLat, minLng],
+        [maxLat, maxLng],
+      ],
+    };
+  }
+  return DEFAULT_VIEW;
+}
+
+/** UTC day, so a layer's TIME (and its tile URLs) changes once a day, not on every render. */
+const utcDay = () => new Date().toISOString().slice(0, 10);
+
+/** One GIBS raster. Above the base map (zIndex) and under zones/radar/pins, which live in the overlay pane. */
+function GibsLayer({ id }: { id: NasaLayerId }) {
+  const day = utcDay();
+  const g = useMemo(() => toLeaflet(NASA_LAYERS[id], new Date(`${day}T12:00:00Z`)), [id, day]);
+  if (g.kind === 'wms' && g.params) {
+    // Leaflet copies unknown options (time) into the query string; WMSParams just doesn't declare it.
+    return <WMSTileLayer key={`${id}:${day}`} url={g.url} params={g.params as L.WMSParams} {...g.options} zIndex={5} />;
+  }
+  return <TileLayer key={`${id}:${day}`} url={g.url} {...g.options} zIndex={5} />;
+}
+
+/** Adds a credit line to the map while a point layer (which has no attribution option of its own) is shown. */
+function Credit({ text }: { text: string }) {
+  const map = useMap();
+  useEffect(() => {
+    const ctl = map.attributionControl;
+    ctl?.addAttribution(text);
+    return () => {
+      ctl?.removeAttribution(text);
+    };
+  }, [map, text]);
+  return null;
+}
+
+/**
+ * FIRMS hotspots: up to a few thousand in burning season, so they are canvas dots with one shared popup
+ * instead of a DOM marker and popup each.
+ */
+function FireLayer({ lang, items, zoom }: { lang: Lang; items: FireHotspot[]; zoom: number }) {
+  const renderer = useMemo(() => L.canvas({ padding: 0.5 }), []);
+  const [picked, setPicked] = useState<FireHotspot | null>(null);
+  const full = zoom >= WEB.map.firmsMinZoom;
+  const radius = full ? WEB.map.firmsRadius.full : WEB.map.firmsRadius.small;
+  return (
+    <>
+      {items.map((f) => (
+        <CircleMarker
+          key={f.id}
+          center={[f.location.lat, f.location.lng]}
+          radius={radius}
+          renderer={renderer}
+          pathOptions={{ color: '#fff', weight: full ? 1 : 0.5, fillColor: WEB.map.fireColor, fillOpacity: 0.9 }}
+          eventHandlers={{ click: () => setPicked(f) }}
+        />
+      ))}
+      {picked && (
+        <Popup position={[picked.location.lat, picked.location.lng]} eventHandlers={{ remove: () => setPicked(null) }}>
+          <PopupBody title={t('layer.nasa.firms', lang)}>
+            {picked.frp !== null && <span>FRP {Math.round(picked.frp)} MW · {picked.satellite}</span>}
+            <TimeLine lang={lang} iso={picked.detectedAt} />
+            <span className="text-caption text-ink-muted">{NASA_ATTRIBUTION.firms}</span>
+          </PopupBody>
+        </Popup>
+      )}
+    </>
+  );
+}
+
+/** Open EONET events; storms also get their recent track as a dashed line. */
+function EventLayer({ lang, items }: { lang: Lang; items: NasaEvent[] }) {
+  return (
+    <>
+      {items.map((e) => {
+        const track = [...e.track].sort((a, b) => a.at.localeCompare(b.at)).map((p) => [p.location.lat, p.location.lng] as [number, number]);
+        const wind = [...e.track].sort((a, b) => b.at.localeCompare(a.at))[0]?.windKts ?? null;
+        return (
+          <Fragment key={e.id}>
+            {track.length > 1 && (
+              <Polyline positions={track} pathOptions={{ color: WEB.map.eventColor, weight: 2, opacity: 0.7, dashArray: '6 6' }} interactive={false} />
+            )}
+            <Marker position={[e.location.lat, e.location.lng]} icon={eventIcon(e.category)} zIndexOffset={Z.event}>
+              <Popup>
+                <PopupBody title={`${t(`nasa.event.${e.category}`, lang)}: ${e.title}`}>
+                  {wind !== null && <span>{wind} kt</span>}
+                  <TimeLine lang={lang} iso={e.updatedAt} />
+                  {e.url && (
+                    <a href={e.url} target="_blank" rel="noopener noreferrer" className="font-semibold">
+                      NASA EONET ↗
+                    </a>
+                  )}
+                </PopupBody>
+              </Popup>
+            </Marker>
+          </Fragment>
+        );
+      })}
+    </>
+  );
+}
+
+const fmtDay = (lang: Lang, iso: string) =>
+  new Date(iso).toLocaleDateString(lang === 'th' ? 'th-TH' : 'en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' });
+const fmtTime = (lang: Lang, iso: string) =>
+  new Date(iso).toLocaleString(lang === 'th' ? 'th-TH' : 'en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok' });
+
+/** Newest item time, falling back to when the runner fetched the feed. */
+function feedTime<T>(feed: SourceResult<T> | null, at: (item: T) => string): string | null {
+  if (!feed) return null;
+  let best: string | null = null;
+  for (const item of feed.items) {
+    const v = at(item);
+    if (!best || v > best) best = v;
+  }
+  return best ?? feed.fetchedAt;
+}
+
+/**
+ * NASA layers sit on the map rather than in the layer chips above it, so this file owns them end to end.
+ * Each active layer shows the day its data is from and its credit line.
+ */
+function NasaControl({
+  lang,
+  nasa,
+  onChange,
+  fires,
+  events,
+}: {
+  lang: Lang;
+  nasa: NasaLayerState;
+  onChange: (change: (s: NasaLayerState) => NasaLayerState) => void;
+  fires: SourceResult<FireHotspot> | null;
+  events: SourceResult<NasaEvent> | null;
+}) {
+  const [open, setOpen] = useState(false);
+  const anyOn = nasa.firms || nasa.events || nasa.raster !== null;
+  const firesAt = feedTime(fires, (f) => f.detectedAt);
+  const eventsAt = feedTime(events, (e) => e.updatedAt);
+  const item = (on: boolean) =>
+    `flex min-h-11 w-full items-center gap-2 rounded-control border px-2.5 text-left text-body ${
+      on ? 'border-ink bg-ink text-on-ink' : 'border-line-control bg-surface text-ink'
+    }`;
+  const note = 'px-1 pb-1 text-caption text-ink-muted';
+  return (
+    <div className="absolute top-[88px] left-2.5 z-[1000] flex max-h-[calc(100%-180px)] max-w-[240px] flex-col gap-1.5 overflow-y-auto rounded-card border border-line bg-surface/95 p-1.5 text-caption text-ink shadow-sm">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="flex min-h-11 items-center justify-between gap-2 px-1.5 text-body font-semibold text-ink"
+      >
+        <span className="flex items-center gap-1.5">
+          NASA
+          {anyOn && <span className="size-2 rounded-full bg-accent" aria-hidden="true" />}
+        </span>
+        <span aria-hidden="true">{open ? '▴' : '▾'}</span>
+      </button>
+      {open && (
+        <>
+          <button type="button" aria-pressed={nasa.firms} className={item(nasa.firms)} onClick={() => onChange((s) => ({ ...s, firms: !s.firms }))}>
+            {t('layer.nasa.firms', lang)}
+          </button>
+          {nasa.firms && (
+            <span className={note}>
+              {firesAt && <>{fmtTime(lang, firesAt)} · </>}
+              {NASA_ATTRIBUTION.firms}
+            </span>
+          )}
+          <button type="button" aria-pressed={nasa.events} className={item(nasa.events)} onClick={() => onChange((s) => ({ ...s, events: !s.events }))}>
+            {t('layer.nasa.events', lang)}
+          </button>
+          {nasa.events && (
+            <span className={note}>
+              {eventsAt && <>{fmtTime(lang, eventsAt)} · </>}
+              {NASA_ATTRIBUTION.eonet}
+            </span>
+          )}
+          <span className="mt-1 border-t border-line" aria-hidden="true" />
+          {NASA_RASTER_IDS.map((id) => {
+            const on = nasa.raster === id;
+            const d = on ? gibsDataDate(NASA_LAYERS[id]) : null;
+            return (
+              <span key={id} className="flex flex-col gap-1">
+                {/* One raster at a time; tapping the active one turns it off. */}
+                <button type="button" aria-pressed={on} className={item(on)} onClick={() => onChange((s) => ({ ...s, raster: s.raster === id ? null : id }))}>
+                  {t(`layer.nasa.${id}`, lang)}
+                </button>
+                {d && (
+                  <span className={note}>
+                    {t('nasa.dataDate', lang, { date: `${d.approx ? '≈ ' : ''}${fmtDay(lang, `${d.date}T00:00:00Z`)}` })} · {NASA_LAYERS[id].attribution}
+                  </span>
+                )}
+              </span>
+            );
+          })}
+          {anyOn && <span className={note}>{t('nasa.disclaimer', lang)}</span>}
         </>
       )}
     </div>

@@ -55,3 +55,13 @@ export function uniqueBy<T>(items: T[], key: (item: T) => string): T[] {
     return true;
   });
 }
+
+/**
+ * How close a sensor must be for a local feed to speak for a place. Flood sensors and cameras are Bangkok-only:
+ * past these distances their cards are left out instead of showing Bangkok's numbers as if they were local.
+ */
+export const LOCAL_KM = { flood: 20, cctv: 15, water: 60 } as const;
+
+export function withinKm<T extends { location: LatLng }>(items: T[], from: LatLng, km: number): boolean {
+  return items.some((it) => distanceKm(from, it.location) <= km);
+}

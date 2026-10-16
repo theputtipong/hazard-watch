@@ -50,10 +50,55 @@ export function inZone(zone: ZoneFeature, { lat, lng }: LatLng): boolean {
   });
 }
 
-export function groupByZone<T extends { location: LatLng }>(items: T[], zones: ZoneFeature[]): Map<string, T[]> {
-  const out = new Map<string, T[]>(zones.map((z) => [z.properties.id, []]));
+/**
+ * Grid of candidate zones per cell. Linear point-in-polygon over 928 districts costs ~0.2–0.6 ms per point,
+ * which blows the Worker's 10 ms CPU budget after a few dozen readings; the grid cuts it ~100×.
+ */
+export interface ZoneIndex {
+  cellDeg: number;
+  /** "row,col" → zones whose bbox touches that cell, in the original order. */
+  cells: Map<string, ZoneFeature[]>;
+  zones: ZoneFeature[];
+}
+
+// Same function for building and lookup: floor of a correctly rounded division is monotonic,
+// so a point inside a bbox always lands in a cell that bbox was registered in.
+const cellOf = (v: number, cellDeg: number) => Math.floor(v / cellDeg);
+
+export function buildZoneIndex(zones: ZoneFeature[], cellDeg = 0.1): ZoneIndex {
+  const cells = new Map<string, ZoneFeature[]>();
+  for (const zone of zones) {
+    const [minLng, minLat, maxLng, maxLat] = zone.properties.bbox;
+    for (let r = cellOf(minLat, cellDeg), r1 = cellOf(maxLat, cellDeg); r <= r1; r++) {
+      for (let c = cellOf(minLng, cellDeg), c1 = cellOf(maxLng, cellDeg); c <= c1; c++) {
+        const key = `${r},${c}`;
+        const list = cells.get(key);
+        if (list) list.push(zone);
+        else cells.set(key, [zone]);
+      }
+    }
+  }
+  return { cellDeg, cells, zones };
+}
+
+/** Same result as `zones.find((z) => inZone(z, p)) ?? null`: candidates keep the original order. */
+export function zoneAt(index: ZoneIndex, p: LatLng): ZoneFeature | null {
+  const candidates = index.cells.get(`${cellOf(p.lat, index.cellDeg)},${cellOf(p.lng, index.cellDeg)}`);
+  return candidates?.find((z) => inZone(z, p)) ?? null;
+}
+
+const isIndex = (zones: ZoneFeature[] | ZoneIndex): zones is ZoneIndex => !Array.isArray(zones);
+
+/** Zones in their original order, whether given as a list or an index. */
+export const zoneList = (zones: ZoneFeature[] | ZoneIndex): ZoneFeature[] => (isIndex(zones) ? zones.zones : zones);
+
+/** Pass a ZoneIndex for many zones; a plain list is scanned linearly (fine for one or a handful). */
+export function groupByZone<T extends { location: LatLng }>(items: T[], zones: ZoneFeature[] | ZoneIndex): Map<string, T[]> {
+  const list = zoneList(zones);
+  const find = isIndex(zones) ? (p: LatLng) => zoneAt(zones, p) : (p: LatLng) => list.find((z) => inZone(z, p));
+  const out = new Map<string, T[]>(list.map((z) => [z.properties.id, []]));
   for (const item of items) {
-    const zone = zones.find((z) => inZone(z, item.location));
+    const zone = find(item.location);
     if (zone) out.get(zone.properties.id)!.push(item);
   }
   return out;

@@ -18,5 +18,9 @@ export const SOURCE_META: Record<SourceId, SourceMeta> = {
   thaiwater: { id: 'thaiwater', url: 'https://www.thaiwater.net', gov: true },
   usgs: { id: 'usgs', url: 'https://earthquake.usgs.gov', gov: true },
   gistda: { id: 'gistda', url: 'https://www.gistda.or.th', gov: true },
+  // NASA is a US federal agency; link the public viewers, not the CSV/JSON endpoints.
+  'nasa-firms': { id: 'nasa-firms', url: 'https://firms.modaps.eosdis.nasa.gov', gov: true },
+  'nasa-eonet': { id: 'nasa-eonet', url: 'https://eonet.gsfc.nasa.gov', gov: true },
+  'nasa-gibs': { id: 'nasa-gibs', url: 'https://worldview.earthdata.nasa.gov', gov: true },
   'open-meteo': { id: 'open-meteo', url: 'https://open-meteo.com', gov: false },
 };

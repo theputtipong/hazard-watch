@@ -1,5 +1,6 @@
 import {
   alertsDue,
+  anyQuakeAlert,
   DEFAULT_CONFIG,
   districtAlerts,
   loosestQuakeLimit,
@@ -11,17 +12,16 @@ import {
   type DashboardSnapshot,
   type Earthquake,
   type Observation,
-  type ZoneFeature,
 } from '@hw/core';
 import { FEEDS } from '@hw/sources';
-import districtsFile from '../../../web/public/geo/districts.json';
+import { DISTRICT_INDEX, findDistrict } from '../geo';
 import { webPushNotifier, type DeliveryResult, type Notifier, type OutgoingMessage, type WebPushTarget } from './notifier';
 import { quakeLimitFor } from './prefs';
 import { pruneRateLimits } from './guard';
 import { forgetOldSends, markSent, recordDelivery, SENT_IDS_PER_QUERY, sentSinceMany, subscriptionsIn, type SubscriptionPrefs, type SubscriptionRow } from './store';
 
-export const DISTRICTS = (districtsFile as unknown as { features: ZoneFeature[] }).features;
-export const DISTRICT_IDS = new Set(DISTRICTS.map((d) => d.properties.id));
+// Re-exported so older imports keep working; geo.ts is the one place that loads districts.
+export { DISTRICT_IDS, DISTRICTS } from '../geo';
 
 export interface PushEnv {
   PUSH_DB: D1Database;
@@ -68,21 +68,22 @@ export async function sendAlerts(
     ...(snapshot.runner?.feeds.waterlevel?.items ?? []),
     ...(snapshot.edge?.feeds.pm25?.items ?? []),
   ];
-  const byDistrict = districtAlerts(readings, DISTRICTS, cfg, now);
+  const byDistrict = districtAlerts(readings, DISTRICT_INDEX, cfg, now);
   const quakes: Earthquake[] = mergeQuakes(snapshot.edge?.feeds.quakesTmd?.items ?? [], snapshot.edge?.feeds.quakesUsgs?.items ?? [], cfg);
   // Widest limit anyone can pick, so a quake only some people asked for still reaches them.
   const loosest = loosestQuakeLimit(cfg);
-  const quakeCandidates = quakes.length ? DISTRICTS.flatMap((d) => quakeAlerts(quakes, d, cfg, now, loosest)) : [];
+  // Only a yes/no is needed here; building every district's quake alerts would cost 928× the text work.
+  const quakeAnywhere = quakes.length > 0 && anyQuakeAlert(quakes, DISTRICT_INDEX, cfg, now, loosest);
 
   const withAlerts = [...byDistrict].filter(([, list]) => list.length).map(([id]) => id);
-  const subs = await subscriptionsIn(env.PUSH_DB, quakeCandidates.length ? 'all' : withAlerts);
+  const subs = await subscriptionsIn(env.PUSH_DB, quakeAnywhere ? 'all' : withAlerts);
   const since = new Date(now.getTime() - sentRetentionMs(cfg));
   const budget = sendBudget(cfg);
   const stats = { subscribers: subs.length, sent: 0, gone: 0, failed: 0, transient: 0, unauthorized: 0, attempts: 0, stoppedEarly: false };
 
   const queue = subs
     .map((sub) => {
-      const district = DISTRICTS.find((d) => d.properties.id === sub.district);
+      const district = findDistrict(sub.district);
       const prefs = JSON.parse(sub.prefs || '{}') as SubscriptionPrefs;
       const candidates = wanted([...(byDistrict.get(sub.district) ?? []), ...(district ? quakeAlerts(quakes, district, cfg, now, quakeLimitFor(sub, cfg)) : [])], prefs);
       return { sub, candidates };

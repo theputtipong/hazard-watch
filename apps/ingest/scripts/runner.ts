@@ -1,4 +1,5 @@
-// Runs outside Cloudflare because BMA and ThaiWater block Cloudflare IPs; uploads the feeds to the ingest worker.
+// Runs outside Cloudflare because BMA and ThaiWater block Cloudflare IPs (and NASA FIRMS files are too big for the
+// Worker's CPU budget); uploads the feeds, including NASA fires/events, to the ingest worker.
 import { defaultContext, FEEDS, type RunnerFeed } from '@hw/sources';
 import { RADARS, type RadarFrame } from '@hw/core';
 import { echoesOnly, packBundle } from './radarImage';
@@ -26,8 +27,11 @@ async function recentlyFetched(): Promise<Set<string>> {
   return skip;
 }
 
+// Feeds without an entry (incl. NASA fires/events) refresh on every run: FIRMS files are rebuilt continuously
+// and EONET allows 60 requests per window, far above one per 40-min dispatch.
+const everyHours: Partial<Record<string, number>> = INGEST.runnerFeedEveryHours;
 const skip = await recentlyFetched();
-for (const name of skip) console.log(`${name.padEnd(10)} skip (fetched within ${INGEST.runnerFeedEveryHours[name as RunnerFeed]} h)`);
+for (const name of skip) console.log(`${name.padEnd(10)} skip (fetched within ${everyHours[name]} h)`);
 const entries = await Promise.all(
   (Object.entries(FEEDS.runner) as [RunnerFeed, (typeof FEEDS.runner)[RunnerFeed]][])
     .filter(([name]) => !skip.has(name))

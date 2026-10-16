@@ -4,7 +4,7 @@ import { t, type Lang } from './i18n';
 import { quakePlace } from './quakePlace';
 import { isStale, quakeAlertFloor, quakeSeverity, rank } from './severity';
 import type { Earthquake, Observation, Severity } from './types';
-import { groupByZone, zoneCenter, type ZoneFeature } from './zones';
+import { groupByZone, zoneCenter, zoneList, type ZoneFeature, type ZoneIndex } from './zones';
 
 export interface Alert {
   /** Stable per hazard and area so repeats can be suppressed. */
@@ -23,9 +23,10 @@ const level = (s: Severity, lang: Lang) => t(`severity.${s}`, lang);
 
 const zoneName = (z: ZoneFeature) => ({ th: z.properties.name_th, en: z.properties.name_en });
 
+/** Pass a ZoneIndex when alerting for many districts (push), so grouping stays within the Worker CPU budget. */
 export function districtAlerts(
   readings: Observation[],
-  districts: ZoneFeature[],
+  districts: ZoneFeature[] | ZoneIndex,
   cfg: AlertConfig,
   now: Date = new Date(),
 ): Map<string, Alert[]> {
@@ -33,7 +34,7 @@ export function districtAlerts(
   const groups = groupByZone(fresh, districts);
   const out = new Map<string, Alert[]>();
 
-  for (const d of districts) {
+  for (const d of zoneList(districts)) {
     const id = d.properties.id;
     const inside = groups.get(id) ?? [];
     const name = zoneName(d);
@@ -174,6 +175,28 @@ export function quakeAlerts(quakes: Earthquake[], district: ZoneFeature, cfg: Al
         value: q.magnitude,
       };
     });
+}
+
+/**
+ * Whether any district would get a quake alert; same answer as `districts.flatMap(quakeAlerts).length > 0`
+ * but stops at the first hit and builds no alert text, which matters with 928 districts.
+ */
+export function anyQuakeAlert(
+  quakes: Earthquake[],
+  districts: ZoneFeature[] | ZoneIndex,
+  cfg: AlertConfig,
+  now: Date = new Date(),
+  limit?: QuakeLimit,
+): boolean {
+  const since = now.getTime() - cfg.quake.lookbackHours * 3_600_000;
+  const recent = quakes.filter((q) => new Date(q.occurredAt).getTime() >= since);
+  if (!recent.length) return false;
+  return zoneList(districts).some((d) => {
+    const centre = zoneCenter(d);
+    return recent.some((q) =>
+      limit ? q.magnitude >= limit.minMagnitude && distanceKm(centre, q.location) <= limit.maxDistanceKm : quakeSeverity(q, centre, cfg) !== 'ok',
+    );
+  });
 }
 
 /** A quake is a single event: alert once while it is still listed. Ongoing hazards remind after the cooldown. */

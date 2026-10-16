@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """
-Usage: python3 tools/boundaries/build.py   (re-downloads only missing files into .cache)
+Usage: python3 tools/boundaries/build.py [--subdistricts]   (re-downloads only missing files into .cache)
+
+Provinces and districts cover the whole country. Tambon stay limited to SUBDISTRICT_PROVINCES and are only rebuilt with
+--subdistricts (that needs the ~180 MB OCHA download); otherwise the committed subdistricts.json is kept as is.
 
 Sources and licences:
   - geoBoundaries THA ADM1 (OSM / ODbL) and ADM2 (RTSD via OCHA / CC BY-IGO)
@@ -18,11 +21,18 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 CACHE = os.path.join(HERE, '.cache')
 OUT = os.path.join(HERE, '..', '..', 'apps', 'web', 'public', 'geo')
 
-# Bangkok + 5 metropolitan provinces; keep in sync with packages/core/src/regions.ts.
-PROVINCES = ['TH10', 'TH11', 'TH12', 'TH13', 'TH73', 'TH74']
+# Bangkok + 5 metropolitan provinces: the only ones with tambon (subdistricts.json is large).
+SUBDISTRICT_PROVINCES = ['TH10', 'TH11', 'TH12', 'TH13', 'TH73', 'TH74']
 DECIMALS = 5  # ~1 m; keeps files small
 # Degrees (~33 m); OCHA tambon polygons are very detailed.
 SIMPLIFY_DEG = 0.0003
+# Provinces and districts nationwide: ~11 m precision is far below the simplification below.
+ADMIN_DECIMALS = 4
+# Simplification per output: (max degrees, max share of a polygon's size). 0.001 deg ~ 110 m. The size cap keeps
+# Bangkok districts (a few km across) from collapsing to triangles at the rural tolerance.
+PROVINCE_TOL = (0.004, 0.05)
+DISTRICT_TOL = (0.004, 0.05)       # districts.json: web map (budget 1.2 MB)
+DISTRICT_LITE_TOL = (0.015, 0.06)  # districts-lite.json: worker/extension/phone lookups (budget 600 KB / 200 KB gzip)
 
 OCHA_SHP_ZIP = 'https://data.humdata.org/dataset/d24bdc45-eb4c-4e3d-8b16-44db02667c27/resource/10dde461-b781-4904-9559-7deb3e960913/download/tha_admin_boundaries.shp.zip'
 
@@ -173,6 +183,66 @@ def simplify(geom, tol):
     return {'type': 'Polygon', 'coordinates': simple[0]} if geom['type'] == 'Polygon' else {'type': 'MultiPolygon', 'coordinates': simple}
 
 
+def admin_tolerances(geoms, max_tol, ratio):
+    """Per-polygon tolerance: max_tol, or ratio * size (sqrt of the bbox area) for small polygons."""
+    tols = []
+    for geom in geoms:
+        x0, y0, x1, y1 = bbox(geom)
+        tols.append(min(max_tol, ratio * ((x1 - x0) * (y1 - y0)) ** 0.5))
+    return tols
+
+
+def simplify_shared(geoms, tols):
+    """Simplify polygons that share borders so neighbours keep identical edges (no gaps or overlaps for lookups).
+
+    The sources share exact vertices along common borders. Rings are cut wherever the set of polygons using a vertex
+    changes; each piece is simplified once (in a fixed direction, with the smallest tolerance among its owners) and
+    every ring then keeps only the surviving vertices.
+    """
+    owners = {}
+    for i, geom in enumerate(geoms):
+        for poly in rings(geom):
+            for ring in poly:
+                for c in ring:
+                    owners.setdefault((c[0], c[1]), set()).add(i)
+    nodes = {p for p, o in owners.items() if len(o) >= 3}
+    all_rings = [[(c[0], c[1]) for c in ring] for geom in geoms for poly in rings(geom) for ring in poly]
+    for pts in all_rings:
+        for a, b in zip(pts, pts[1:]):
+            # Where a shared border ends, cut at the vertex that still belongs to more polygons.
+            if owners[a] != owners[b]:
+                nodes.update(q for q, other in ((a, b), (b, a)) if not owners[q] < owners[other])
+    for pts in all_rings:
+        # A ring with no junctions (island, or enclosed by one neighbour): cut at points any copy of it agrees on.
+        if not nodes.intersection(pts):
+            first = min(pts)
+            nodes.update((first, max(pts, key=lambda q: (q[0] - first[0]) ** 2 + (q[1] - first[1]) ** 2)))
+    keep, done = set(nodes), set()
+    for pts in all_rings:
+        start = next(k for k, q in enumerate(pts) if q in nodes)
+        seq = pts[start:-1] + pts[:start + 1]
+        cuts = [k for k, q in enumerate(seq) if q in nodes]
+        for a, b in zip(cuts, cuts[1:]):
+            piece = seq[a:b + 1]
+            if piece[0] > piece[-1] or (piece[0] == piece[-1] and piece[1] > piece[-2]):
+                piece = piece[::-1]
+            key = tuple(piece)
+            if len(piece) < 3 or key in done:
+                continue
+            done.add(key)
+            tol = min(tols[o] for o in owners[piece[1]])
+            keep.update(_dp(list(piece), tol))
+    out = []
+    for geom in geoms:
+        simple = []
+        for poly in rings(geom):
+            kept = [[c for c in ring if (c[0], c[1]) in keep] for ring in poly]
+            simple.append([k if len(k) >= 4 else ring for k, ring in zip(kept, poly)])
+        out.append({'type': 'Polygon', 'coordinates': simple[0]} if geom['type'] == 'Polygon'
+                   else {'type': 'MultiPolygon', 'coordinates': simple})
+    return out
+
+
 def read_xlsx(path):
     ns = {'m': 'http://schemas.openxmlformats.org/spreadsheetml/2006/main'}
     z = zipfile.ZipFile(path)
@@ -216,21 +286,29 @@ def contains(geom, lng, lat):
     return False
 
 
-def rounded(geom):
+def rounded(geom, decimals=DECIMALS):
     def r(c):
-        return [round(c[0], DECIMALS), round(c[1], DECIMALS)]
-    return {'type': geom['type'], 'coordinates': [[[r(c) for c in ring] for ring in poly] for poly in rings(geom)]
-            if geom['type'] == 'MultiPolygon' else [[r(c) for c in ring] for ring in geom['coordinates']]}
+        return [round(c[0], decimals), round(c[1], decimals)]
+
+    def ring_of(ring):
+        out = [r(c) for c in ring]
+        if decimals == DECIMALS:
+            return out
+        # Coarser rounding can merge neighbouring vertices; drop the repeats (deterministic, so shared borders match).
+        dedup = [c for k, c in enumerate(out) if k == 0 or c != out[k - 1]]
+        return dedup if len(dedup) >= 4 else out
+    return {'type': geom['type'], 'coordinates': [[ring_of(ring) for ring in poly] for poly in rings(geom)]
+            if geom['type'] == 'MultiPolygon' else [ring_of(ring) for ring in geom['coordinates']]}
 
 
-def bbox(geom):
+def bbox(geom, decimals=DECIMALS):
     xs = [c[0] for poly in rings(geom) for ring in poly for c in ring]
     ys = [c[1] for poly in rings(geom) for ring in poly for c in ring]
-    return [round(min(xs), DECIMALS), round(min(ys), DECIMALS), round(max(xs), DECIMALS), round(max(ys), DECIMALS)]
+    return [round(min(xs), decimals), round(min(ys), decimals), round(max(xs), decimals), round(max(ys), decimals)]
 
 
-def feature(geom, **props):
-    return {'type': 'Feature', 'properties': {**props, 'bbox': bbox(geom)}, 'geometry': rounded(geom)}
+def feature(geom, decimals=DECIMALS, **props):
+    return {'type': 'Feature', 'properties': {**props, 'bbox': bbox(geom, decimals)}, 'geometry': rounded(geom, decimals)}
 
 
 def match(polygons, table, pcode_key, lat_key='center_lat', lng_key='center_lon'):
@@ -244,21 +322,23 @@ def match(polygons, table, pcode_key, lat_key='center_lat', lng_key='center_lon'
     return found
 
 
-def main():
-    names = read_xlsx(fetch('ocha_names.xlsx'))
-    adm1 = [r for r in names['tha_admin1'] if r['adm1_pcode'] in PROVINCES]
-    adm2 = [r for r in names['tha_admin2'] if r['adm1_pcode'] in PROVINCES]
+def admin_features(polygons, matched, tol, **props_of):
+    """Simplified features for the matched polygons; props_of maps property name -> OCHA column (or a fixed value)."""
+    items = sorted(matched.items(), key=lambda kv: kv[1][props_of['id']])
+    geoms = [polygons[i]['geometry'] for i, _ in items]
+    simple = simplify_shared(geoms, admin_tolerances(geoms, *tol))
+    return [feature(g, ADMIN_DECIMALS, **{k: (r[v] if isinstance(v, str) else v[0]) for k, v in props_of.items()})
+            for g, (_, r) in zip(simple, items)]
 
-    gb1 = json.load(open(fetch('gb_adm1.geojson')))['features']
-    gb2 = json.load(open(fetch('gb_adm2.geojson')))['features']
 
-    provinces = [feature(gb1[i]['geometry'], id=r['adm1_pcode'], parent=None, level=1,
-                         name_th=r['adm1_name1'], name_en=r['adm1_name'])
-                 for i, r in match(gb1, adm1, 'adm1_pcode').items()]
-    districts = [feature(gb2[i]['geometry'], id=r['adm2_pcode'], parent=r['adm1_pcode'], level=2,
-                         name_th=r['adm2_name1'], name_en=r['adm2_name'])
-                 for i, r in match(gb2, adm2, 'adm2_pcode').items()]
+def write(name, feats):
+    feats.sort(key=lambda f: f['properties']['id'])
+    path = os.path.join(OUT, f'{name}.json')
+    json.dump({'type': 'FeatureCollection', 'features': feats}, open(path, 'w'), ensure_ascii=False, separators=(',', ':'))
+    print(f'{name:15} {len(feats):4} features  {os.path.getsize(path) / 1024:7.0f} KB')
 
+
+def build_subdistricts():
     bma = json.load(open(fetch('bma_subdistricts.geojson')))['features']
     subdistricts = [feature(f['geometry'], id='TH' + f['properties']['SUBDISTRICT_CODE'], parent='TH' + f['properties']['DISTRICT_CODE'],
                             level=3, name_th=f['properties']['SUBDISTRICT_NAME_T'].strip(),
@@ -266,7 +346,7 @@ def main():
                     for f in bma if f.get('geometry')]
 
     # Tambon outside Bangkok come from OCHA (Bangkok uses the BMA layer above).
-    others = [pc for pc in PROVINCES if pc != 'TH10']
+    others = [pc for pc in SUBDISTRICT_PROVINCES if pc != 'TH10']
     if others:
         files = fetch_zip_members(OCHA_SHP_ZIP, ['tha_admin3.shp', 'tha_admin3.shx', 'tha_admin3.dbf'])
         rows = read_dbf(files['tha_admin3.dbf'])
@@ -275,20 +355,43 @@ def main():
             r = rows[i]
             subdistricts.append(feature(simplify(geom, SIMPLIFY_DEG), id=r['adm3_pcode'], parent=r['adm2_pcode'], level=3,
                                         name_th=r['adm3_name1'], name_en=r['adm3_name']))
+    return subdistricts
+
+
+def main():
+    names = read_xlsx(fetch('ocha_names.xlsx'))
+    adm1 = names['tha_admin1']
+    adm2 = names['tha_admin2']
+
+    gb1 = json.load(open(fetch('gb_adm1.geojson')))['features']
+    gb2 = json.load(open(fetch('gb_adm2.geojson')))['features']
+
+    m1, m2 = match(gb1, adm1, 'adm1_pcode'), match(gb2, adm2, 'adm2_pcode')
+    province_props = dict(id='adm1_pcode', parent=(None,), level=(1,), name_th='adm1_name1', name_en='adm1_name')
+    district_props = dict(id='adm2_pcode', parent='adm1_pcode', level=(2,), name_th='adm2_name1', name_en='adm2_name')
+    provinces = admin_features(gb1, m1, PROVINCE_TOL, **province_props)
+    districts = admin_features(gb2, m2, DISTRICT_TOL, **district_props)
+    districts_lite = admin_features(gb2, m2, DISTRICT_LITE_TOL, **district_props)
+
+    os.makedirs(OUT, exist_ok=True)
+    if '--subdistricts' in sys.argv:
+        subdistricts = build_subdistricts()
+        write('subdistricts', subdistricts)
+    else:
+        subdistricts = json.load(open(os.path.join(OUT, 'subdistricts.json')))['features']
+        print(f'subdistricts    {len(subdistricts):4} features  kept (pass --subdistricts to rebuild)')
 
     missing = {'provinces': len(adm1) - len(provinces), 'districts': len(adm2) - len(districts)}
-    os.makedirs(OUT, exist_ok=True)
-    for name, feats in [('provinces', provinces), ('districts', districts), ('subdistricts', subdistricts)]:
-        feats.sort(key=lambda f: f['properties']['id'])
-        path = os.path.join(OUT, f'{name}.json')
-        json.dump({'type': 'FeatureCollection', 'features': feats}, open(path, 'w'), ensure_ascii=False, separators=(',', ':'))
-        print(f'{name:13} {len(feats):4} features  {os.path.getsize(path) / 1024:7.0f} KB')
+    for name, feats in [('provinces', provinces), ('districts', districts), ('districts-lite', districts_lite)]:
+        write(name, feats)
     # Lets the server name ids for link previews without loading the polygons.
     names = {f['properties']['id']: [f['properties']['name_th'], f['properties']['name_en']]
              for f in provinces + districts + subdistricts}
     path = os.path.join(OUT, 'names.json')
     json.dump(names, open(path, 'w'), ensure_ascii=False, separators=(',', ':'), sort_keys=True)
-    print(f'names         {len(names):4} entries   {os.path.getsize(path) / 1024:7.0f} KB')
+    print(f'names           {len(names):4} entries   {os.path.getsize(path) / 1024:7.0f} KB')
+    # Thai province names in pcode order, for provincesTh in packages/core/src/regions.ts.
+    print('provincesTh', json.dumps([f['properties']['name_th'] for f in provinces], ensure_ascii=False))
     if any(missing.values()):
         print('WARNING: unmatched', missing, file=sys.stderr)
 

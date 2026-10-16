@@ -6,6 +6,7 @@ import {
   inZone,
   isStale,
   mergeQuakes,
+  nasaNear,
   quakeAlertFloor,
   quakeAlerts,
   quakePlace,
@@ -19,13 +20,17 @@ import {
   type HazardKind,
   type LatLng,
   type LocalizedText,
+  type NasaNear,
   type Observation,
   type PushKind,
   type Severity,
   type ZoneFeature,
 } from '@hw/core';
-import provincesFile from '../../web/public/geo/provinces.json';
-import { DISTRICTS } from './push/run';
+// names.json is already in the bundle for push ids, so province names cost nothing extra (provinces.json is ~240 KB).
+import namesFile from '../../web/public/geo/names.json';
+import { DISTRICTS, districtAt, findDistrict } from './geo';
+
+export { districtAt, findDistrict };
 
 /**
  * Severities and alert text use the same rules as Web Push so every channel agrees; text the app can build from a
@@ -51,6 +56,8 @@ export interface AreaReport {
   rivers: AreaReading[];
   /** Latest earthquake in range of the district, even if it is not an alert. */
   quake: { magnitude: number; place: LocalizedText; occurredAt: string; km: number; severity: Severity } | null;
+  /** NASA fires/events near the district centre, display only (never an alert); null when neither feed exists. */
+  nasa: NasaNear | null;
   feeds: FeedStatus[];
 }
 
@@ -85,11 +92,11 @@ export interface AreaReading {
 
 const RIVER_COUNT = 3;
 
+// Province ids are 4 chars (TH + 2 digits); names.json maps id → [th, en].
 const PROVINCES = new Map(
-  (provincesFile as unknown as { features: ZoneFeature[] }).features.map((f) => [
-    f.properties.id,
-    { th: f.properties.name_th, en: f.properties.name_en },
-  ]),
+  Object.entries(namesFile as unknown as Record<string, [string, string]>)
+    .filter(([id]) => id.length === 4)
+    .map(([id, [th, en]]) => [id, { th, en }]),
 );
 
 export const districtInfo = (d: ZoneFeature): AreaDistrict => ({
@@ -105,9 +112,6 @@ export function districtList(): AreaDistrict[] {
     (a, b) => (a.province?.th ?? '').localeCompare(b.province?.th ?? '', 'th') || a.name.th.localeCompare(b.name.th, 'th'),
   );
 }
-
-export const findDistrict = (id: string) => DISTRICTS.find((d) => d.properties.id === id) ?? null;
-export const districtAt = (p: LatLng) => DISTRICTS.find((d) => inZone(d, p)) ?? null;
 
 const round1 = (n: number) => Math.round(n * 10) / 10;
 
@@ -133,6 +137,12 @@ function nearest(items: Observation[], from: LatLng, cfg: AlertConfig, now: Date
   return (fresh.length ? fresh : usable).sort((a, b) => a.km - b.km).slice(0, limit);
 }
 
+/** Same 0.1 km precision as the other distances in the report; full floats only bloat the payload. */
+const nasaReport = (n: NasaNear): NasaNear => ({
+  fires: { ...n.fires, nearestKm: n.fires.nearestKm === null ? null : round1(n.fires.nearestKm) },
+  events: n.events.map((e) => ({ ...e, km: round1(e.km) })),
+});
+
 export function buildAreaReport(snapshot: DashboardSnapshot, district: ZoneFeature, now = new Date(), cfg = DEFAULT_CONFIG): AreaReport {
   const info = districtInfo(district);
   const runner = snapshot.runner?.feeds;
@@ -141,6 +151,8 @@ export function buildAreaReport(snapshot: DashboardSnapshot, district: ZoneFeatu
   const rain = runner?.rain?.items ?? [];
   const water = runner?.waterlevel?.items ?? [];
   const pm25 = edge?.pm25?.items ?? [];
+  const fires = runner?.fires;
+  const events = runner?.events;
 
   const quakes = mergeQuakes(edge?.quakesTmd?.items ?? [], edge?.quakesUsgs?.items ?? [], cfg);
   const alerts: AreaAlert[] = [
@@ -195,6 +207,7 @@ export function buildAreaReport(snapshot: DashboardSnapshot, district: ZoneFeatu
           severity: quakeSeverity(regional, info.center, cfg),
         }
       : null,
+    nasa: fires || events ? nasaReport(nasaNear(fires?.items ?? [], events?.items ?? [], info.center, now)) : null,
     feeds: feedStatuses(snapshot, now),
   };
 }

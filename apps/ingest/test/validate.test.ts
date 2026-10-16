@@ -1,4 +1,4 @@
-import type { CctvCamera, Observation, RadarFrame, ZoneFeature } from '@hw/core';
+import { buildZoneIndex, type CctvCamera, type FireHotspot, type NasaEvent, type Observation, type RadarFrame, type ZoneFeature } from '@hw/core';
 import { ENDPOINTS } from '@hw/sources';
 import { describe, expect, it } from 'vitest';
 import type { FeedMap } from '../src/store';
@@ -49,6 +49,30 @@ const camera: CctvCamera = {
   location: { lat: 13.7262, lng: 100.52797 },
   viewUrl: ENDPOINTS.bmaTrafficView('603'),
   sessionUrl: ENDPOINTS.bmaTrafficSession,
+};
+
+const fire = (id: string, over: Partial<FireHotspot> = {}): FireHotspot => ({
+  id: `N20:${id}`,
+  location: { lat: 18.79, lng: 98.98 },
+  detectedAt: '2026-10-05T06:22:00.000Z',
+  frp: 12.5,
+  confidence: 'nominal',
+  satellite: 'N20',
+  day: true,
+  ...over,
+});
+
+const storm: NasaEvent = {
+  id: 'EONET_25290',
+  category: 'severeStorms',
+  title: 'Typhoon Example',
+  location: { lat: 15.2, lng: 125.1 },
+  track: [
+    { at: '2026-10-04T18:00:00.000Z', location: { lat: 14.8, lng: 127.0 }, windKts: 65 },
+    { at: '2026-10-05T00:00:00.000Z', location: { lat: 15.2, lng: 125.1 }, windKts: null },
+  ],
+  updatedAt: '2026-10-05T00:00:00.000Z',
+  url: 'https://www.metoc.navy.mil/jtwc/products/wp2126.tcw',
 };
 
 const result = <T>(source: string, items: T[], over: object = {}) => ({ source, fetchedAt, ok: true, items, ...over });
@@ -169,6 +193,64 @@ describe('parseRunnerPayload', () => {
   });
 });
 
+describe('parseRunnerPayload: NASA feeds', () => {
+  it('accepts fires and events unchanged', () => {
+    const volcano: NasaEvent = { ...storm, id: 'EONET_1', category: 'volcanoes', track: [], location: { lat: -36.9, lng: -71.4 }, url: null };
+    const out = parseRunnerPayload(
+      payload({ fires: result('nasa-firms', [fire('a'), fire('b', { frp: null, day: false })]), events: result('nasa-eonet', [storm, volcano]) }),
+      now,
+    );
+    expect(out.ok && out.dropped).toEqual([]);
+    if (!out.ok) return;
+    expect(out.feeds.fires!.items).toEqual([fire('a'), fire('b', { frp: null, day: false })]);
+    expect(out.feeds.events!.items).toEqual([storm, volcano]);
+  });
+
+  it('drops malformed or out-of-bounds fires', () => {
+    const bad = [
+      fire('x1', { location: { lat: 35.6, lng: 139.7 } }), // Tokyo: outside FIRE_BOUNDS
+      fire('x2', { frp: -1 }),
+      fire('x3', { confidence: 'certain' as never }),
+      fire('x4', { satellite: 'GOES' as never }),
+      fire('x5', { detectedAt: '2027-01-01T00:00:00Z' }),
+    ];
+    const good = Array.from({ length: 6 }, (_, i) => fire(`g${i}`, { location: { lat: 21.9, lng: 96.1 } })); // Mandalay: inside
+    const out = parseRunnerPayload(payload({ fires: result('nasa-firms', [...good, { ...fire('g9'), html: '<img>' }, ...bad]) }), now);
+    expect(out.ok && out.feeds.fires!.items).toHaveLength(7);
+    expect(out.ok && out.feeds.fires!.items[6]).not.toHaveProperty('html');
+    expect(out.dropped.map((d) => d.id)).toEqual(['x1', 'x2', 'x3', 'x4', 'x5'].map((s) => `N20:${s}`));
+  });
+
+  it('caps fires at 3,000 and events at 100', () => {
+    const fires = Array.from({ length: 3001 }, (_, i) => fire(`f${i}`));
+    const events = Array.from({ length: 101 }, (_, i) => ({ ...storm, id: `EONET_${i}` }));
+    const ok = parseRunnerPayload(payload({ fires: result('nasa-firms', fires.slice(0, 3000)), events: result('nasa-eonet', events.slice(0, 100)) }), now);
+    expect(ok.ok && [ok.feeds.fires!.items.length, ok.feeds.events!.items.length]).toEqual([3000, 100]);
+    const over = parseRunnerPayload(payload({ fires: result('nasa-firms', fires), events: result('nasa-eonet', events), cctv: result('bma-traffic', [camera]) }), now);
+    expect(over.ok && Object.keys(over.feeds)).toEqual(['cctv']);
+    expect(over.dropped.map((d) => d.reason)).toEqual(['feed dropped: items: more than 3000', 'feed dropped: items: more than 100']);
+  });
+
+  it.each([
+    ['http link', { url: 'http://example.org/x' }],
+    ['javascript link', { url: 'javascript:alert(1)' }],
+    ['unknown category', { category: 'wildfires' }],
+    ['bad coordinates', { location: { lat: 95, lng: 0 } }],
+    ['bad track point', { track: [{ at: '2026-10-05T00:00:00Z', location: { lat: 0, lng: 0 }, windKts: 9999 }] }],
+    ['too long track', { track: Array.from({ length: 41 }, () => storm.track[0]) }],
+    ['missing title', { title: '' }],
+  ])('refuses an event with %s', (_label, over) => {
+    const out = parseRunnerPayload(payload({ events: result('nasa-eonet', [storm, storm, { ...storm, id: 'EONET_bad', ...over }]) }), now);
+    expect(out.ok && out.feeds.events!.items).toHaveLength(2);
+    expect(out.dropped).toMatchObject([{ feed: 'events', id: 'EONET_bad' }]);
+  });
+
+  it('checks the source of NASA feeds', () => {
+    const out = parseRunnerPayload(payload({ fires: result('nasa-eonet', [fire('a')]), events: result('nasa-eonet', [storm]) }), now);
+    expect(out.ok && Object.keys(out.feeds)).toEqual(['events']);
+  });
+});
+
 /** A row of square districts 0.01° wide, west to east from 100.40 E. */
 const districts: ZoneFeature[] = Array.from({ length: 20 }, (_, i) => {
   const [w, e, s, n] = [100.4 + i * 0.01, 100.41 + i * 0.01, 13.7, 13.71];
@@ -208,8 +290,27 @@ describe('suspiciousJump', () => {
     expect(suspiciousJump(rainFeed(0, '2026-10-05T03:00:00Z'), rainFeed(20), districts, now).suspicious).toBe(false);
   });
 
+  it('is not moved by NASA feeds (display only)', () => {
+    const fires = { fires: result('nasa-firms', districts.map((_, i) => fire(`F${i}`, { location: inDistrict(i), frp: 5000 }))) } as FeedMap;
+    const events = { events: result('nasa-eonet', [{ ...storm, location: inDistrict(0) }]) } as FeedMap;
+    const verdict = suspiciousJump({ ...rainFeed(0), ...fires }, { ...rainFeed(0), ...fires, ...events }, districts, now);
+    expect(verdict).toMatchObject({ suspicious: false, newDanger: [], districtsWithData: 20 });
+  });
+
   it('ignores a failed feed, as the store keeps its previous items', () => {
     const failed = { rain: { ...rainFeed(20).rain!, ok: false } };
     expect(suspiciousJump(rainFeed(0), failed, districts, now).suspicious).toBe(false);
+  });
+
+  it('gives the same verdict with a zone index as with the plain list', () => {
+    const index = buildZoneIndex(districts);
+    for (const [prev, next] of [
+      [rainFeed(0), rainFeed(15)],
+      [rainFeed(0), rainFeed(9)],
+      [rainFeed(8), rainFeed(17)],
+      [null, rainFeed(20)],
+    ] as const) {
+      expect(suspiciousJump(prev, next, index, now)).toEqual(suspiciousJump(prev, next, districts, now));
+    }
   });
 });

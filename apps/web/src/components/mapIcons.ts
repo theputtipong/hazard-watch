@@ -1,5 +1,5 @@
 import L from 'leaflet';
-import type { Severity } from '@hw/core';
+import type { NasaEventCategory, Severity } from '@hw/core';
 import { WEB } from '@/config';
 
 /** Each hazard has its own shape, not just colour, so they can be told apart without colour. */
@@ -9,6 +9,16 @@ const PERSON =
 const DROP = '<path d="M12 3.5c-3.2 4.3-5.5 7.6-5.5 10.4a5.5 5.5 0 0 0 11 0c0-2.8-2.3-6.1-5.5-10.4z" fill="#fff"/>';
 const CAMERA =
   '<rect x="3" y="7.5" width="12" height="9" rx="2" fill="#fff"/><path d="M15.5 11l5.5-3v8l-5.5-3z" fill="#fff"/>';
+const FLAME =
+  '<path d="M12 2.8c.6 3.2 4.7 5.3 4.7 10.2a4.7 4.7 0 0 1-9.4 0c0-2.4 1.2-3.9 2.4-5.1.1 1.6.8 2.7 1.9 3.1-.4-3.1-.3-5.6.4-8.2z" fill="#fff"/>';
+/** EONET categories: storm swirl, volcano cone, water drop, sliding slope. */
+const EVENT_GLYPH: Record<NasaEventCategory, string> = {
+  severeStorms:
+    '<path d="M12 8.2a3.8 3.8 0 1 1 0 7.6 3.8 3.8 0 0 1 0-7.6zm0 2.3a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z" fill="#fff"/><path d="M8.7 8.9C9.5 5.7 13 3.6 17.5 4.2 14.6 4.9 12.9 6.3 12.3 8.2zM15.3 15.1c-.8 3.2-4.3 5.3-8.8 4.7 2.9-.7 4.6-2.1 5.2-4z" fill="#fff"/>',
+  volcanoes: '<path d="M3.5 19.5l5.5-9h6l5.5 9z" fill="#fff"/><path d="M10.5 8.5l-1-3M13.5 8.5l1-3M12 8V4" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/>',
+  floods: DROP,
+  landslides: '<path d="M3.5 19.5V7l17 12.5z" fill="#fff"/><circle cx="17.5" cy="9.5" r="1.8" fill="#fff"/><circle cx="20" cy="13.5" r="1.3" fill="#fff"/>',
+};
 const alertBadge = (color: string) =>
   `<span style="position:absolute;top:-4px;right:-4px;width:14px;height:14px;border-radius:50%;background:#fff;color:${color};font:700 11px/14px system-ui;text-align:center;box-shadow:0 0 0 1.5px ${color}">!</span>`;
 
@@ -90,4 +100,10 @@ export function cctvIcon() {
   return round('cctv', s, WEB.map.cctvColor, svg(CAMERA, s * 0.66));
 }
 
-export const LEGEND_GLYPH = { person: PERSON, drop: DROP, camera: CAMERA };
+/** NASA EONET event (storm, volcano, flood, landslide): ink circle with its own glyph, ringed so it reads as "far away, satellite". */
+export function eventIcon(category: NasaEventCategory) {
+  const s = WEB.map.eventIconSize;
+  return round(`event-${category}`, s, WEB.map.eventColor, svg(EVENT_GLYPH[category], s * 0.66));
+}
+
+export const LEGEND_GLYPH = { person: PERSON, drop: DROP, camera: CAMERA, flame: FLAME, storm: EVENT_GLYPH.severeStorms };

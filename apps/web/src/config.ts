@@ -1,4 +1,4 @@
-import { DEFAULT_CONFIG, type Severity } from '@hw/core';
+import { DEFAULT_CONFIG, type NasaLayerId, type Severity } from '@hw/core';
 import { palettes, type Palette } from '@hw/tokens';
 import type { LayerKey } from './lib/layers';
 
@@ -68,6 +68,17 @@ export const WEB = {
     /** Hidden below this zoom so hundreds of cameras don't bury the hazards. */
     cctvMinZoom: 13,
     cctvColor: palettes.light.ink,
+    /** Zoomed all the way out the map shows the whole world (for NASA layers); below 2 the tiles repeat side by side. */
+    worldMinZoom: 2,
+    /** NASA raster on at first visit. Only one at a time: GIBS sends no-store, so each extra layer refetches on every pan. */
+    nasaRaster: null as NasaLayerId | null,
+    /** Below this zoom FIRMS hotspots draw as small dots so a busy burning season stays readable. */
+    firmsMinZoom: 6,
+    firmsRadius: { small: 2.5, full: 5 },
+    /** Orange like the warning tone, but drawn as small dots so it is not read as a severity. */
+    fireColor: palettes.light.sevWarning,
+    eventColor: palettes.light.brand,
+    eventIconSize: 28,
   },
 
   /** Normal is grey so only problems get colour. */

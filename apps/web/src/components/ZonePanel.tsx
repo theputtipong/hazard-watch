@@ -1,6 +1,7 @@
 'use client';
 
-import { activeRegions, isBangkokZone, rank, type ZoneSummary } from '@hw/core';
+import { useMemo, useState } from 'react';
+import { activeRegions, isBangkokZone, rank, type ZoneFeature, type ZoneSummary } from '@hw/core';
 import { t, type Lang } from '@hw/core/i18n';
 import { describe, levelName, zoneLabel } from '@/lib/zoneText';
 import type { ZoneView } from '@/lib/useZones';
@@ -13,6 +14,62 @@ function Status({ s, lang }: { s: ZoneSummary | undefined; lang: Lang }) {
     return <span className="inline-flex rounded-full bg-surface-sunken px-2.5 py-0.5 text-caption font-semibold text-ink-muted">{t('zone.noData', lang)}</span>;
   }
   return <SeverityPill severity={s.severity} lang={lang} />;
+}
+
+const SEARCH_LIMIT = 20;
+const norm = (s: string) => s.toLocaleLowerCase().replace(/\s+/g, '');
+
+/** Provinces then districts whose Thai or English name contains the query; spaces ignored ("bang na" = "bangna"). */
+function searchZones(q: string, provinces: ZoneFeature[], districts: ZoneFeature[] | null): ZoneFeature[] {
+  const needle = norm(q);
+  if (!needle) return [];
+  const hit = (z: ZoneFeature) => norm(z.properties.name_th).includes(needle) || norm(z.properties.name_en).includes(needle);
+  return [...provinces.filter(hit), ...(districts ?? []).filter(hit)].slice(0, SEARCH_LIMIT);
+}
+
+function AreaSearch({ lang, zones }: { lang: Lang; zones: ZoneView }) {
+  const [query, setQuery] = useState('');
+  const results = useMemo(() => searchZones(query, zones.provinces, zones.districts), [query, zones.provinces, zones.districts]);
+  const parentName = (z: ZoneFeature) => {
+    const p = z.properties.level > 1 ? zones.byId(z.properties.parent ?? '') : null;
+    return p ? zoneLabel(p, lang) : null;
+  };
+  return (
+    <div className="flex flex-col gap-2">
+      <input
+        type="search"
+        value={query}
+        // 1.2 MB of district outlines: fetched only once someone starts searching.
+        onFocus={zones.loadDistricts}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder={t('area.searchDistrict', lang)}
+        aria-label={t('area.searchDistrict', lang)}
+        className="min-h-11 w-full rounded-control border border-line-control bg-surface px-3 text-body text-ink placeholder:text-ink-muted"
+      />
+      {query.trim() && (
+        <ul aria-live="polite" className="flex flex-col gap-1">
+          {results.map((z) => (
+            <li key={z.properties.id}>
+              <button
+                type="button"
+                onClick={() => {
+                  zones.pick(z.properties.id);
+                  setQuery('');
+                }}
+                className="flex min-h-11 w-full items-center justify-between gap-2 rounded-control border border-line bg-surface px-3 text-left text-body hover:border-ink"
+              >
+                <span>{zoneLabel(z, lang)}</span>
+                {parentName(z) && <span className="text-caption text-ink-muted">{parentName(z)}</span>}
+              </button>
+            </li>
+          ))}
+          {!results.length && (
+            <li className="text-body text-ink-muted">{zones.districts ? t('common.noData', lang) : t('common.loading', lang)}</li>
+          )}
+        </ul>
+      )}
+    </div>
+  );
 }
 
 export function ZonePanel({ lang, zones }: { lang: Lang; zones: ZoneView }) {
@@ -66,6 +123,8 @@ export function ZonePanel({ lang, zones }: { lang: Lang; zones: ZoneView }) {
       </div>
       )}
 
+      <AreaSearch lang={lang} zones={zones} />
+
       <div className="flex flex-col gap-1 rounded-card bg-bg px-3.5 py-2.5">
         <div className="flex flex-wrap items-center gap-2">
           <strong className="text-title">{focus ? zoneLabel(focus, lang) : regionName}</strong>
@@ -78,7 +137,9 @@ export function ZonePanel({ lang, zones }: { lang: Lang; zones: ZoneView }) {
       {zones.visible.length > 0 ? (
         <div>
           <div className="mb-2 flex flex-wrap items-baseline gap-2">
-            <h3 className="text-body font-semibold">{t('zone.list', lang, { level: levelName(childLevel, bangkok, lang) })}</h3>
+            <h3 className="text-body font-semibold">
+              {zones.path.length ? t('zone.list', lang, { level: levelName(childLevel, bangkok, lang) }) : t('area.pickProvince', lang)}
+            </h3>
             <span className="text-caption text-ink-muted">
               {t('area.sortNote', lang)} · {t('zone.tapHint', lang)}
             </span>
@@ -114,6 +175,10 @@ export function ZonePanel({ lang, zones }: { lang: Lang; zones: ZoneView }) {
             })}
           </ul>
         </div>
+      ) : zones.loading ? (
+        <p className="text-body text-ink-muted" aria-live="polite">
+          {t('common.loading', lang)}
+        </p>
       ) : (
         <p className="text-body text-ink-muted">{t('zone.noChildren', lang, { level: levelName(childLevel, bangkok, lang) })}</p>
       )}

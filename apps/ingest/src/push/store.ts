@@ -20,6 +20,8 @@ export interface SubscriptionRow {
   quake_max_km: number | null;
   /** Consecutive failed deliveries (migration 0004). */
   failures?: number;
+  /** ISO time; the push queue serves oldest first. */
+  updated_at?: string;
 }
 
 /** Consecutive definitive failures (4xx other than 404/408/410/429) before a subscription is dropped; push services return 404/410 for ones that are gone for sure. */
@@ -73,12 +75,31 @@ export async function getSubscription(db: D1Database, id: string): Promise<Subsc
   return db.prepare('SELECT * FROM subscriptions WHERE id = ?1').bind(id).first<SubscriptionRow>();
 }
 
+/** D1 refuses more than 100 bound parameters per query; 90 leaves headroom for future filters. */
+export const MAX_BIND_PARAMS = 90;
+
+// Same order as the SQL: ISO strings compare correctly as plain strings.
+const byHealthThenAge = (a: SubscriptionRow, b: SubscriptionRow) =>
+  (a.failures ?? 0) - (b.failures ?? 0) || ((a.updated_at ?? '') < (b.updated_at ?? '') ? -1 : (a.updated_at ?? '') > (b.updated_at ?? '') ? 1 : 0);
+
+/**
+ * With 928 districts a storm can put hundreds in alert at once, so the IN list goes out in chunks of
+ * MAX_BIND_PARAMS; each chunk is already limited, then the merge is re-sorted and limited again.
+ */
 export async function subscriptionsIn(db: D1Database, districts: string[] | 'all', limit = MAX_ROWS_PER_RUN): Promise<SubscriptionRow[]> {
-  const order = `ORDER BY failures ASC, updated_at ASC LIMIT ${Math.max(1, Math.floor(limit))}`;
+  const max = Math.max(1, Math.floor(limit));
+  const order = `ORDER BY failures ASC, updated_at ASC LIMIT ${max}`;
   if (districts === 'all') return (await db.prepare(`SELECT * FROM subscriptions ${order}`).all<SubscriptionRow>()).results;
-  if (!districts.length) return [];
-  const marks = districts.map((_, i) => `?${i + 1}`).join(',');
-  return (await db.prepare(`SELECT * FROM subscriptions WHERE district IN (${marks}) ${order}`).bind(...districts).all<SubscriptionRow>()).results;
+  const unique = [...new Set(districts)];
+  if (!unique.length) return [];
+  const rows: SubscriptionRow[] = [];
+  for (let i = 0; i < unique.length; i += MAX_BIND_PARAMS) {
+    const chunk = unique.slice(i, i + MAX_BIND_PARAMS);
+    const marks = chunk.map((_, j) => `?${j + 1}`).join(',');
+    rows.push(...(await db.prepare(`SELECT * FROM subscriptions WHERE district IN (${marks}) ${order}`).bind(...chunk).all<SubscriptionRow>()).results);
+  }
+  // One chunk needs no merge, and keeps the database's own order exactly as before.
+  return unique.length <= MAX_BIND_PARAMS ? rows : rows.sort(byHealthThenAge).slice(0, max);
 }
 
 export type StrikeAction = 'delete' | 'strike' | 'reset' | 'none';

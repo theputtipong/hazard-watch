@@ -1,3 +1,4 @@
+import { GIBS } from '@hw/core';
 import { WEB } from '@/config';
 import { API_BASE } from '@/lib/api';
 import { PREFS_SCRIPT } from '@/lib/prefsScript';
@@ -9,6 +10,9 @@ const API = origin(API_BASE);
 const VECTOR_TILES = origin(WEB.map.openfreemap.style.light);
 // The raster layer is also the fallback when WebGL or the vector style fails, so it is always allowed.
 const RASTER_TILES = origin(WEB.map.osm.url);
+// NASA GIBS imagery loads as <img> tiles (WMTS and WMS on one host). FIRMS/EONET are not listed: the client only
+// reads them from our snapshot, never from NASA directly.
+const NASA_TILES = origin(GIBS.wmts);
 
 let prefsHash: Promise<string> | undefined;
 
@@ -34,7 +38,7 @@ export async function contentSecurityPolicy(nonce: string): Promise<string> {
     // React SSR style="" attributes and Leaflet/MapLibre markup carry inline styles that cannot take a nonce.
     // No nonce here on purpose: a nonce would make browsers ignore 'unsafe-inline'.
     'style-src': ["'self'", "'unsafe-inline'"],
-    'img-src': ["'self'", 'data:', 'blob:', API, RASTER_TILES],
+    'img-src': ["'self'", 'data:', 'blob:', API, RASTER_TILES, NASA_TILES],
     'font-src': ["'self'"],
     // MapLibre fetches its style, vector tiles, glyphs and sprites.
     'connect-src': ["'self'", API, VECTOR_TILES],

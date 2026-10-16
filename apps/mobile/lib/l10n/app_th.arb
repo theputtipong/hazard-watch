@@ -18,6 +18,10 @@
       }
     }
   },
+  "appCoverageAll": "ให้บริการทั้ง 77 จังหวัด",
+  "@appCoverageAll": {
+    "description": "app.coverageAll"
+  },
   "commonUpdated": "อัปเดต",
   "@commonUpdated": {
     "description": "common.updated"
@@ -295,6 +299,14 @@
   "@areaSituation": {
     "description": "area.situation"
   },
+  "areaPickProvince": "เลือกจังหวัด",
+  "@areaPickProvince": {
+    "description": "area.pickProvince"
+  },
+  "areaSearchDistrict": "ค้นหาเขต/อำเภอ",
+  "@areaSearchDistrict": {
+    "description": "area.searchDistrict"
+  },
   "mapTitle": "แผนที่",
   "@mapTitle": {
     "description": "map.title"
@@ -428,6 +440,101 @@
   "layerWater": "น้ำในคลอง",
   "@layerWater": {
     "description": "layer.water"
+  },
+  "layerNasaFirms": "จุดความร้อน (ไฟ)",
+  "@layerNasaFirms": {
+    "description": "layer.nasa.firms"
+  },
+  "layerNasaEvents": "พายุและภัยทั่วโลก",
+  "@layerNasaEvents": {
+    "description": "layer.nasa.events"
+  },
+  "layerNasaImergRain": "ฝนจากดาวเทียม",
+  "@layerNasaImergRain": {
+    "description": "layer.nasa.imergRain"
+  },
+  "layerNasaFlood": "น้ำท่วมจากดาวเทียม",
+  "@layerNasaFlood": {
+    "description": "layer.nasa.flood"
+  },
+  "layerNasaAod": "ควันและฝุ่นจากดาวเทียม",
+  "@layerNasaAod": {
+    "description": "layer.nasa.aod"
+  },
+  "layerNasaTrueColor": "ภาพถ่ายดาวเทียม",
+  "@layerNasaTrueColor": {
+    "description": "layer.nasa.trueColor"
+  },
+  "layerNasaFireWms": "จุดความร้อนทั่วโลก",
+  "@layerNasaFireWms": {
+    "description": "layer.nasa.fireWms"
+  },
+  "nasaCardTitle": "ไฟและพายุจากดาวเทียม NASA",
+  "@nasaCardTitle": {
+    "description": "nasa.card.title"
+  },
+  "nasaFiresCount": "พบจุดความร้อน {n} จุดในระยะ {km} กม. ช่วง 24 ชม.",
+  "@nasaFiresCount": {
+    "description": "nasa.fires.count",
+    "placeholders": {
+      "n": {
+        "type": "String"
+      },
+      "km": {
+        "type": "String"
+      }
+    }
+  },
+  "nasaFiresNearest": "จุดที่ใกล้ที่สุดห่าง {km} กม.",
+  "@nasaFiresNearest": {
+    "description": "nasa.fires.nearest",
+    "placeholders": {
+      "km": {
+        "type": "String"
+      }
+    }
+  },
+  "nasaFiresNone": "ไม่พบจุดความร้อนใกล้คุณในช่วง 24 ชม.",
+  "@nasaFiresNone": {
+    "description": "nasa.fires.none"
+  },
+  "nasaEventSevereStorms": "พายุ",
+  "@nasaEventSevereStorms": {
+    "description": "nasa.event.severeStorms"
+  },
+  "nasaEventVolcanoes": "ภูเขาไฟ",
+  "@nasaEventVolcanoes": {
+    "description": "nasa.event.volcanoes"
+  },
+  "nasaEventFloods": "น้ำท่วม",
+  "@nasaEventFloods": {
+    "description": "nasa.event.floods"
+  },
+  "nasaEventLandslides": "ดินถล่ม",
+  "@nasaEventLandslides": {
+    "description": "nasa.event.landslides"
+  },
+  "nasaEventKm": "ห่าง {km} กม.",
+  "@nasaEventKm": {
+    "description": "nasa.event.km",
+    "placeholders": {
+      "km": {
+        "type": "String"
+      }
+    }
+  },
+  "nasaDataDate": "ภาพดาวเทียมวันที่ {date}",
+  "@nasaDataDate": {
+    "description": "nasa.dataDate",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "nasaDisclaimer": "ข้อมูลดาวเทียมจาก NASA อาจช้ากว่าเหตุการณ์จริงหลายชั่วโมง ไม่ใช่ประกาศเตือนภัยทางการ",
+  "@nasaDisclaimer": {
+    "description": "nasa.disclaimer"
   },
   "freshStale": "ยังไม่มีค่าใหม่ ค่าล่าสุดเมื่อ {time}",
   "@freshStale": {
@@ -1344,6 +1451,14 @@
   "@feedsNameQuakes": {
     "description": "feeds.name.quakes"
   },
+  "feedsNameFires": "จุดความร้อน",
+  "@feedsNameFires": {
+    "description": "feeds.name.fires"
+  },
+  "feedsNameEvents": "พายุและภัยทั่วโลก",
+  "@feedsNameEvents": {
+    "description": "feeds.name.events"
+  },
   "timeJustNow": "เมื่อสักครู่",
   "@timeJustNow": {
     "description": "time.justNow"
@@ -1493,7 +1608,7 @@
   "@footerCoffee": {
     "description": "footer.coffee"
   },
-  "footerCredits": "ข้อมูลจาก กรมอุตุนิยมวิทยา · สำนักการระบายน้ำ กทม. · สสน. (ThaiWater) · กรมควบคุมมลพิษ · GISTDA · USGS · Open-Meteo · ขอบเขตพื้นที่: กรุงเทพมหานคร, geoBoundaries, OCHA/กรมแผนที่ทหาร · แผนที่ OpenFreeMap © OpenMapTiles ข้อมูลจากผู้ร่วมพัฒนา OpenStreetMap",
+  "footerCredits": "ข้อมูลจาก กรมอุตุนิยมวิทยา · สำนักการระบายน้ำ กทม. · สสน. (ThaiWater) · กรมควบคุมมลพิษ · GISTDA · USGS · NASA (FIRMS, EONET, GIBS) · Open-Meteo · ขอบเขตพื้นที่: กรุงเทพมหานคร, geoBoundaries, OCHA/กรมแผนที่ทหาร · แผนที่ OpenFreeMap © OpenMapTiles ข้อมูลจากผู้ร่วมพัฒนา OpenStreetMap",
   "@footerCredits": {
     "description": "footer.credits"
   },
@@ -1544,6 +1659,18 @@
   "sourcesDescOpenMeteo": "พยากรณ์อากาศ",
   "@sourcesDescOpenMeteo": {
     "description": "sources.desc.openMeteo"
+  },
+  "sourcesDescNasaFirms": "จุดความร้อนจากดาวเทียม",
+  "@sourcesDescNasaFirms": {
+    "description": "sources.desc.nasaFirms"
+  },
+  "sourcesDescNasaEonet": "พายุ ภูเขาไฟ และภัยธรรมชาติทั่วโลก",
+  "@sourcesDescNasaEonet": {
+    "description": "sources.desc.nasaEonet"
+  },
+  "sourcesDescNasaGibs": "ภาพและแผนที่จากดาวเทียม",
+  "@sourcesDescNasaGibs": {
+    "description": "sources.desc.nasaGibs"
   },
   "levelSemantics": "ระดับ {level}",
   "@levelSemantics": {
