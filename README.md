@@ -64,7 +64,8 @@ add the extension. Every platform reads the same public API, so the data, alert 
 
 - Area: Bangkok and five provinces (Nonthaburi, Pathum Thani, Samut Prakan, Samut Sakhon, Nakhon Pathom). Radar covers
   the whole country.
-- BMA street-flood and rain data are currently blocked by the source (403), so those cards show "no data".
+- BMA blocks cloud IPs; street-flood and rain data arrive when a phone or extension in Thailand relays them, otherwise
+  those cards show "no data".
 - The rain-movement badge is an estimate from the wind forecast, not tracked from radar images.
 
 ## Layout
@@ -98,7 +99,7 @@ packages/
 | PM2.5 | Air4Thai (PCD) | ingest cron, every 10 min | |
 | Earthquakes | TMD RSS + USGS | ingest cron, every 10 min | |
 | Weather | Open-Meteo | ingest, on request per location (cached 10 min) | |
-| Street flooding, rain gauges | BMA Drainage Dept. (unofficial endpoints) | GitHub Actions, every 40 min (see below) | 403 bot challenge from Cloudflare IPs |
+| Street flooding, rain gauges | BMA Drainage Dept. (unofficial endpoints) | GitHub Actions, every 40 min, plus relays from the app/extension on Thai IPs (`POST /v1/relay/bma/:kind`, see below) | 403 bot challenge from Cloudflare (and GitHub) IPs |
 | Canal/river levels, radar images | ThaiWater (HII) | GitHub Actions, every 40 min | 429 rate limit from Cloudflare IPs; radar frames are cut to rain echoes only (`apps/ingest/scripts/radarImage.ts`) and placed with `packages/core/src/radars.ts` |
 | CCTV list | BMA Traffic | GitHub Actions, once a day (`INGEST.runnerFeedEveryHours`) | pins + link to source only |
 | Base map | OpenFreeMap vector tiles via MapLibre GL in Leaflet (`positron` / `dark`, follows the theme; labels in the page language) | browser | config in `WEB.map.openfreemap`; free public instance, no key; falls back to OSM raster automatically without WebGL or if the style fails to load |
@@ -108,6 +109,12 @@ every `INGEST.runnerDispatchEveryMinutes` (40, to stay inside the 2,000 free Act
 That needs the Worker secret `GITHUB_DISPATCH_TOKEN`: a fine-grained token for this repo only, with
 *Actions: Read and write* (GitHub answers 403 if the permission or repo is missing, 401 if the token is wrong).
 The GitHub schedule stays as a fallback. The ingest keeps feeds left out of a runner upload (e.g. the daily CCTV list).
+
+BMA relay: the app and the extension send the raw BMA `flood`/`rain` list they downloaded to `POST /v1/relay/bma/:kind`.
+It needs no key, so the ingest takes it only from Thai IPs (Cloudflare `cf.country`, else 403), answers
+`{ok: true, written: false}` without a KV write while its copy is younger than `INGEST.relayFreshMinutes` (10, to stay
+inside the 1,000 free KV writes a day), and re-parses the list with the runner's parser, limits and push hold. A runner
+upload whose BMA fetch failed does not overwrite a relay copy younger than `INGEST.relayKeepMinutes` (30).
 
 ## Develop
 
@@ -175,6 +182,9 @@ needs its own adapters in `packages/sources`.
 - No server state: every `pollMinutes` (15, `apps/extension/src/config.ts`) the service worker reads `/v1/snapshot`,
   builds the same alerts as Web Push for the chosen district (`localAlerts` → core `districtAlerts` / `quakeAlerts`),
   shows new ones as notifications (repeat after `push.cooldownHours`) and sets the toolbar badge.
+- When the server's BMA flood/rain copy is 10 min old or more it fetches BMA and relays it (`src/relay.ts`, see Data
+  flow). That needs the host permission `https://weather.bangkok.go.th/*` (`build.mjs`); Chrome asks existing users to
+  accept it when they update.
 - Popup: area (GPS or a picked district), alerts (up to `maxBanners`), weather + wind, nearest PM2.5 / river gauge,
   flooding in the district, and "when the data last updated" (core `feedStatuses`, shared with the web). Text lives in
   core i18n (`ext.*`, `feeds.*`, `note.*`, `gauge.*`). Fonts (IBM Plex Sans Thai 400/500/600) ship in `static/fonts`.

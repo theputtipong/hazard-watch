@@ -14,12 +14,17 @@ Future<void> main() async {
   final settings = AppSettings(prefs);
   await settings.load();
   await initPhoneNotifications(settings);
+  final api = HttpHazardApi();
   runApp(
     HazardWatchApp(
       settings: settings,
-      api: HttpHazardApi(),
+      api: api,
       location: DeviceLocation(),
-      bma: DeviceBma(fetcher: HttpBmaFetcher(), store: PrefsBmaStore(prefs)),
+      bma: DeviceBma(
+        fetcher: HttpBmaFetcher(),
+        store: PrefsBmaStore(prefs),
+        relay: (k, raw) => api.relayBma(k.name, raw),
+      ),
     ),
   );
 }

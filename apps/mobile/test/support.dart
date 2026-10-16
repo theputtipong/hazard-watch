@@ -62,6 +62,14 @@ class FakeApi implements HazardApi {
     if (error != null) throw error!;
     return MapSnapshot.fromJson(snapshotData ?? snapshotJson());
   }
+
+  /// Every relayBma call, in order, so BMA tests can check what was handed to the server.
+  final relays = <({String kind, List<Object?> raw})>[];
+
+  @override
+  Future<void> relayBma(String kind, List<Object?> raw) async {
+    relays.add((kind: kind, raw: raw));
+  }
 }
 
 class FakeLocation implements LocationService {

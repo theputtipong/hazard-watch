@@ -1,8 +1,10 @@
+import { BMA_URLS } from '@hw/core';
+
 export const ENDPOINTS = {
   air4thai: 'https://air4thai.pcd.go.th/services/getNewAQI_JSON.php',
   /** Unofficial; POST only; blocks cloud IPs (403). */
-  bmaFlood: 'https://weather.bangkok.go.th/Flood/PageMap/GetDataTable',
-  bmaRain: 'https://weather.bangkok.go.th/rain/PageMap/GetDataForUpdate',
+  bmaFlood: BMA_URLS.flood,
+  bmaRain: BMA_URLS.rain,
   bmaTraffic: 'http://www.bmatraffic.com/',
   bmaTrafficView: (id: string) => `http://www.bmatraffic.com/PlayVideo.aspx?ID=${id}`,
   /** Must be opened first to create the ASP.NET session the camera page needs. */

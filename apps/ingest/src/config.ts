@@ -1,3 +1,5 @@
+import { RELAY_FRESH_MINUTES } from '@hw/core';
+
 export const INGEST = {
   maxUploadBytes: 5 * 1024 * 1024,
   cacheSeconds: { snapshot: 60, weather: 600, radar: 120, districts: 3600 },
@@ -18,6 +20,10 @@ export const INGEST = {
   runnerDispatchDedupeMinutes: 5,
   /** Hours between fetches; the BMA data agreement allows at most one CCTV list fetch a day. */
   runnerFeedEveryHours: { cctv: 24 } as Partial<Record<'flood' | 'rain' | 'waterlevel' | 'radar' | 'cctv', number>>,
+  /** A relayed BMA feed newer than this is not rewritten (saves KV writes: free plan 1,000/day). */
+  relayFreshMinutes: RELAY_FRESH_MINUTES,
+  /** /ingest/runner keeps a relayed flood/rain copy this recent instead of marking the feed failing. */
+  relayKeepMinutes: 3 * RELAY_FRESH_MINUTES,
 } as const;
 
 /** Thailand spans ~5.6–20.5 N, 97.3–105.6 E; about 1° of margin (same box as validate.ts). */

@@ -7,8 +7,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'bma_parse.dart';
 
 // BMA blocks Cloudflare and GitHub Actions IPs, so the server's flood/rain feeds fail; a phone in Thailand can reach it.
-// What a phone fetches is only shown on that phone and never sent to our API: we cannot verify it, and fake flood data
-// would trigger false alerts for everyone.
+// After a good download the raw list is also sent to our API in the background (POST /v1/relay/bma/<kind>). The server
+// accepts it only from Thai IPs, re-parses it with its own rules, skips it while its copy is under 10 minutes old and
+// holds alerts on a suspicious jump, so one phone cannot fake a flood for everyone.
 
 enum BmaKind {
   flood('https://weather.bangkok.go.th/Flood/PageMap/GetDataTable'),
@@ -20,6 +21,9 @@ enum BmaKind {
   /// The feed topic in `/v1/area` that this replaces.
   String get topic => name;
 }
+
+/// Sends a freshly downloaded raw list to our API. Best effort: failures are ignored.
+typedef BmaRelay = Future<void> Function(BmaKind kind, List<Object?> raw);
 
 abstract interface class BmaFetcher {
   /// The raw JSON array; throws on any failure.
@@ -72,12 +76,13 @@ class BmaCopy {
 /// BMA data downloaded on this phone, reused for [maxAge] (in memory and across restarts) so opening the app often
 /// does not hammer BMA.
 class DeviceBma {
-  DeviceBma({required this.fetcher, this.store});
+  DeviceBma({required this.fetcher, this.store, this.relay});
 
   static const maxAge = Duration(minutes: 10);
 
   final BmaFetcher fetcher;
   final BmaStore? store;
+  final BmaRelay? relay;
   final _copies = <BmaKind, BmaCopy?>{};
   final _pending = <BmaKind, Future<BmaCopy?>>{};
 
@@ -93,6 +98,7 @@ class DeviceBma {
     try {
       final raw = await fetcher.fetch(kind);
       final items = kind == BmaKind.flood ? parseBmaFlood(raw, now) : parseBmaRain(raw, now);
+      _relay(kind, raw);
       final copy = BmaCopy(items: items, fetchedAt: now);
       _copies[kind] = copy;
       await _save(kind, copy);
@@ -105,6 +111,13 @@ class DeviceBma {
         failedAt: cached.failedAt ?? now,
       );
     }
+  }
+
+  // Fire and forget: the relay helps other users, so it must never delay or change what this phone shows.
+  void _relay(BmaKind kind, List<Object?> raw) {
+    final r = relay;
+    if (r == null) return;
+    unawaited(Future.sync(() => r(kind, raw)).catchError((Object _) {}));
   }
 
   String _key(BmaKind kind) => 'bma.${kind.name}';

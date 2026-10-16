@@ -29,6 +29,10 @@ abstract interface class HazardApi {
 
   /// Every point the web map draws.
   Future<MapSnapshot> snapshot();
+
+  /// Hands BMA's raw flood/rain list (kind = `BmaKind.name`) to the server, which cannot reach BMA itself.
+  /// Best effort: never throws.
+  Future<void> relayBma(String kind, List<Object?> raw);
 }
 
 class HttpHazardApi implements HazardApi {
@@ -82,4 +86,19 @@ class HttpHazardApi implements HazardApi {
   @override
   Future<MapSnapshot> snapshot() async =>
       MapSnapshot.fromJson((await _get('/v1/snapshot', {}))! as Map<String, dynamic>);
+
+  @override
+  Future<void> relayBma(String kind, List<Object?> raw) async {
+    try {
+      await _client
+          .post(
+            Uri.parse('$base/v1/relay/bma/$kind'),
+            headers: {'content-type': 'application/json'},
+            body: jsonEncode(raw),
+          )
+          .timeout(_timeout);
+    } on Object {
+      // Best effort: the server keeps its own copy and the phone already shows this one, so status and errors are ignored.
+    }
+  }
 }

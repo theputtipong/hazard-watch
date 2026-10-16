@@ -1,4 +1,4 @@
-import { RADARS, type DashboardSnapshot } from '@hw/core';
+import { isRelayKind, RADARS, type DashboardSnapshot } from '@hw/core';
 import { t } from '@hw/core/i18n';
 import { defaultContext, fetchWeather, FEEDS, REQUEST, type EdgeFeed } from '@hw/sources';
 import { Hono, type Context } from 'hono';
@@ -7,7 +7,8 @@ import { INGEST, THAILAND_BOUNDS } from './config';
 import { parseEndpointBody, parseSubscribeBody, rateLimit, readJsonBody, type PushAction } from './push/guard';
 import { DISTRICTS, messageFor, notifierFor, sendAlerts, type PushEnv } from './push/run';
 import { deleteSubscription, getSubscription, markSent, recordDelivery, sentSince, subscriptionId, upsertSubscription } from './push/store';
-import { isPushHeld, KEYS, readGroup, readRadarBundle, unpackRadar, writeGroup, type FeedMap } from './store';
+import { keepRecentRelay, relayFeed, relayIsFresh } from './relay';
+import { isPushHeld, KEYS, readGroup, readRadarBundle, unpackRadar, writeGroup, type FeedMap, type GroupSnapshot } from './store';
 import { parseRunnerPayload, suspiciousJump } from './validate';
 import { buildAreaReport, districtAt, districtList, findDistrict } from './area';
 import { buildSummary } from './summary';
@@ -314,6 +315,48 @@ app.post('/v1/push/test', async (c) => {
   return c.json({ result });
 });
 
+/** Shared by /ingest/runner and /v1/relay: hold check, write to KEYS.runner, push unless held. */
+async function writeRunnerFeeds(
+  c: Context<{ Bindings: Env }>,
+  prev: GroupSnapshot | null,
+  feeds: FeedMap,
+  now: Date,
+  label: 'runner' | 'relay',
+): Promise<{ snapshot: GroupSnapshot; held: boolean }> {
+  const jump = suspiciousJump(prev?.feeds, feeds, DISTRICTS, now);
+  if (jump.suspicious) console.log(`${label} push held`, JSON.stringify({ newDanger: jump.newDanger.length, districtsWithData: jump.districtsWithData }));
+  const snapshot = await writeGroup(c.env.SNAPSHOTS, KEYS.runner, feeds, now, {
+    prev,
+    holdPushUntil: jump.suspicious ? new Date(now.getTime() + INGEST.pushHoldMinutes * 60_000) : undefined,
+  });
+  const held = isPushHeld(snapshot, now);
+  if (!held) c.executionCtx.waitUntil(pushAfterUpdate(c.env, now));
+  return { snapshot, held };
+}
+
+/**
+ * Raw BMA flood/rain lists relayed by the app and extension: BMA blocks cloud IPs but answers Thai ones.
+ * Public on purpose (no key to leak from an app); the Thai-IP check, server-side parsing, the fresh-copy skip
+ * and the runner's push hold limit what one device can do.
+ */
+app.post('/v1/relay/bma/:kind', async (c) => {
+  const kind = c.req.param('kind');
+  if (!isRelayKind(kind)) return c.json({ error: 'unknown feed' }, 404);
+  if (c.req.raw.cf?.country !== 'TH') return c.json({ error: 'outside Thailand' }, 403);
+  const now = new Date();
+  const prev = await readGroup(c.env.SNAPSHOTS, KEYS.runner);
+  // Checked before reading the body: most relays arrive while the copy is fresh, so they cost one KV read and no write.
+  if (relayIsFresh(prev, kind, now, INGEST.relayFreshMinutes)) return c.json({ ok: true, written: false });
+  const body = await readJsonBody(c.req.raw, INGEST.maxUploadBytes);
+  if (!body.ok) return c.json({ error: body.error }, body.status);
+  const r = await relayFeed(kind, body.value, now);
+  if (!r.ok) return c.json({ error: r.error }, 400);
+  const { held } = await writeRunnerFeeds(c, prev, { [kind]: r.feed }, now, 'relay');
+  // Never log the IP or headers: the privacy page promises not to keep them.
+  console.log('relay write', kind, r.feed.items.length, 'dropped', r.dropped);
+  return c.json({ ok: true, written: true, items: r.feed.items.length, held });
+});
+
 app.use('/ingest/*', async (c, next) => {
   if (!(await tokenMatches(c.req.header('authorization') ?? '', c.env.INGEST_TOKEN))) return c.json({ error: 'unauthorized' }, 401);
   const size = Number(c.req.header('content-length') ?? 0);
@@ -335,14 +378,12 @@ app.post('/ingest/runner', async (c) => {
   if (parsed.dropped.length) console.log('runner dropped', parsed.dropped.length, JSON.stringify(parsed.dropped.slice(0, 10)));
   if (!parsed.ok) return c.json({ error: parsed.error, dropped: parsed.dropped.length }, 400);
   const prev = await readGroup(c.env.SNAPSHOTS, KEYS.runner);
-  const jump = suspiciousJump(prev?.feeds, parsed.feeds, DISTRICTS, now);
-  if (jump.suspicious) console.log('runner push held', JSON.stringify({ newDanger: jump.newDanger.length, districtsWithData: jump.districtsWithData }));
-  const snapshot = await writeGroup(c.env.SNAPSHOTS, KEYS.runner, parsed.feeds, now, {
-    prev,
-    holdPushUntil: jump.suspicious ? new Date(now.getTime() + INGEST.pushHoldMinutes * 60_000) : undefined,
-  });
-  const held = isPushHeld(snapshot, now);
-  if (!held) c.executionCtx.waitUntil(pushAfterUpdate(c.env, now));
+  // GitHub Actions can't reach BMA; a recent copy relayed from a Thai device beats marking the feed failing.
+  const { feeds, kept } = keepRecentRelay(prev, parsed.feeds, now, INGEST.relayKeepMinutes);
+  if (kept.length) console.log('runner kept relay', kept.join(','));
+  // Nothing left to store: skip the KV write (free plan: 1,000/day).
+  if (!Object.keys(feeds).length) return c.json({ ok: true, feeds: [], dropped: parsed.dropped.length, held: isPushHeld(prev, now) });
+  const { snapshot, held } = await writeRunnerFeeds(c, prev, feeds, now, 'runner');
   return c.json({ ok: true, feeds: Object.keys(snapshot.feeds), dropped: parsed.dropped.length, held });
 });
 

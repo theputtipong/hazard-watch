@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -26,11 +27,17 @@ class FakeFetcher implements BmaFetcher {
   final calls = <BmaKind>[];
   bool fail = false;
 
+  /// Returned instead of the fixture when set.
+  List<Object?>? raw;
+
+  /// What the last successful fetch returned.
+  List<Object?>? last;
+
   @override
   Future<List<Object?>> fetch(BmaKind kind) async {
     calls.add(kind);
     if (fail) throw const SocketException('blocked');
-    return sourceFixture(kind == BmaKind.flood ? 'bma-flood.json' : 'bma-rain.json');
+    return last = raw ?? sourceFixture(kind == BmaKind.flood ? 'bma-flood.json' : 'bma-rain.json');
   }
 }
 
@@ -192,6 +199,66 @@ void main() {
     test('nothing to show when the first download fails', () async {
       final bma = DeviceBma(fetcher: FakeFetcher()..fail = true);
       expect(await bma.get(BmaKind.flood, parseNow), isNull);
+    });
+  });
+
+  group('DeviceBma relay', () {
+    test('relays the raw list once after a fresh download', () async {
+      final fetcher = FakeFetcher();
+      final relays = <(BmaKind, List<Object?>)>[];
+      final bma = DeviceBma(fetcher: fetcher, relay: (k, raw) async => relays.add((k, raw)));
+      final copy = await bma.get(BmaKind.flood, parseNow);
+      expect(copy!.items, hasLength(6));
+      expect(relays, hasLength(1));
+      expect(relays.single.$1, BmaKind.flood);
+      expect(relays.single.$2, same(fetcher.last));
+    });
+
+    test('no relay for a copy reused within 10 minutes or restored after a restart', () async {
+      final fetcher = FakeFetcher();
+      final store = MemoryStore();
+      final relays = <BmaKind>[];
+      Future<void> relay(BmaKind k, List<Object?> _) async => relays.add(k);
+      final bma = DeviceBma(fetcher: fetcher, store: store, relay: relay);
+      await bma.get(BmaKind.rain, parseNow);
+      await bma.get(BmaKind.rain, parseNow.add(const Duration(minutes: 5)));
+      await DeviceBma(
+        fetcher: fetcher,
+        store: store,
+        relay: relay,
+      ).get(BmaKind.rain, parseNow.add(const Duration(minutes: 9)));
+      expect(fetcher.calls, hasLength(1));
+      expect(relays, [BmaKind.rain]);
+    });
+
+    test('no relay when the download fails', () async {
+      final relays = <BmaKind>[];
+      final bma = DeviceBma(fetcher: FakeFetcher()..fail = true, relay: (k, _) async => relays.add(k));
+      expect(await bma.get(BmaKind.flood, parseNow), isNull);
+      expect(relays, isEmpty);
+    });
+
+    test('no relay when the list does not parse', () async {
+      final relays = <BmaKind>[];
+      final bma = DeviceBma(fetcher: FakeFetcher()..raw = [42], relay: (k, _) async => relays.add(k));
+      expect(await bma.get(BmaKind.flood, parseNow), isNull);
+      expect(relays, isEmpty);
+    });
+
+    test('a relay that throws, fails or never finishes does not affect the copy', () async {
+      final relays = <BmaRelay>[
+        (_, _) => throw StateError('sync'),
+        (_, _) async => throw StateError('async'),
+        (_, _) => Completer<void>().future,
+      ];
+      for (final relay in relays) {
+        final copy = await DeviceBma(
+          fetcher: FakeFetcher(),
+          relay: relay,
+        ).get(BmaKind.rain, parseNow).timeout(const Duration(seconds: 5));
+        expect(copy!.failed, isFalse);
+        expect(copy.items, isNotEmpty);
+      }
     });
   });
 

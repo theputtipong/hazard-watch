@@ -140,12 +140,13 @@ void alertsDispatcher() {
     final settings = AppSettings(prefs);
     await settings.load();
     final store = PrefsBmaStore(prefs);
+    final api = HttpHazardApi();
     await checkAndNotify(
       settings: settings,
-      api: HttpHazardApi(),
+      api: api,
       notifier: LocalAlertNotifier(),
       store: store,
-      bma: DeviceBma(fetcher: HttpBmaFetcher(), store: store),
+      bma: DeviceBma(fetcher: HttpBmaFetcher(), store: store, relay: (k, raw) => api.relayBma(k.name, raw)),
       now: DateTime.now(),
     );
     return true;

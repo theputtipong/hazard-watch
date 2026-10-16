@@ -1,6 +1,7 @@
 import { alertsDue, DEFAULT_CONFIG, sentRetentionMs, type Alert } from '@hw/core';
 import { fetchSnapshot, siteLink } from './api';
 import { EXT } from './config';
+import { relayStale } from './relay';
 import { alertSeverity, districtById, localAlerts, wantedAlerts } from './status';
 import { getSent, getSettings, saveSent } from './storage';
 
@@ -45,11 +46,15 @@ async function setBadge(alerts: Alert[] | null) {
 }
 
 async function check(now = new Date()) {
+  const pending = fetchSnapshot();
+  // Server BMA copy is relayed whatever district is chosen; failures never touch the badge or alerts.
+  void pending.then((s) => relayStale(s, now)).catch(() => {});
+
   const settings = await getSettings();
   const district = settings.place ? districtById(settings.place.districtId) : null;
   if (!district) return setBadge(null);
 
-  const snapshot = await fetchSnapshot();
+  const snapshot = await pending;
   const alerts = wantedAlerts(localAlerts(snapshot, district, DEFAULT_CONFIG, now), settings);
   await setBadge(alerts);
   if (!settings.notify) return;

@@ -12,7 +12,8 @@ cpSync('static', out, { recursive: true });
 
 // The API host must be listed for fetches from the service worker to skip CORS.
 const manifest = JSON.parse(readFileSync('static/manifest.json', 'utf8'));
-manifest.host_permissions = [`${new URL(apiBase).origin}/*`];
+// BMA sends no CORS headers and blocks non-Thai IPs, so the worker on a Thai user's machine fetches it for the relay.
+manifest.host_permissions = [`${new URL(apiBase).origin}/*`, 'https://weather.bangkok.go.th/*'];
 const { version } = JSON.parse(readFileSync('package.json', 'utf8'));
 manifest.version = version;
 writeFileSync(`${out}/manifest.json`, JSON.stringify(manifest, null, 2));

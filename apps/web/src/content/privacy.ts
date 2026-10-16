@@ -3,7 +3,7 @@ import type { Lang } from '@hw/core/i18n';
 /** PDPA notice. Draft: have it legally reviewed before a public launch. */
 export const privacy: Record<Lang, { updated: string; sections: { heading: string; body: string[] }[] }> = {
   th: {
-    updated: 'ปรับปรุงล่าสุด 13 ตุลาคม 2569',
+    updated: 'ปรับปรุงล่าสุด 16 ตุลาคม 2569',
     sections: [
       {
         heading: 'สรุปสั้น ๆ',
@@ -59,6 +59,7 @@ export const privacy: Record<Lang, { updated: string; sections: { heading: strin
         body: [
           'การตั้งค่า เขต/อำเภอที่เลือก และตำแหน่งโดยประมาณ เก็บไว้ในพื้นที่จัดเก็บของส่วนขยายบนเครื่องของคุณเท่านั้น',
           'ส่วนขยายอ่านข้อมูลสาธารณะจาก API ของเราทุก 15 นาที และส่งพิกัดแบบปัดเศษ (ประมาณ 1 กม.) เฉพาะเพื่อดูสภาพอากาศ',
+          'เมื่อข้อมูลน้ำท่วมและฝนของ กทม. บนเซิร์ฟเวอร์ของเราเก่ากว่า 10 นาที ส่วนขยายอาจโหลดข้อมูลสาธารณะชุดนี้จากเว็บไซต์ของ กทม. (ซึ่งจะเห็นหมายเลข IP ของคุณ) แล้วส่งต่อให้ API ของเราโดยไม่ดัดแปลงเพื่อให้ผู้ใช้ทุกคนเห็น โดยไม่แนบข้อมูลส่วนตัว ตำแหน่ง เขต/อำเภอ หรือการตั้งค่าของคุณ เซิร์ฟเวอร์รับข้อมูลนี้เฉพาะจากหมายเลข IP ในประเทศไทย และไม่บันทึกหมายเลข IP ไว้',
           'ไม่มีบัญชีผู้ใช้ และเราไม่เก็บข้อมูลใดของผู้ใช้ส่วนขยายไว้ที่เซิร์ฟเวอร์ การถอนการติดตั้งส่วนขยายจะลบข้อมูลทั้งหมด',
         ],
       },
@@ -68,7 +69,7 @@ export const privacy: Record<Lang, { updated: string; sections: { heading: strin
           'การตั้งค่า เขต/อำเภอที่เลือก และการตั้งค่าการแจ้งเตือน เก็บไว้ในเครื่องของคุณเท่านั้น การลบแอปจะลบข้อมูลทั้งหมด',
           'ถ้าคุณกด "ใช้ตำแหน่งของฉัน" แอปส่งพิกัดแบบปัดเศษ (ประมาณ 1 กม.) ไปที่ API ของเราเพื่อหาเขต/อำเภอ และไม่ถูกบันทึกไว้ แอปไม่ใช้ตำแหน่งขณะทำงานเบื้องหลัง',
           'การแจ้งเตือนในแอปสร้างขึ้นบนเครื่องของคุณ: ประมาณทุก 15 นาที แอปขอข้อมูลสาธารณะของเขต/อำเภอที่เลือกจาก API ของเรา (ส่งเพียงรหัสเขต ไม่ใช่พิกัด) เราไม่เก็บข้อมูลการรับแจ้งเตือนของผู้ใช้แอปไว้ที่เซิร์ฟเวอร์',
-          'ในกรุงเทพฯ แอปอาจโหลดข้อมูลน้ำท่วมและฝนจากเว็บไซต์ของ กทม. โดยตรง ซึ่งจะเห็นหมายเลข IP ของคุณ แต่ไม่ได้รับตำแหน่งของคุณ',
+          'เมื่อข้อมูลน้ำท่วมและฝนของ กทม. บนเซิร์ฟเวอร์ของเราเก่ากว่า 10 นาที แอป (เช่น เมื่อคุณเลือกเขตในกรุงเทพฯ หรือเปิดแท็บแผนที่) อาจโหลดข้อมูลชุดนี้จากเว็บไซต์ของ กทม. โดยตรง ซึ่งจะเห็นหมายเลข IP ของคุณ แต่ไม่ได้รับตำแหน่งของคุณ เมื่อโหลดได้ แอปส่งข้อมูลสาธารณะชุดนั้นต่อให้ API ของเราโดยไม่ดัดแปลงเพื่อให้ผู้ใช้ทุกคนเห็น โดยไม่แนบข้อมูลส่วนตัว ตำแหน่ง เขต/อำเภอ หรือการตั้งค่าของคุณ เซิร์ฟเวอร์รับข้อมูลนี้เฉพาะจากหมายเลข IP ในประเทศไทย และไม่บันทึกหมายเลข IP ไว้',
           'แผนที่พื้นหลังโหลดจาก OpenFreeMap (หรือ OpenStreetMap ถ้า OpenFreeMap ใช้งานไม่ได้) ซึ่งจะเห็นหมายเลข IP ของคุณและบริเวณแผนที่ที่คุณเปิดดู',
           'เมื่อคุณกดลิงก์แหล่งข้อมูล แอปเปิดเว็บไซต์ของหน่วยงานในเบราว์เซอร์ โดยแอปไม่ได้ส่งข้อมูลใดไปให้',
           'ไม่มีบัญชีผู้ใช้ ไม่มีโฆษณา ไม่มีตัวติดตาม และไม่มีเครื่องมือวิเคราะห์หรือรายงานข้อผิดพลาด',
@@ -78,7 +79,7 @@ export const privacy: Record<Lang, { updated: string; sections: { heading: strin
     ],
   },
   en: {
-    updated: 'Last updated 13 October 2026',
+    updated: 'Last updated 16 October 2026',
     sections: [
       {
         heading: 'In short',
@@ -134,6 +135,7 @@ export const privacy: Record<Lang, { updated: string; sections: { heading: strin
         body: [
           'Your settings, chosen district and approximate location stay in the extension’s storage on your device.',
           'The extension reads public data from our API every 15 minutes and sends coordinates rounded to about 1 km only to look up the weather.',
+          'When our server’s copy of Bangkok (BMA) flood and rain data is more than 10 minutes old, the extension may load that public data from the BMA website (which sees your IP address) and pass it on unchanged to our API so every user sees it. Nothing about you, your location, your district or your settings is attached; our server accepts this data only from Thai IP addresses and does not keep your IP address.',
           'There is no account, and we store nothing about extension users on our server. Uninstalling the extension deletes everything.',
         ],
       },
@@ -143,7 +145,7 @@ export const privacy: Record<Lang, { updated: string; sections: { heading: strin
           'Your settings, chosen district and alert settings stay on your device. Uninstalling the app deletes them.',
           'If you tap "Use my location", the app sends coordinates rounded to about 1 km to our API to find your district; they are not stored. The app never uses your location in the background.',
           'Alerts in the app are created on your device: about every 15 minutes it fetches public data for your chosen district from our API (the district code only, not coordinates). We store nothing about app users’ alerts on our server.',
-          'In Bangkok the app may load flood and rain data straight from the BMA website, which sees your IP address but not your location.',
+          'When our server’s copy of Bangkok (BMA) flood and rain data is more than 10 minutes old, the app (for example, when you pick a Bangkok district or open the Map tab) may load it straight from the BMA website, which sees your IP address but not your location. When it does, the app passes that public data on unchanged to our API so every user sees it. Nothing about you, your location, your district or your settings is attached; our server accepts this data only from Thai IP addresses and does not keep your IP address.',
           'The background map is loaded from OpenFreeMap (or OpenStreetMap if OpenFreeMap is unavailable), which sees your IP address and the map area you view.',
           'Tapping a data source link opens the agency’s website in your browser; the app sends it nothing.',
           'There is no account, no ads, no trackers, and no analytics or crash-reporting tools.',
