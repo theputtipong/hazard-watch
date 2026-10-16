@@ -1776,9 +1776,13 @@
   "@notifyChannel": {
     "description": "notify.channel"
   },
-  "areaSearch": "ค้นหาเขต/อำเภอ",
+  "areaSearch": "ค้นหาเขต/อำเภอ หรือจังหวัด",
   "@areaSearch": {
     "description": "area.search"
+  },
+  "areaNoMatch": "ไม่พบเขต/อำเภอที่ตรงกับคำค้น",
+  "@areaNoMatch": {
+    "description": "area.noMatch"
   },
   "readingRain": "ฝนชั่วโมงที่แล้ว",
   "@readingRain": {

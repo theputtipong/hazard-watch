@@ -14,15 +14,79 @@ import {
   type WeatherNow,
 } from '@hw/core';
 import { t, type Lang, type MessageKey } from '@hw/core/i18n';
-import provincesFile from '../../web/public/geo/provinces.json';
 import { fetchSnapshot, fetchWeather, siteLink } from './api';
 import { EXT } from './config';
-import { DISTRICTS, districtAt, districtById, floodInDistrict, localAlerts, nearestLive, wantedAlerts, type Place } from './status';
+import { DISTRICTS, PROVINCES, districtAt, districtById, districtCenter, floodInDistrict, localAlerts, nasaLines, nearestLive, wantedAlerts, type Place } from './status';
 import { getSettings, saveSettings, type Settings } from './storage';
 
+// --- Pure picker helpers (exported for tests; no DOM) ---
+
+export interface PickItem {
+  id: string;
+  parent: string | null;
+  name_th: string;
+  name_en: string;
+}
+
+/** Case- and space-insensitive key, so "chiang mai", "ChiangMai" and "เชียง ใหม่" all match. */
+export const fold = (s: string) => s.normalize('NFC').toLowerCase().replace(/\s+/g, '');
+
+const byName = (lang: Lang) => (a: PickItem, b: PickItem) => (lang === 'th' ? a.name_th : a.name_en).localeCompare(lang === 'th' ? b.name_th : b.name_en, lang);
+
+const matches = (item: PickItem, q: string) => fold(item.name_th).includes(q) || fold(item.name_en).includes(q);
+
+/** Province id → its districts, sorted by name in the UI language. */
+export function groupDistricts(districts: PickItem[], lang: Lang): Map<string, PickItem[]> {
+  const out = new Map<string, PickItem[]>();
+  for (const d of districts) {
+    if (!d.parent) continue;
+    const list = out.get(d.parent);
+    if (list) list.push(d);
+    else out.set(d.parent, [d]);
+  }
+  for (const list of out.values()) list.sort(byName(lang));
+  return out;
+}
+
+/**
+ * Provinces and districts left after the text filter. A province whose name matches keeps
+ * all its districts; a district whose name matches keeps its province.
+ */
+export function filterPlaces(query: string, provinces: PickItem[], byProvince: Map<string, PickItem[]>, lang: Lang) {
+  const q = fold(query);
+  const districts = new Map<string, PickItem[]>();
+  const kept: PickItem[] = [];
+  for (const p of provinces) {
+    const all = byProvince.get(p.id) ?? [];
+    const hit = !q || matches(p, q) ? all : all.filter((d) => matches(d, q));
+    if (!hit.length && q && !matches(p, q)) continue;
+    kept.push(p);
+    districts.set(p.id, hit);
+  }
+  return { provinces: kept.sort(byName(lang)), districts };
+}
+
+/** Saved district id (incl. pre-77-province Greater Bangkok ids, which kept their ids) → picker state. */
+export function restorePick(districtId: string | null | undefined, districts: PickItem[]): { provinceId: string; districtId: string } | null {
+  const d = districtId ? districts.find((x) => x.id === districtId) : undefined;
+  return d?.parent ? { provinceId: d.parent, districtId: d.id } : null;
+}
+
+/** Province to show after filtering: keep the current one if still listed, else the first hit. */
+export function pickProvince(current: string, shown: PickItem[], query: string): string {
+  if (shown.some((p) => p.id === current)) return current;
+  return fold(query) ? (shown[0]?.id ?? '') : '';
+}
+
+// --- Popup ---
+
 const cfg = DEFAULT_CONFIG;
-const app = document.getElementById('app')!;
-const provinces = (provincesFile as unknown as { features: { properties: { id: string; name_th: string; name_en: string } }[] }).features.map((f) => f.properties);
+const DISTRICT_ITEMS: PickItem[] = DISTRICTS.map((d) => d.properties);
+const PROVINCE_ITEMS: PickItem[] = PROVINCES;
+let app: HTMLElement;
+/** Picker state survives re-renders so the filter is not lost after picking. */
+let query = '';
+let provinceId = '';
 
 let settings: Settings;
 let snapshot: DashboardSnapshot | null = null;
@@ -66,6 +130,9 @@ function arrow(fromDeg: number) {
 
 async function setPlace(place: Place) {
   settings.place = place;
+  // A GPS fix should show its own province, not one hidden by an old filter.
+  if (place.source === 'gps') query = '';
+  provinceId = restorePick(place.districtId, DISTRICT_ITEMS)?.provinceId ?? provinceId;
   await saveSettings({ place });
   await load();
   void chrome.runtime.sendMessage({ type: 'check' });
@@ -93,34 +160,81 @@ function locate() {
   );
 }
 
-function districtPicker() {
-  const select = el('select', { 'aria-label': tr('ext.pickDistrict') }, el('option', { value: '' }, tr('ext.pickDistrict')));
-  const key = settings.lang === 'th' ? 'name_th' : 'name_en';
-  for (const p of provinces) {
-    const group = el('optgroup', { label: p[key] });
-    DISTRICTS.filter((d) => d.properties.parent === p.id)
-      .sort((a, b) => a.properties[key].localeCompare(b.properties[key], settings.lang))
-      .forEach((d) => group.append(el('option', { value: d.properties.id }, d.properties[key])));
-    select.append(group);
-  }
-  select.value = settings.place?.source === 'picked' ? settings.place.districtId : '';
-  select.addEventListener('change', () => {
-    const d = districtById(select.value);
-    if (!d) return;
-    const [minLng, minLat, maxLng, maxLat] = d.properties.bbox;
-    void setPlace({ location: { lat: (minLat + maxLat) / 2, lng: (minLng + maxLng) / 2 }, districtId: d.properties.id, source: 'picked' });
+function field(id: string, label: string, control: HTMLElement) {
+  control.id = id;
+  return el('div', { class: 'field' }, el('label', { for: id, class: 'field__label' }, label), control);
+}
+
+function areaPicker() {
+  const lang = settings.lang;
+  const key = lang === 'th' ? 'name_th' : 'name_en';
+  const byProvince = groupDistricts(DISTRICT_ITEMS, lang);
+  const saved = settings.place?.districtId ?? '';
+  if (!provinceId) provinceId = restorePick(saved, DISTRICT_ITEMS)?.provinceId ?? '';
+
+  const filter = el('input', { type: 'search', autocomplete: 'off', spellcheck: 'false', 'aria-controls': 'pick-province pick-district' });
+  filter.value = query;
+  const province = el('select', {});
+  const district = el('select', {});
+
+  const fill = () => {
+    const { provinces, districts } = filterPlaces(query, PROVINCE_ITEMS, byProvince, lang);
+    provinceId = pickProvince(provinceId, provinces, query);
+    province.replaceChildren(el('option', { value: '' }, tr('area.pickProvince')), ...provinces.map((p) => el('option', { value: p.id }, p[key])));
+    province.value = provinceId;
+    const list = districts.get(provinceId) ?? [];
+    district.replaceChildren(el('option', { value: '' }, tr('ext.pickDistrict')), ...list.map((d) => el('option', { value: d.id }, d[key])));
+    district.value = list.some((d) => d.id === saved) ? saved : '';
+    district.disabled = !provinceId;
+  };
+
+  filter.addEventListener('input', () => {
+    query = filter.value;
+    fill();
   });
-  return select;
+  province.addEventListener('change', () => {
+    provinceId = province.value;
+    // No auto-focus: arrow keys on a closed select fire change per step on some platforms.
+    fill();
+  });
+  district.addEventListener('change', () => {
+    const d = districtById(district.value);
+    if (!d) return;
+    void setPlace({ location: districtCenter(d), districtId: d.properties.id, source: 'picked' });
+  });
+  fill();
+
+  return el(
+    'div',
+    { class: 'picker' },
+    field('pick-filter', tr('area.searchDistrict'), filter),
+    el('div', { class: 'picker__selects' }, field('pick-province', tr('area.pickProvince'), province), field('pick-district', tr('ext.pickDistrict'), district)),
+  );
 }
 
 function placeCard() {
   const d = settings.place ? districtById(settings.place.districtId) : null;
+  const p = d?.properties.parent ? PROVINCE_ITEMS.find((x) => x.id === d.properties.parent) : undefined;
+  const nm = (x: PickItem) => (settings.lang === 'th' ? x.name_th : x.name_en);
   return el(
     'section',
     { class: 'card' },
-    d && el('h2', { class: 'area' }, settings.lang === 'th' ? d.properties.name_th : d.properties.name_en),
+    d && el('div', {}, el('h2', { class: 'area' }, nm(d.properties)), p && el('p', { class: 'caption' }, nm(p))),
     error && el('p', { class: 'label' }, tr(error)),
-    el('div', { class: 'row' }, button(tr('location.useMine'), 'btn btn--sm', locate), districtPicker()),
+    el('div', { class: 'row' }, button(tr('location.useMine'), 'btn btn--sm', locate)),
+    areaPicker(),
+  );
+}
+
+/** At most two short lines; the title and disclaimer carry the NASA attribution. */
+function nasaCard(lines: string[]) {
+  if (!lines.length) return null;
+  return el(
+    'section',
+    { class: 'card nasa' },
+    el('h2', { class: 'label muted' }, tr('nasa.card.title')),
+    el('ul', { class: 'nasa__lines' }, ...lines.slice(0, 2).map((l) => el('li', {}, l))),
+    el('p', { class: 'caption' }, tr('nasa.disclaimer')),
   );
 }
 
@@ -312,7 +426,7 @@ function render() {
   if (place && district && snapshot) {
     // Same list as the badge and notifications, so the three never disagree.
     const alerts = wantedAlerts(localAlerts(snapshot, district), settings);
-    parts.push(alertsSection(alerts), readingsCard(snapshot, place), feedsCard(snapshot));
+    parts.push(alertsSection(alerts), readingsCard(snapshot, place), nasaCard(nasaLines(snapshot, district, settings.lang, { from: place.location })), feedsCard(snapshot));
     const at = snapshot.edge?.updatedAt;
     if (at) parts.push(el('p', { class: 'caption' }, `${tr('common.updated')} ${agoText(at, settings.lang)}`));
   } else if (place && !snapshot && error === 'ext.loadFailed') {
@@ -333,7 +447,13 @@ async function load() {
   render();
 }
 
-settings = await getSettings();
-render();
-if (!settings.place) locate();
-else void load();
+async function main() {
+  app = document.getElementById('app')!;
+  settings = await getSettings();
+  render();
+  if (!settings.place) locate();
+  else void load();
+}
+
+// Tests import the pure helpers above without a DOM.
+if (typeof document !== 'undefined') void main();

@@ -1,7 +1,8 @@
 # เฝ้าระวังภัย · HazardWatch
 
 Public, free dashboard for weather, flooding, PM2.5 and earthquake alerts based on the viewer's location.
-Currently covers Bangkok and the five metropolitan provinces; built to expand to all of Thailand and beyond.
+Covers all 77 provinces of Thailand (928 districts; subdistricts in Bangkok and the five metropolitan provinces), on a
+map that zooms out to the whole world with NASA satellite layers.
 
 Live: https://hazard.pdouvch.com · API: https://api.hazard.pdouvch.com
 
@@ -14,6 +15,8 @@ add the extension. Every platform reads the same public API, so the data, alert 
 
 - Hazards: street flooding and rain gauges (Bangkok), canal/river levels as % of bank-full, PM2.5, earthquakes (TMD +
   USGS, duplicates merged), current weather with surface wind and the ~3 km wind that steers rain.
+- NASA (display only, never an alert): fire hotspots within 25 km in the last 24 h and up to 5 open storms, volcanoes,
+  floods or landslides within 500 km of the chosen district (`NASA_NEAR` in `packages/core/src/nasa.ts`).
 - Levels: ปกติ / ระวัง / ระวังมาก / อันตราย (Normal / Caution / Warning / Danger), always as a word plus a three-bar meter.
   Every reading has a plain-language note on what it means and what to do.
 - Data freshness: stale readings are never shown as current. "When the data last updated" lists every source.
@@ -24,7 +27,8 @@ add the extension. Every platform reads the same public API, so the data, alert 
 | Feature | Notes |
 |---|---|
 | Dashboard | Cards for weather, PM2.5, flooding, earthquakes and river levels for your location or a chosen area |
-| Map | Zones (province → district → subdistrict) coloured by the worst reading; flood, PM2.5, river and CCTV pins; legend |
+| Map | Zones (province → district → subdistrict) coloured by the worst reading; flood, PM2.5, river and CCTV pins; legend. Zooms out to the whole world |
+| NASA layers | FIRMS fire hotspots (on by default); EONET events and one GIBS image at a time (rain, flood, aerosol, fire, true colour) start off |
 | Rain radar | 24 radars nationwide on the map, plus a badge showing which way rain may be moving |
 | Location | Browser geolocation, or pick an area by hand (remembered on the device). Links `/<lang>?area=<id>` open an area |
 | Push alerts | Web Push per district, even with the tab closed (Chrome, Edge, Firefox, Safari on macOS) |
@@ -39,7 +43,7 @@ add the extension. Every platform reads the same public API, so the data, alert 
 - Push alerts work in the browser or the installed app.
 - Read-aloud needs a Thai voice in Text-to-speech settings (the page explains how).
 - Native app (`apps/mobile`): Data sources screen with links to the original sources and a notice that the app is not
-  a government service.
+  a government service; the same NASA layers and a province → district picker with search.
 
 ### iOS / iPadOS (Safari / installed PWA)
 
@@ -48,7 +52,7 @@ add the extension. Every platform reads the same public API, so the data, alert 
   In a normal Safari tab the alert card explains this instead of offering the button.
 - A Thai voice is built in for read-aloud.
 - Native app (`apps/mobile`): Data sources screen with links to the original sources and a notice that the app is not
-  a government service.
+  a government service; the same NASA layers and a province → district picker with search.
 
 ### Desktop browser extension (Chrome, Edge)
 
@@ -56,14 +60,17 @@ add the extension. Every platform reads the same public API, so the data, alert 
 |---|---|
 | Notifications | Checks every 15 minutes while the browser is open; same alerts and 3-hour no-repeat rule as Web Push |
 | Toolbar badge | Number of current alerts for your district, coloured by the worst level |
-| Popup summary | Your district: alerts, nearest PM2.5 and river gauge, flooding, weather + wind, data-source status |
-| Settings | Choose hazards and the PM2.5 level; GPS or pick a district |
+| Popup summary | Your district: alerts, nearest PM2.5 and river gauge, flooding, weather + wind, NASA fires/events nearby, data-source status |
+| Settings | Choose hazards and the PM2.5 level; GPS or pick a district (province → district, with search) |
 | Limits | Desktop Chrome/Edge only (no Firefox or mobile build yet); no server account; alerts stop when the browser is closed |
 
 ### Coverage and limits
 
-- Area: Bangkok and five provinces (Nonthaburi, Pathum Thani, Samut Prakan, Samut Sakhon, Nakhon Pathom). Radar covers
-  the whole country.
+- Area: all 77 provinces, picked down to the district; subdistricts only in Bangkok and five provinces (Nonthaburi,
+  Pathum Thani, Samut Prakan, Samut Sakhon, Nakhon Pathom). Radar covers the whole country. Street flooding, rain
+  gauges and CCTV are Bangkok only (BMA data); away from them those cards stay hidden.
+- NASA layers cover the world map, but the cards and alerts are still for the chosen area. FIRMS hotspots are kept
+  for Thailand and its neighbours only (`FIRE_BOUNDS`), EONET events worldwide.
 - BMA blocks cloud IPs; street-flood and rain data arrive when a phone or extension in Thailand relays them, otherwise
   those cards show "no data".
 - The rain-movement badge is an estimate from the wind forecast, not tracked from radar images.
@@ -88,7 +95,8 @@ packages/
 .github/workflows/
   check-deploy-web.yml    Typecheck, lint, tests; on main also deploys what changed (see Deploy).
   check-build-mobile.yml  Flutter analyze, tests and Android/iOS builds (apps/mobile).
-  fetch-feeds.yml         Fetches feeds that block Cloudflare IPs (BMA, ThaiWater) and pushes them to ingest.
+  fetch-feeds.yml         Fetches feeds that block Cloudflare IPs (BMA, ThaiWater) or are too big for it (NASA) and
+                          pushes them to ingest.
   monitor-sources.yml     Source-outage check every 2 h; opens/closes `outage` issues (tools/monitor).
 ```
 
@@ -102,6 +110,9 @@ packages/
 | Street flooding, rain gauges | BMA Drainage Dept. (unofficial endpoints) | GitHub Actions, every 40 min, plus relays from the app/extension on Thai IPs (`POST /v1/relay/bma/:kind`, see below) | 403 bot challenge from Cloudflare (and GitHub) IPs |
 | Canal/river levels, radar images | ThaiWater (HII) | GitHub Actions, every 40 min | 429 rate limit from Cloudflare IPs; radar frames are cut to rain echoes only (`apps/ingest/scripts/radarImage.ts`) and placed with `packages/core/src/radars.ts` |
 | CCTV list | BMA Traffic | GitHub Actions, once a day (`INGEST.runnerFeedEveryHours`) | pins + link to source only |
+| Fire hotspots | NASA FIRMS: keyless SouthEast_Asia 24 h CSVs of the three VIIRS satellites (NOAA-20, NOAA-21, Suomi NPP) | GitHub Actions, every run | each CSV is ~1.8 MB, too big for the Worker's 10 ms CPU; rows outside `FIRE_BOUNDS` dropped, capped at 3,000 (`FIRE_CAP`) |
+| Natural events | NASA EONET: open severe storms, volcanoes, floods, landslides (wildfires come from FIRMS) | GitHub Actions, every run | capped at 100 events (`EVENT_CAP`), 40 track points each |
+| Satellite imagery | NASA GIBS tiles (`NASA_LAYERS` in `packages/core/src/nasa.ts`) | browser / app, straight from NASA | nothing on our side; one raster at a time, all off by default because GIBS sends `no-store` |
 | Base map | OpenFreeMap vector tiles via MapLibre GL in Leaflet (`positron` / `dark`, follows the theme; labels in the page language) | browser | config in `WEB.map.openfreemap`; free public instance, no key; falls back to OSM raster automatically without WebGL or if the style fails to load |
 
 GitHub's own schedule for `fetch-feeds.yml` runs hours late, so the ingest cron starts it with `workflow_dispatch`
@@ -154,9 +165,23 @@ Worker secrets (`VAPID_PRIVATE_KEY`, `INGEST_TOKEN`, `GITHUB_DISPATCH_TOKEN`) li
 
 ## Adding coverage
 
-Add a region to `REGIONS` in `packages/core/src/regions.ts` and its id to `ACTIVE_REGION_IDS`. Adapters filter by
-the active regions automatically; sources that only exist for one area (e.g. BMA) need no change. A new country
-needs its own adapters in `packages/sources`.
+`ACTIVE_REGION_IDS` in `packages/core/src/regions.ts` is `['th-all']`: one region for the 77 provinces (the old
+`th-bangkok-metro` stays defined). Adapters filter by the active regions automatically; sources that only exist for
+one area (e.g. BMA) need no change. A new country needs its own region and adapters in `packages/sources`.
+
+Boundaries: `python3 tools/boundaries/build.py` writes `apps/web/public/geo` (ids are OCHA pcodes, so saved areas and
+push subscriptions stay valid):
+
+| File | Used by | Detail |
+|---|---|---|
+| `provinces.json`, `districts.json` | web map | 77 provinces / 928 districts, simplified up to 0.004° (~1.16 MB, budget 1.2 MB) |
+| `districts-lite.json` | ingest Worker, extension, app (`gen_geo`) | 0.015° outside Greater Bangkok (~591 KB, budget 600 KB / 200 KB gzip); the six metropolitan provinces and their borders are kept exactly as in `districts.json`, so Bangkok alerts match the map |
+| `subdistricts.json` | web map | Bangkok and five provinces only (`SUBDISTRICT_PROVINCES`) |
+| `names.json` | link previews | names only, no polygons |
+
+After a rebuild run `pnpm --filter @hw/mobile generate`. The Worker looks districts up through a grid `ZoneIndex`
+(`apps/ingest/src/geo.ts`), and push reads subscriptions in chunks of 90 districts (D1's bound-parameter limit). The
+extension bundles `districts-lite.json` once in a chunk shared by the service worker and the popup.
 
 ## Push notifications
 
@@ -243,6 +268,11 @@ store across failures; `failingSince` marks the first failure) is older than the
 
 กรมอุตุนิยมวิทยา · สำนักการระบายน้ำ กรุงเทพมหานคร · สถาบันสารสนเทศทรัพยากรน้ำ (ThaiWater) · กรมควบคุมมลพิษ ·
 GISTDA · USGS · Open-Meteo · © OpenStreetMap contributors
+
+NASA (`NASA_ATTRIBUTION` in `packages/core/src/nasa.ts`), shown next to each layer and card:
+- Imagery: NASA EOSDIS GIBS / Worldview
+- Fires: NASA FIRMS (LANCE/ESDIS)
+- Events: NASA EONET
 
 Zone boundaries (`apps/web/public/geo`, rebuilt with `python3 tools/boundaries/build.py`): BMA GIS (Bangkok subdistricts),
 geoBoundaries THA ADM1 (OSM, ODbL) and ADM2 (RTSD/OCHA, CC BY-IGO), OCHA COD-AB names (CC BY-IGO).

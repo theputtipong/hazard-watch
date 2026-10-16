@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "generate": "node tool/gen_l10n.mjs && node tool/gen_geo.mjs && node tool/gen_sources.mjs",
-    "test": "node tool/gen_l10n.mjs --check && node tool/gen_geo.mjs --check && node tool/gen_sources.mjs --check"
+    "generate": "node tool/gen_l10n.mjs && node tool/gen_geo.mjs && node tool/gen_sources.mjs && node tool/gen_nasa.mjs",
+    "test": "node tool/gen_l10n.mjs --check && node tool/gen_geo.mjs --check && node tool/gen_sources.mjs --check && node tool/gen_nasa.mjs --check"
   }
 }

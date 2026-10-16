@@ -59,6 +59,9 @@ header h1 { flex: 1; font-size: 17px; line-height: 26px; font-weight: 600; }
 .btn[disabled] { opacity: .45; cursor: not-allowed; }
 .btn svg { width: 16px; height: 16px; }
 :where(a, button, input, select, summary):focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+input[type=search] { font: inherit; font-size: 13px; line-height: 20px; height: 32px; width: 100%; padding: 0 var(--space-2); border-radius: var(--rounded-control);
+  border: 1px solid var(--line-control); background: var(--surface); color: var(--ink); }
+input[type=search]::placeholder { color: var(--ink-muted); }
 select { font: inherit; font-size: 13px; line-height: 20px; height: 28px; max-width: 100%; padding: 0 var(--space-2); border-radius: var(--rounded-control);
   border: 1px solid var(--line-control); background: var(--surface); color: var(--ink); }
 
@@ -123,3 +126,13 @@ details[open] summary { margin-bottom: var(--space-2); }
 details .opts { display: grid; gap: var(--space-2); font-size: 13px; line-height: 20px; }
 label.check { display: flex; align-items: center; gap: var(--space-2); }
 input[type=checkbox] { width: 16px; height: 16px; margin: 0; accent-color: var(--ink); }
+
+/* Area picker: filter on top, province → district side by side. */
+.picker { display: grid; gap: var(--space-2); }
+.picker__selects { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2); }
+.field { display: grid; gap: var(--space-1); min-width: 0; }
+.field__label { font-size: 12px; line-height: 18px; font-weight: 500; color: var(--ink-muted); }
+.field select { width: 100%; height: 32px; }
+select[disabled] { opacity: .45; cursor: not-allowed; }
+
+.nasa__lines { display: grid; gap: var(--space-1); font-size: 13px; line-height: 20px; }

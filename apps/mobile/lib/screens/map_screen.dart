@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../api/hazard_api.dart';
@@ -10,13 +11,16 @@ import '../location.dart';
 import '../map/base_map.dart';
 import '../map/map_data.dart';
 import '../map/map_markers.dart';
+import '../map/nasa_layers.g.dart';
+import '../map/nasa_map.dart';
 import '../settings.dart';
 import '../theme/hw_app_theme.dart';
 import '../widgets/reading_tile.dart';
 import '../widgets/source_link.dart';
 
 /// The web map's hazards on OpenFreeMap tiles: street flooding, rain, canal levels, PM2.5 and earthquakes, coloured by
-/// severity. Tap a pin for its reading. Loads only once the tab is first opened.
+/// severity, plus NASA layers (FIRMS hotspots, EONET events, one GIBS raster) that reach out to the whole world.
+/// Tap a pin for its reading. Loads only once the tab is first opened.
 class MapScreen extends StatefulWidget {
   const MapScreen({
     super.key,
@@ -26,6 +30,8 @@ class MapScreen extends StatefulWidget {
     required this.clock,
     this.bma,
     this.baseMap,
+    this.nasaStore,
+    this.tileProvider,
   });
 
   final AppSettings settings;
@@ -38,6 +44,12 @@ class MapScreen extends StatefulWidget {
 
   /// Replaces the network base map (tests).
   final Widget Function(BuildContext context, bool dark, String lang)? baseMap;
+
+  /// Where NASA layer choices are remembered; defaults to this device's preferences.
+  final NasaLayerStore? nasaStore;
+
+  /// Replaces the network GIBS tile fetcher (tests).
+  final TileProvider? tileProvider;
 
   @override
   State<MapScreen> createState() => _MapScreenState();
@@ -60,13 +72,47 @@ class _MapScreenState extends State<MapScreen> {
   bool _locating = false;
   String? _hint;
   String? _districtId;
+  late final NasaLayerStore _nasaStore = widget.nasaStore ?? DeviceNasaLayerStore();
+  NasaLayerState _nasa = NasaLayerState.initial;
+  bool _nasaTouched = false;
 
   @override
   void initState() {
     super.initState();
     _districtId = widget.settings.district?.id;
     widget.settings.addListener(_onSettings);
+    _loadNasa();
   }
+
+  Future<void> _loadNasa() async {
+    final saved = await _nasaStore.read();
+    // A choice made while the read was pending wins over the saved one.
+    if (saved != null && mounted && !_nasaTouched) setState(() => _nasa = saved);
+  }
+
+  void _setNasa(NasaLayerState next) {
+    _nasaTouched = true;
+    setState(() => _nasa = next);
+    _nasaStore.write(next);
+  }
+
+  Future<void> _openNasaSheet() => showModalBottomSheet<void>(
+    context: context,
+    showDragHandle: true,
+    isScrollControlled: true,
+    builder: (context) => StatefulBuilder(
+      // The sheet keeps its own copy so its switches move as they are tapped.
+      builder: (context, setSheet) => NasaLayerSheet(
+        state: _nasa,
+        snapshot: _snapshot,
+        now: widget.clock(),
+        onChanged: (next) {
+          _setNasa(next);
+          setSheet(() {});
+        },
+      ),
+    ),
+  );
 
   @override
   void dispose() {
@@ -189,6 +235,9 @@ class _MapScreenState extends State<MapScreen> {
       for (final p in data?.points ?? const <MapPoint>[])
         if (_layers.contains(p.layer)) p,
     ];
+    final nasa = _nasa;
+    final fires = nasa.firms && snapshot != null ? firePoints(snapshot) : const <FirePoint>[];
+    final events = nasa.events && snapshot != null ? eventPoints(snapshot) : const <EventPoint>[];
 
     return Stack(
       children: [
@@ -199,6 +248,7 @@ class _MapScreenState extends State<MapScreen> {
             options: MapOptions(
               initialCenter: center,
               initialZoom: _areaZoom,
+              minZoom: NasaMapConfig.worldMinZoom,
               maxZoom: MapConfig.maxZoom,
               backgroundColor: c.surfaceSunken,
               interactionOptions: const InteractionOptions(flags: InteractiveFlag.all & ~InteractiveFlag.rotate),
@@ -206,6 +256,10 @@ class _MapScreenState extends State<MapScreen> {
             ),
             children: [
               widget.baseMap?.call(context, dark, lang) ?? BaseMap(dark: dark, lang: lang),
+              if (nasa.raster case final id?) gibsTileLayer(nasaLayers[id]!, now, tileProvider: widget.tileProvider),
+              if (events.isNotEmpty) eventTrackLayer(events),
+              if (fires.isNotEmpty) FireLayer(fires: fires, onTap: (f) => _showFire(f, now)),
+              if (events.isNotEmpty) MarkerLayer(markers: [for (final e in events) _eventMarker(context, e, now)]),
               MarkerLayer(
                 markers: [
                   for (final p in points) _marker(context, p, now),
@@ -218,6 +272,7 @@ class _MapScreenState extends State<MapScreen> {
                     ),
                 ],
               ),
+              if (nasa.anyOn) _NasaCredits(state: nasa, snapshot: snapshot, now: now),
               const BaseMapAttribution(),
             ],
           ),
@@ -254,6 +309,14 @@ class _MapScreenState extends State<MapScreen> {
                   constraints: const BoxConstraints(maxWidth: 240),
                   child: _StatusPill(text: _hint!),
                 ),
+              // NASA layers get their own sheet (seven of them) rather than more chips; outlined while any is on.
+              _MapButton(
+                key: const ValueKey('nasa-button'),
+                icon: Icons.satellite_alt,
+                tooltip: 'NASA · ${l.mapLayers}',
+                active: nasa.anyOn,
+                onPressed: _openNasaSheet,
+              ),
               _MapButton(
                 icon: Icons.my_location,
                 tooltip: _locating ? l.mapLocating : l.mapLocate,
@@ -309,6 +372,74 @@ class _MapScreenState extends State<MapScreen> {
       ),
     );
   }
+
+  Marker _eventMarker(BuildContext context, EventPoint e, DateTime now) {
+    final l = AppLocalizations.of(context);
+    const hit = PinSize.hit;
+    return Marker(
+      key: ValueKey('event:${e.id}'),
+      point: LatLng(e.lat, e.lng),
+      width: hit,
+      height: hit,
+      child: Semantics(
+        button: true,
+        label: '${eventName(l, e.category)}: ${e.title}',
+        excludeSemantics: true,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => _showSheet(
+            title: '${eventName(l, e.category)}: ${e.title}',
+            lines: [if (e.windKts != null) '${numberText(e.windKts!)} kt', clockText(l, e.updatedAt, now)],
+            credit: NasaAttribution.eonet,
+            link: e.url,
+          ),
+          child: Center(child: EventPin(category: e.category)),
+        ),
+      ),
+    );
+  }
+
+  void _showFire(FirePoint f, DateTime now) {
+    final l = AppLocalizations.of(context);
+    _showSheet(
+      title: l.layerNasaFirms,
+      lines: [
+        [if (f.frp != null) 'FRP ${f.frp!.round()} MW', f.satellite].join(' · '),
+        clockText(l, f.at, now),
+      ],
+      credit: NasaAttribution.firms,
+    );
+  }
+
+  Future<void> _showSheet({required String title, required List<String> lines, required String credit, String? link}) =>
+      showModalBottomSheet<void>(
+        context: context,
+        showDragHandle: true,
+        builder: (context) {
+          final text = Theme.of(context).textTheme;
+          final c = context.hw;
+          return SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(HwSize.space4, 0, HwSize.space4, HwSize.space4),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                spacing: HwSize.space2,
+                children: [
+                  Semantics(header: true, child: Text(title, style: text.titleLarge)),
+                  for (final line in lines) Text(line, style: text.bodyLarge),
+                  if (link != null)
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: SourceLink(label: 'NASA EONET ↗', url: link),
+                    ),
+                  Text(credit, style: text.bodySmall!.copyWith(color: c.inkMuted)),
+                ],
+              ),
+            ),
+          );
+        },
+      );
 
   String _areaName(AppLocalizations l, Locale locale) => widget.settings.district?.name.of(locale) ?? l.mapBangkok;
 }
@@ -418,12 +549,20 @@ class _StatusPill extends StatelessWidget {
 }
 
 class _MapButton extends StatelessWidget {
-  const _MapButton({required this.icon, required this.tooltip, required this.onPressed, this.busy = false});
+  const _MapButton({
+    super.key,
+    required this.icon,
+    required this.tooltip,
+    required this.onPressed,
+    this.busy = false,
+    this.active = false,
+  });
 
   final IconData icon;
   final String tooltip;
   final VoidCallback? onPressed;
   final bool busy;
+  final bool active;
 
   @override
   Widget build(BuildContext context) {
@@ -433,7 +572,7 @@ class _MapButton extends StatelessWidget {
       elevation: 2,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(HwSize.radiusControl),
-        side: BorderSide(color: c.line),
+        side: BorderSide(color: active ? c.ink : c.line, width: active ? 2 : 1),
       ),
       child: IconButton(
         tooltip: tooltip,
@@ -543,6 +682,116 @@ class PointSheet extends StatelessWidget {
                 ),
               ],
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+String _day(AppLocalizations l, String isoDay) => DateFormat('d MMM', l.localeName).format(DateTime.parse(isoDay));
+
+/// "Satellite image from ≈ 15 Oct" for a raster; WMS days are exact.
+String nasaRasterDate(AppLocalizations l, NasaLayer layer, DateTime now) {
+  final d = gibsDataDate(layer, now);
+  return l.nasaDataDate('${d.approx ? '≈ ' : ''}${_day(l, d.date)}');
+}
+
+/// Credits (and the raster's day) for the NASA layers that are on, bottom-left so the map buttons stay clear.
+class _NasaCredits extends StatelessWidget {
+  const _NasaCredits({required this.state, required this.snapshot, required this.now});
+
+  final NasaLayerState state;
+  final MapSnapshot? snapshot;
+  final DateTime now;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final c = context.hw;
+    final raster = state.raster == null ? null : nasaLayers[state.raster];
+    final text = [if (raster != null) nasaRasterDate(l, raster, now), ...nasaCredits(state)].join(' · ');
+    return Align(
+      alignment: Alignment.bottomLeft,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: HwSize.touchTarget + HwSize.space2, right: HwSize.touchTarget * 2),
+        child: Container(
+          key: const ValueKey('nasa-credits'),
+          padding: const EdgeInsets.symmetric(horizontal: HwSize.space1, vertical: 2),
+          color: c.surface.withValues(alpha: 0.8),
+          child: Text(text, style: Theme.of(context).textTheme.labelSmall!.copyWith(color: c.inkMuted)),
+        ),
+      ),
+    );
+  }
+}
+
+/// NASA layer choices: FIRMS and EONET points, then one GIBS raster at a time. Each active layer says what day its
+/// data is from and who it is from.
+class NasaLayerSheet extends StatelessWidget {
+  const NasaLayerSheet({
+    super.key,
+    required this.state,
+    required this.snapshot,
+    required this.now,
+    required this.onChanged,
+  });
+
+  final NasaLayerState state;
+  final MapSnapshot? snapshot;
+  final DateTime now;
+  final ValueChanged<NasaLayerState> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final c = context.hw;
+    final text = Theme.of(context).textTheme;
+    final note = text.bodySmall!.copyWith(color: c.inkMuted);
+    String feedNote(String key, String credit) {
+      final at = nasaFeedTime(snapshot, key);
+      return [if (at != null) clockText(l, at, now), credit].join(' · ');
+    }
+
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(HwSize.space4, 0, HwSize.space4, HwSize.space4),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Semantics(header: true, child: Text('NASA', style: text.titleLarge)),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(nasaLayerName(l, 'firms')),
+              subtitle: state.firms ? Text(feedNote('fires', NasaAttribution.firms), style: note) : null,
+              value: state.firms,
+              onChanged: (v) => onChanged(state.copyWith(firms: v)),
+            ),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(nasaLayerName(l, 'events')),
+              subtitle: state.events ? Text(feedNote('events', NasaAttribution.eonet), style: note) : null,
+              value: state.events,
+              onChanged: (v) => onChanged(state.copyWith(events: v)),
+            ),
+            const Divider(),
+            for (final id in nasaRasterIds)
+              SwitchListTile(
+                key: ValueKey('nasa-raster:$id'),
+                contentPadding: EdgeInsets.zero,
+                title: Text(nasaLayerName(l, id)),
+                subtitle: state.raster == id
+                    ? Text('${nasaRasterDate(l, nasaLayers[id]!, now)} · ${nasaLayers[id]!.attribution}', style: note)
+                    : null,
+                value: state.raster == id,
+                // One raster at a time; turning the active one off leaves none.
+                onChanged: (v) => onChanged(state.copyWith(raster: () => v ? id : null)),
+              ),
+            if (state.anyOn)
+              Padding(
+                padding: const EdgeInsets.only(top: HwSize.space2),
+                child: Text(l.nasaDisclaimer, style: note),
+              ),
           ],
         ),
       ),

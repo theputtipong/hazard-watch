@@ -1,6 +1,9 @@
 import 'dart:io';
 
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hazardwatch/api/hazard_api.dart';
 import 'package:hazardwatch/api/models.dart';
@@ -11,6 +14,8 @@ import 'package:hazardwatch/location.dart';
 import 'package:hazardwatch/map/base_map.dart';
 import 'package:hazardwatch/map/map_data.dart';
 import 'package:hazardwatch/map/map_markers.dart';
+import 'package:hazardwatch/map/nasa_layers.g.dart';
+import 'package:hazardwatch/map/nasa_map.dart';
 import 'package:hazardwatch/screens/map_screen.dart';
 import 'package:hazardwatch/settings.dart';
 import 'package:hazardwatch/theme/hw_app_theme.dart';
@@ -70,6 +75,64 @@ BmaCopy _deviceFlood({DateTime? failedAt}) => BmaCopy(
     ),
   ],
 );
+
+/// A 1×1 transparent PNG, so GIBS layers draw without the network.
+final _png = Uint8List.fromList(const [
+  0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52, //
+  0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4, //
+  0x89, 0x00, 0x00, 0x00, 0x0D, 0x49, 0x44, 0x41, 0x54, 0x78, 0x9C, 0x63, 0x00, 0x01, 0x00, 0x00, //
+  0x05, 0x00, 0x01, 0x0D, 0x0A, 0x2D, 0xB4, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE, //
+  0x42, 0x60, 0x82,
+]);
+
+class _FakeTiles extends TileProvider {
+  final urls = <String>[];
+
+  @override
+  ImageProvider getImage(TileCoordinates coordinates, TileLayer options) {
+    urls.add(getTileUrl(coordinates, options));
+    return MemoryImage(_png);
+  }
+}
+
+/// FIRMS rows as runner.feeds.fires carries them (FireHotspot in packages/core/src/types.ts).
+Map<String, dynamic> _fire(String id, double lat, double lng, {double? frp = 12.4}) => {
+  'id': id,
+  'location': {'lat': lat, 'lng': lng},
+  'detectedAt': fixtureNow.subtract(const Duration(hours: 3)).toUtc().toIso8601String(),
+  'frp': frp,
+  'confidence': 'nominal',
+  'satellite': 'N20',
+  'day': true,
+};
+
+Map<String, dynamic> _feed(String source, List<Map<String, dynamic>> items) => {
+  'source': source,
+  'fetchedAt': fixtureNow.toUtc().toIso8601String(),
+  'ok': true,
+  'items': items,
+};
+
+Map<String, dynamic> _storm() => {
+  'id': 'EONET_1',
+  'category': 'severeStorms',
+  'title': 'Typhoon Test',
+  'location': {'lat': 16.0, 'lng': 112.0},
+  'track': [
+    {
+      'at': '2026-10-04T00:00:00Z',
+      'location': {'lat': 15.0, 'lng': 115.0},
+      'windKts': 60,
+    },
+    {
+      'at': '2026-10-05T00:00:00Z',
+      'location': {'lat': 16.0, 'lng': 112.0},
+      'windKts': 85,
+    },
+  ],
+  'updatedAt': '2026-10-05T00:00:00Z',
+  'url': 'https://eonet.gsfc.nasa.gov/api/v3/events/EONET_1',
+};
 
 void main() {
   // If this fails, the web map or packages/core changed: update MapConfig / CoreConfig to match.
@@ -382,6 +445,228 @@ void main() {
       await tester.tap(find.widgetWithText(TextButton, 'ลองใหม่'));
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('f1')), findsOneWidget);
+    });
+  });
+
+  group('NASA layers', () {
+    final now = DateTime.utc(2026, 10, 16, 3);
+
+    test('only FIRMS points start on; every GIBS raster starts off', () {
+      expect(NasaLayerState.initial, const NasaLayerState(firms: true, events: false));
+      expect(nasaLayers.values.where((l) => l.defaultOn), isEmpty);
+      expect(nasaPointLayers['firms']!.defaultOn, isTrue);
+      expect(nasaPointLayers['events']!.defaultOn, isFalse);
+      expect(nasaRasterIds.toSet(), nasaLayers.keys.toSet());
+    });
+
+    test('NASA map settings match the web', () {
+      final web = File('../web/src/config.ts').readAsStringSync();
+      expect(web, contains('worldMinZoom: ${NasaMapConfig.worldMinZoom.round()},'));
+      expect(web, contains('nasaRaster: null as NasaLayerId | null,'));
+      expect(web, contains('firmsMinZoom: ${NasaMapConfig.firmsMinZoom.round()},'));
+      expect(
+        web,
+        contains(
+          'firmsRadius: { small: ${NasaMapConfig.firmsRadiusSmall}, full: ${NasaMapConfig.firmsRadiusFull.round()} },',
+        ),
+      );
+      expect(web, contains('eventIconSize: ${NasaMapConfig.eventIconSize.round()},'));
+    });
+
+    test('WMTS URLs carry the layer, TIME=default and the max zoom GIBS serves', () {
+      const base = 'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best';
+      final expected = {
+        'imergRain': (
+          6,
+          '$base/IMERG_Precipitation_Rate_30min/default/default/GoogleMapsCompatible_Level6/{z}/{y}/{x}.png',
+        ),
+        'flood': (9, '$base/VIIRS_Combined_Flood_2-Day/default/default/GoogleMapsCompatible_Level9/{z}/{y}/{x}.png'),
+        'aod': (
+          6,
+          '$base/VIIRS_NOAA20_AOD_Deep_Blue_Land_Ocean/default/default/GoogleMapsCompatible_Level6/{z}/{y}/{x}.png',
+        ),
+        'trueColor': (
+          9,
+          '$base/VIIRS_SNPP_CorrectedReflectance_TrueColor/default/default/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg',
+        ),
+      };
+      for (final MapEntry(key: id, value: (zoom, url)) in expected.entries) {
+        final l = nasaLayers[id]!;
+        expect(gibsTileUrl(l, now), url, reason: id);
+        final layer = gibsTileLayer(l, now);
+        expect((layer.urlTemplate, layer.maxNativeZoom, layer.wmsOptions), (url, zoom, null), reason: id);
+        // Overzooms past the native level instead of asking GIBS for tiles it answers 400 to.
+        expect(layer.maxZoom, MapConfig.maxZoom, reason: id);
+        expect(gibsDataDate(l, now), (date: '2026-10-15', approx: true), reason: id);
+      }
+    });
+
+    test('the fire raster goes over WMS with an explicit UTC-yesterday TIME', () {
+      final l = nasaLayers['fireWms']!;
+      expect(l.service, GibsService.wms);
+      expect(gibsTileUrl(l, now), 'https://gibs.earthdata.nasa.gov/wms/epsg3857/best/wms.cgi');
+      expect(gibsWmsParams(l, now), {
+        'LAYERS': 'VIIRS_NOAA20_Thermal_Anomalies_375m_All',
+        'FORMAT': 'image/png',
+        'TRANSPARENT': 'true',
+        'TIME': '2026-10-15',
+      });
+      final layer = gibsTileLayer(l, now);
+      expect((layer.urlTemplate, layer.maxNativeZoom), (null, 8));
+      final url = Uri.parse(layer.wmsOptions!.getUrl(const TileCoordinates(0, 0, 1), 256, false));
+      expect(url.path, '/wms/epsg3857/best/wms.cgi');
+      expect(url.queryParameters, containsPair('service', 'WMS'));
+      expect(url.queryParameters, containsPair('request', 'GetMap'));
+      expect(url.queryParameters, containsPair('layers', 'VIIRS_NOAA20_Thermal_Anomalies_375m_All'));
+      expect(url.queryParameters, containsPair('version', '1.3.0'));
+      expect(url.queryParameters, containsPair('crs', 'EPSG:3857'));
+      expect(url.queryParameters, containsPair('time', '2026-10-15'));
+      expect(gibsDataDate(l, now), (date: '2026-10-15', approx: false));
+
+      // Early morning in Bangkok is still the previous UTC day, so "yesterday" is two Thai days back.
+      final bangkokMorning = DateTime.parse('2026-10-16T06:30:00+07:00');
+      expect(gibsWmsParams(l, bangkokMorning)['TIME'], '2026-10-14');
+    });
+
+    test('saved choices round-trip; unknown rasters and junk fall back to defaults', () {
+      const s = NasaLayerState(firms: false, events: true, raster: 'flood');
+      expect(NasaLayerState.fromJson(s.toJson()), s);
+      expect(NasaLayerState.fromJson({'firms': true, 'raster': 'gone'}), NasaLayerState.initial);
+      expect(NasaLayerState.fromJson('junk'), NasaLayerState.initial);
+    });
+
+    test('fires and events parse from the snapshot; bad rows are skipped', () {
+      final s = snapshotJson();
+      _feeds(s, 'runner')['fires'] = _feed('nasa-firms', [
+        _fire('a', 13.7, 100.4),
+        {'id': 'broken'},
+      ]);
+      _feeds(s, 'runner')['events'] = _feed('nasa-eonet', [_storm()]);
+      final snap = MapSnapshot.fromJson(s);
+      expect(firePoints(snap).map((f) => (f.id, f.frp, f.satellite)), [('a', 12.4, 'N20')]);
+      final e = eventPoints(snap).single;
+      expect((e.category, e.windKts, e.track.first.lat), ('severeStorms', 85.0, 15.0));
+      expect(nasaFeedTime(snap, 'fires'), fixtureNow.subtract(const Duration(hours: 3)));
+      expect(nasaFeedTime(MapSnapshot.fromJson(snapshotJson()), 'fires'), isNull);
+    });
+
+    test('credits list each NASA source once', () {
+      expect(nasaCredits(NasaLayerState.initial), [NasaAttribution.firms]);
+      expect(nasaCredits(const NasaLayerState(firms: true, events: true, raster: 'fireWms')), [
+        nasaLayers['fireWms']!.attribution,
+        NasaAttribution.eonet,
+      ]);
+      expect(nasaCredits(const NasaLayerState(firms: false, events: false)), isEmpty);
+    });
+
+    Future<(MemoryNasaLayerStore, _FakeTiles)> pumpNasaMap(WidgetTester tester, {NasaLayerState? saved}) async {
+      final settings = AppSettings()..district = fixtureDistrict();
+      final s = snapshotJson();
+      // West of the district centre, clear of the sensor pins; the other one is far outside the view.
+      _feeds(s, 'runner')['fires'] = _feed('nasa-firms', [
+        _fire('fire-near', _ref.lat, _ref.lng - 0.04),
+        _fire('fire-far', 18.8, 98.9, frp: null),
+      ]);
+      _feeds(s, 'runner')['events'] = _feed('nasa-eonet', [_storm()]);
+      final store = MemoryNasaLayerStore(saved);
+      final tiles = _FakeTiles();
+      await pumpThemed(
+        tester,
+        SizedBox.expand(
+          child: MapScreen(
+            settings: settings,
+            api: FakeApi()..snapshotData = s,
+            location: FakeLocation(LocationUnavailable(denied: true)),
+            clock: () => fixtureNow,
+            baseMap: (_, _, _) => const SizedBox.shrink(),
+            nasaStore: store,
+            tileProvider: tiles,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      return (store, tiles);
+    }
+
+    Future<void> openSheet(WidgetTester tester) async {
+      await tester.tap(find.byKey(const ValueKey('nasa-button')));
+      await tester.pumpAndSettle();
+    }
+
+    Future<void> closeSheet(WidgetTester tester) async {
+      Navigator.of(tester.element(find.byType(NasaLayerSheet))).pop();
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('FIRMS hotspots draw by default with their credit; events and rasters stay off', (tester) async {
+      await pumpNasaMap(tester);
+      final circles = tester.widget<CircleLayer<FirePoint>>(find.byType(CircleLayer<FirePoint>)).circles;
+      expect(circles.map((c) => c.hitValue!.id), ['fire-near', 'fire-far']);
+      expect(find.byType(EventPin), findsNothing);
+      expect(find.byType(TileLayer), findsNothing);
+      expect(find.textContaining(NasaAttribution.firms), findsOneWidget);
+      expect(tester.widget<FlutterMap>(find.byType(FlutterMap)).options.minZoom, NasaMapConfig.worldMinZoom);
+      // The existing hazard pins are untouched.
+      expect(find.byKey(const ValueKey('f1')), findsOneWidget);
+    });
+
+    testWidgets('tapping a hotspot shows its reading', (tester) async {
+      await pumpNasaMap(tester);
+      final map = tester.getRect(find.byType(FlutterMap));
+      // 0.04° of longitude at zoom 12 is 0.04 × 256 × 2^12 / 360 px.
+      await tester.tapAt(map.center - Offset(0.04 * 256 * 4096 / 360, 0));
+      await tester.pumpAndSettle();
+      final sheet = find.byType(BottomSheet);
+      expect(find.descendant(of: sheet, matching: find.text('จุดความร้อน (ไฟ)')), findsOneWidget);
+      expect(find.descendant(of: sheet, matching: find.text('FRP 12 MW · N20')), findsOneWidget);
+      expect(find.descendant(of: sheet, matching: find.text(NasaAttribution.firms)), findsOneWidget);
+    });
+
+    testWidgets('the layer sheet turns on one raster at a time with its day and credit, and remembers it', (
+      tester,
+    ) async {
+      final (store, tiles) = await pumpNasaMap(tester);
+      await openSheet(tester);
+      expect(find.byType(SwitchListTile), findsNWidgets(2 + nasaRasterIds.length));
+
+      await tester.tap(find.byKey(const ValueKey('nasa-raster:flood')));
+      await tester.pumpAndSettle();
+      expect(store.saved, const NasaLayerState(firms: true, events: false, raster: 'flood'));
+      expect(find.textContaining(nasaLayers['flood']!.attribution), findsWidgets);
+
+      await tester.tap(find.byKey(const ValueKey('nasa-raster:fireWms')));
+      await tester.pumpAndSettle();
+      expect(store.saved!.raster, 'fireWms');
+      await closeSheet(tester);
+
+      final layer = tester.widget<TileLayer>(find.byType(TileLayer));
+      expect((layer.maxNativeZoom, layer.wmsOptions != null), (8, true));
+      // Flood at zoom 12 asked GIBS for level-9 tiles (overzoom), then the fire raster for yesterday's day.
+      expect(tiles.urls.first, contains('/GoogleMapsCompatible_Level9/9/'));
+      expect(tiles.urls.last, contains('time=${gibsUtcYesterday(fixtureNow)}'));
+      // Data date and NASA credit on the map itself.
+      final credits = tester.widget<Text>(
+        find.descendant(of: find.byKey(const ValueKey('nasa-credits')), matching: find.byType(Text)),
+      );
+      expect(credits.data, contains('ภาพดาวเทียมวันที่'));
+      expect(credits.data, contains(NasaAttribution.gibs));
+      expect(credits.data, contains(NasaAttribution.firms));
+    });
+
+    testWidgets('events show storms with their track; all NASA off removes the credits', (tester) async {
+      await pumpNasaMap(tester, saved: const NasaLayerState(firms: false, events: true));
+      expect(find.byType(CircleLayer<FirePoint>), findsNothing);
+      expect(find.byType(EventPin), findsNothing); // the storm is outside the district view
+      final track = tester.widget<PolylineLayer>(find.byType(PolylineLayer));
+      expect(track.polylines.single.points.length, 2);
+      expect(find.textContaining(NasaAttribution.eonet), findsOneWidget);
+
+      await openSheet(tester);
+      await tester.tap(find.widgetWithText(SwitchListTile, 'พายุและภัยทั่วโลก'));
+      await tester.pumpAndSettle();
+      await closeSheet(tester);
+      expect(find.byKey(const ValueKey('nasa-credits')), findsNothing);
+      expect(find.byType(PolylineLayer), findsNothing);
     });
   });
 }

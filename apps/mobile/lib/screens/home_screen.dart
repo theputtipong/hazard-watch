@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import '../api/hazard_api.dart';
 import '../api/models.dart';
 import '../bma/device_bma.dart';
+import '../bma/geo.dart';
 import '../bma/merge.dart';
 import '../format.dart';
 import '../l10n/gen/app_localizations.dart';
@@ -14,6 +15,7 @@ import '../theme/hw_app_theme.dart';
 import '../widgets/alert_card.dart';
 import '../widgets/feed_status.dart';
 import '../widgets/hw_card.dart';
+import '../widgets/nasa_card.dart';
 import '../widgets/reading_tile.dart';
 import '../widgets/river_gauge.dart';
 import '../widgets/source_link.dart';
@@ -42,6 +44,18 @@ class HomeScreen extends StatefulWidget {
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
+
+/// How close a gauge must be to speak for a district (LOCAL_KM in apps/web/src/lib/derive.ts). BMA rain gauges are
+/// Bangkok-only and river gauges thin out upcountry: past these distances the reading is left out rather than showing
+/// Bangkok's numbers as if they were local.
+const localKm = (rain: 20.0, water: 60.0);
+
+/// Feed names, including the NASA topics the shared formatter does not know yet.
+String homeFeedName(AppLocalizations l, String topic) => switch (topic) {
+  'fires' => l.feedsNameFires,
+  'events' => l.feedsNameEvents,
+  _ => feedName(l, topic),
+};
 
 class _HomeScreenState extends State<HomeScreen> {
   static const _maxAlerts = 3;
@@ -128,7 +142,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _pick() async {
-    final d = await pickDistrict(context, widget.api, widget.location);
+    final d = await pickDistrict(context, widget.api, widget.location, current: widget.settings.district);
     if (d != null) widget.settings.district = d;
   }
 
@@ -172,7 +186,8 @@ class _HomeScreenState extends State<HomeScreen> {
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.all(HwSize.space4),
           children: [
-            _Header(district: district, onChange: _pick),
+            // The report knows the province even when an older saved pick did not store it.
+            _Header(district: district, province: report?.district.province ?? district.province, onChange: _pick),
             const SizedBox(height: HwSize.space3),
             if (_error != null) ...[
               CalmBox(text: _errorText(l, _error!, report, now)),
@@ -203,15 +218,31 @@ class _HomeScreenState extends State<HomeScreen> {
     final shown = _showAllAlerts ? r.alerts : r.alerts.take(_maxAlerts).toList();
     final meta = r.updatedAt == null ? null : l.homeAlertsMeta(agoText(l, r.updatedAt!, now));
     final v = mergeDevice(r, flood: _device[BmaKind.flood], rain: _device[BmaKind.rain], now: now);
+    // Inside Bangkok the BMA gauges are the district's own network; elsewhere only a gauge just over the border counts.
+    final rain = v.rain != null && (isBangkok(r.district.id) || v.rain!.km <= localKm.rain) ? v.rain : null;
+    final rivers = [
+      for (final g in r.rivers)
+        if (g.km <= localKm.water) g,
+    ];
+    // The server's calm counts every reading it sends; one that is too far to show must not hide the all-clear.
+    bool high(AreaReading? x) => x != null && !x.stale && x.level.index >= HwLevel.watch.index;
+    final calm =
+        v.calm ||
+        (r.alerts.isEmpty &&
+            !high(r.pm25) &&
+            !high(rain) &&
+            !rivers.any(high) &&
+            (v.flood == null || v.floodStale || v.flood!.flooded == 0));
+    final nasa = r.nasa;
     final tiles = [
       if (r.pm25 != null) _pm25Tile(context, r.pm25!, now),
-      if (v.rain != null) _rainTile(context, v.rain!, now, onDevice: v.rainOnDevice),
+      if (rain != null) _rainTile(context, rain, now, onDevice: v.rainOnDevice),
       if (v.flood != null) _floodTile(context, v, now),
       if (r.quake != null) _quakeTile(context, r.quake!, now),
     ];
     return [
       // Calm only when nothing shown is at caution or above (design system AlertCard rule).
-      if (v.calm) CalmBox(text: l.extAllClear),
+      if (calm) CalmBox(text: l.extAllClear),
       for (final a in shown) ...[
         creditedAlertCard(
           context,
@@ -233,28 +264,29 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       const SizedBox(height: HwSize.space3),
       if (tiles.isNotEmpty) ReadingList(children: tiles),
-      if (r.rivers.isNotEmpty) ...[
+      if (rivers.isNotEmpty) ...[
         const SizedBox(height: HwSize.space3),
         HwCard(
           title: l.cardWater,
-          source: _riverSource(l, r.rivers),
+          source: _riverSource(l, rivers),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             spacing: HwSize.space4,
             children: [
               Text(l.gaugeIntro, style: text.labelLarge!.copyWith(color: c.inkMuted)),
-              for (final g in r.rivers) _gauge(context, g, now),
+              for (final g in rivers) _gauge(context, g, now),
             ],
           ),
         ),
       ],
+      if (nasa != null) ...[const SizedBox(height: HwSize.space3), _nasaCard(l, r, nasa, now)],
       const SizedBox(height: HwSize.space6),
       Text(l.feedsTitle, style: text.labelLarge!.copyWith(color: c.inkMuted)),
       const SizedBox(height: HwSize.space2),
       for (var i = 0; i < v.feeds.length; i++) ...[
         if (i > 0) Divider(height: 1, color: c.line),
         FeedStatusRow(
-          name: feedName(l, v.feeds[i].topic),
+          name: homeFeedName(l, v.feeds[i].topic),
           state: v.feeds[i].state,
           age: feedAgeText(l, v.feeds[i], now),
         ),
@@ -262,6 +294,24 @@ class _HomeScreenState extends State<HomeScreen> {
       const SizedBox(height: HwSize.space6),
       const NotGovernmentNote(),
     ];
+  }
+
+  /// FIRMS lags ~3 h by design, so only a failed fetch earns a note, not its age (as on the web).
+  Widget _nasaCard(AppLocalizations l, AreaReport r, NasaNear nasa, DateTime now) {
+    final fires = r.feeds.where((f) => f.topic == 'fires').firstOrNull;
+    final events = r.feeds.where((f) => f.topic == 'events').firstOrNull;
+    final at = fires?.lastOkAt ?? events?.lastOkAt;
+    final failed = fires?.state == FeedState.down;
+    return NasaCard(
+      near: nasa,
+      now: now,
+      updatedAt: at,
+      note: !failed
+          ? null
+          : at == null
+          ? l.freshFailedNoData
+          : l.freshFailed(clockText(l, at, now)),
+    );
   }
 
   Widget _riverSource(AppLocalizations l, List<AreaReading> rivers) {
@@ -408,9 +458,10 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 class _Header extends StatelessWidget {
-  const _Header({required this.district, required this.onChange});
+  const _Header({required this.district, required this.province, required this.onChange});
 
   final District district;
+  final LocalizedText? province;
   final VoidCallback onChange;
 
   @override
@@ -427,7 +478,7 @@ class _Header extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Semantics(header: true, child: Text(district.name.of(locale), style: text.headlineSmall)),
-              if (district.province != null) Text(district.province!.of(locale), style: text.bodySmall),
+              if (province != null) Text(province!.of(locale), style: text.bodySmall),
             ],
           ),
         ),

@@ -18,10 +18,26 @@ const { version } = JSON.parse(readFileSync('package.json', 'utf8'));
 manifest.version = version;
 writeFileSync(`${out}/manifest.json`, JSON.stringify(manifest, null, 2));
 
+// provinces.json is only read for names; its outlines would add ~0.2 MB to every bundle that touches it.
+const namesOnly = {
+  name: 'provinces-names-only',
+  setup(b) {
+    b.onLoad({ filter: /[\\/]geo[\\/]provinces\.json$/ }, ({ path }) => {
+      const { features } = JSON.parse(readFileSync(path, 'utf8'));
+      const slim = features.map(({ properties: { id, name_th, name_en } }) => ({ properties: { id, name_th, name_en } }));
+      return { contents: JSON.stringify({ features: slim }), loader: 'json' };
+    });
+  },
+};
+
 const options = {
   entryPoints: { background: 'src/background.ts', popup: 'src/popup.ts' },
   outdir: out,
   bundle: true,
+  // Background and popup share status.ts and its district outlines; splitting ships them once as a chunk.
+  splitting: true,
+  chunkNames: 'chunks/[name]-[hash]',
+  plugins: [namesOnly],
   format: 'esm',
   target: 'chrome120',
   minify: !process.argv.includes('--watch'),

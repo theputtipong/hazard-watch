@@ -17,11 +17,13 @@ class SourceFeed {
   SourceFeed.fromJson(Map<String, dynamic> j)
     : ok = j['ok'] as bool,
       items = (j['items'] as List).cast<Map<String, dynamic>>(),
+      fetchedAt = DateTime.parse(j['fetchedAt'] as String),
       lastOkAt = j['lastOkAt'] != null
           ? DateTime.parse(j['lastOkAt'] as String)
           : (j['ok'] as bool ? DateTime.parse(j['fetchedAt'] as String) : null);
 
   final bool ok;
+  final DateTime fetchedAt;
   final DateTime? lastOkAt;
   final List<Map<String, dynamic>> items;
 }
@@ -34,7 +36,7 @@ class MapSnapshot {
             for (final e in feeds.entries) e.key: SourceFeed.fromJson(e.value as Map<String, dynamic>),
       };
 
-  /// By snapshot key: pm25, quakesTmd, quakesUsgs, flood, rain, waterlevel, radar, cctv.
+  /// By snapshot key: pm25, quakesTmd, quakesUsgs, flood, rain, waterlevel, radar, cctv, fires, events.
   final Map<String, SourceFeed> feeds;
 }
 

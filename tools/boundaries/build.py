@@ -33,6 +33,9 @@ ADMIN_DECIMALS = 4
 PROVINCE_TOL = (0.004, 0.05)
 DISTRICT_TOL = (0.004, 0.05)       # districts.json: web map (budget 1.2 MB)
 DISTRICT_LITE_TOL = (0.015, 0.06)  # districts-lite.json: worker/extension/phone lookups (budget 600 KB / 200 KB gzip)
+# Push alerts and the phone's Bangkok zones match stations to districts in these provinces, so districts-lite keeps
+# them (and their borders with neighbours) exactly as in districts.json; only the rest of the country is coarser.
+LITE_EXACT_PROVINCES = set(SUBDISTRICT_PROVINCES)
 
 OCHA_SHP_ZIP = 'https://data.humdata.org/dataset/d24bdc45-eb4c-4e3d-8b16-44db02667c27/resource/10dde461-b781-4904-9559-7deb3e960913/download/tha_admin_boundaries.shp.zip'
 
@@ -192,12 +195,15 @@ def admin_tolerances(geoms, max_tol, ratio):
     return tols
 
 
-def simplify_shared(geoms, tols):
+def simplify_shared(geoms, tols, exact=(), exact_tols=None):
     """Simplify polygons that share borders so neighbours keep identical edges (no gaps or overlaps for lookups).
 
     The sources share exact vertices along common borders. Rings are cut wherever the set of polygons using a vertex
     changes; each piece is simplified once (in a fixed direction, with the smallest tolerance among its owners) and
     every ring then keeps only the surviving vertices.
+
+    Pieces owned by any polygon in `exact` use the smallest of `exact_tols` among their owners instead, so those
+    polygons come out identical to a run with `exact_tols` for every polygon.
     """
     owners = {}
     for i, geom in enumerate(geoms):
@@ -230,7 +236,8 @@ def simplify_shared(geoms, tols):
             if len(piece) < 3 or key in done:
                 continue
             done.add(key)
-            tol = min(tols[o] for o in owners[piece[1]])
+            own = owners[piece[1]]
+            tol = min((exact_tols if own & exact else tols)[o] for o in own)
             keep.update(_dp(list(piece), tol))
     out = []
     for geom in geoms:
@@ -322,11 +329,16 @@ def match(polygons, table, pcode_key, lat_key='center_lat', lng_key='center_lon'
     return found
 
 
-def admin_features(polygons, matched, tol, **props_of):
-    """Simplified features for the matched polygons; props_of maps property name -> OCHA column (or a fixed value)."""
+def admin_features(polygons, matched, tol, exact_tol=None, exact_parents=(), **props_of):
+    """Simplified features for the matched polygons; props_of maps property name -> OCHA column (or a fixed value).
+
+    Polygons whose parent is in exact_parents are simplified with exact_tol (shared borders included).
+    """
     items = sorted(matched.items(), key=lambda kv: kv[1][props_of['id']])
     geoms = [polygons[i]['geometry'] for i, _ in items]
-    simple = simplify_shared(geoms, admin_tolerances(geoms, *tol))
+    exact = {k for k, (_, r) in enumerate(items) if r.get(props_of['parent']) in exact_parents} if exact_tol else set()
+    simple = simplify_shared(geoms, admin_tolerances(geoms, *tol), exact,
+                             admin_tolerances(geoms, *exact_tol) if exact_tol else None)
     return [feature(g, ADMIN_DECIMALS, **{k: (r[v] if isinstance(v, str) else v[0]) for k, v in props_of.items()})
             for g, (_, r) in zip(simple, items)]
 
@@ -371,7 +383,7 @@ def main():
     district_props = dict(id='adm2_pcode', parent='adm1_pcode', level=(2,), name_th='adm2_name1', name_en='adm2_name')
     provinces = admin_features(gb1, m1, PROVINCE_TOL, **province_props)
     districts = admin_features(gb2, m2, DISTRICT_TOL, **district_props)
-    districts_lite = admin_features(gb2, m2, DISTRICT_LITE_TOL, **district_props)
+    districts_lite = admin_features(gb2, m2, DISTRICT_LITE_TOL, DISTRICT_TOL, LITE_EXACT_PROVINCES, **district_props)
 
     os.makedirs(OUT, exist_ok=True)
     if '--subdistricts' in sys.argv:

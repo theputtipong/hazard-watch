@@ -12,12 +12,19 @@ iOS and Android app: an extra channel next to the web, PWA and extension, readin
   each good download it also relays the raw list to `POST /v1/relay/bma/<kind>`, fire-and-forget (failures are ignored;
   the server takes it only from Thai IPs and re-checks it). Severities use the thresholds in `lib/bma/rules.dart`
   (checked against `packages/core/src/config.ts` by a test) and the district outlines in
-  `lib/bma/bangkok_districts.g.dart`, generated from `apps/web/public/geo/districts.json` by
-  `pnpm --filter @hw/mobile generate`.
+  `lib/bma/bangkok_districts.g.dart`, generated from `apps/web/public/geo/districts-lite.json` (the Worker's file,
+  full detail in Greater Bangkok) by `pnpm --filter @hw/mobile generate`.
 - Map tab: the web map's street flooding, canal levels and PM2.5 plus rain gauges and regional earthquakes, from
   `/v1/snapshot` (and the phone's own BMA copy when the server's is failing), on OpenFreeMap vector tiles in the app's
   theme and language (`lib/map/`). Falls back to OSM raster tiles if the style can't load. Nothing loads until the tab
   is opened.
+- NASA layers (`lib/map/nasa_map.dart`): the map zooms out to the whole world; FIRMS fire hotspots from `/v1/snapshot`
+  start on, EONET events and one GIBS raster at a time (tiles straight from NASA) start off. Layer ids, zooms, days and
+  credits are in `lib/map/nasa_layers.g.dart`, generated from `packages/core/src/nasa.ts` by `tool/gen_nasa.mjs` (part
+  of `pnpm --filter @hw/mobile generate`; `pnpm test` fails if stale). Home shows a NASA card (`lib/widgets/nasa_card.dart`)
+  from the `nasa` part of `/v1/area`: fires within 25 km, events within 500 km. Display only, never a notification.
+- Area picker (`lib/screens/area_picker_screen.dart`): use my location first, then search (Thai or English, spaces
+  ignored) or province → district across all 77 provinces and 928 districts.
 - Alerts tab: the followed district's alerts from `/v1/area` (flood and rain from the phone's BMA copy when that is
   what Home shows), grouped by level, most severe first.
 - Phone notifications (off until turned on in Settings, which asks for permission): no Firebase or push service. A

@@ -6,7 +6,9 @@ import 'package:hazardwatch/location.dart';
 import 'package:hazardwatch/screens/home_screen.dart';
 import 'package:hazardwatch/theme/hw_app_theme.dart';
 import 'package:hazardwatch/widgets/alert_card.dart';
+import 'package:hazardwatch/widgets/nasa_card.dart';
 import 'package:hazardwatch/widgets/reading_tile.dart';
+import 'package:hazardwatch/widgets/severity.dart';
 import 'package:hazardwatch/widgets/source_link.dart';
 
 import 'support.dart';
@@ -124,6 +126,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.textContaining('นอกพื้นที่ที่เรามีข้อมูล'), findsOneWidget);
     api.error = null;
+    await tester.tap(find.text('กรุงเทพมหานคร'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('จตุจักร'));
     await tester.pumpAndSettle();
     expect(find.text('จตุจักร'), findsOneWidget); // home header
@@ -140,5 +144,80 @@ void main() {
     await tester.tap(find.text('มืด'));
     await tester.pumpAndSettle();
     expect(Theme.of(tester.element(find.text('เขตที่ติดตาม'))).brightness, Brightness.dark);
+  });
+
+  group('NASA card', () {
+    Future<void> showNasa(WidgetTester tester) =>
+        tester.scrollUntilVisible(find.text('ไฟและพายุจากดาวเทียม NASA'), 300, scrollable: _homeList);
+
+    testWidgets('fires within 25 km and storms with distance, credited to NASA, no severity', (tester) async {
+      await pumpApp(tester);
+      await showNasa(tester);
+      expect(find.text('พบจุดความร้อน 2 จุดในระยะ 25 กม. ช่วง 24 ชม.'), findsOneWidget);
+      expect(find.text('จุดที่ใกล้ที่สุดห่าง 2.4 กม.'), findsOneWidget);
+      expect(find.textContaining('Typhoon Test'), findsOneWidget);
+      expect(find.text('ห่าง 367 กม.'), findsOneWidget);
+      expect(find.textContaining('ไม่ใช่ประกาศเตือนภัยทางการ'), findsOneWidget);
+      final card = find.byType(NasaCard);
+      final credit = tester.widget<SourceText>(find.descendant(of: card, matching: find.byType(SourceText)));
+      expect(credit.text, startsWith('Fires: NASA FIRMS (LANCE/ESDIS) · Events: NASA EONET'));
+      final links = tester.widgetList<SourceLink>(find.descendant(of: card, matching: find.byType(SourceLink)));
+      expect(links.map((s) => s.url), ['https://firms.modaps.eosdis.nasa.gov', 'https://eonet.gsfc.nasa.gov']);
+      // Display only: never an alert card, never a severity pill.
+      expect(find.descendant(of: card, matching: find.byType(AlertCard)), findsNothing);
+      expect(find.descendant(of: card, matching: find.byType(SeverityBadge)), findsNothing);
+      expect(find.descendant(of: card, matching: find.byType(SeverityMeter)), findsNothing);
+    });
+
+    testWidgets('hidden when the report has no NASA data', (tester) async {
+      await pumpApp(tester, api: FakeApi(report: fixtureJson()..['nasa'] = null));
+      await tester.scrollUntilVisible(find.text('ข้อมูลอัปเดตล่าสุดเมื่อไหร่'), 300, scrollable: _homeList);
+      expect(find.byType(NasaCard), findsNothing);
+      expect(find.text('ไฟและพายุจากดาวเทียม NASA'), findsNothing);
+    });
+
+    testWidgets('nothing near: one calm line, no disclaimer', (tester) async {
+      final quiet = fixtureJson()
+        ..['nasa'] = {
+          'fires': {'count': 0, 'nearestKm': null, 'radiusKm': 25},
+          'events': <Object>[],
+        };
+      await pumpApp(tester, api: FakeApi(report: quiet));
+      await showNasa(tester);
+      expect(find.text('ไม่พบจุดความร้อนใกล้คุณในช่วง 24 ชม.'), findsOneWidget);
+      expect(find.textContaining('ไม่ใช่ประกาศเตือนภัยทางการ'), findsNothing);
+      expect(find.textContaining('ห่าง'), findsNothing);
+    });
+  });
+
+  testWidgets('outside Bangkok: far BMA rain and river gauges are left out, province shown', (tester) async {
+    final j = fixtureJson();
+    (j['district'] as Map<String, dynamic>)
+      ..['id'] = 'TH5001'
+      ..['name'] = {'th': 'เมืองเชียงใหม่', 'en': 'Mueang Chiang Mai'}
+      ..['province'] = {'th': 'เชียงใหม่', 'en': 'Chiang Mai'};
+    j
+      ..['severity'] = 'ok'
+      ..['calm'] = false
+      ..['alerts'] = <Object>[]
+      ..['flood'] = null
+      ..['quake'] = null;
+    (j['readings'] as Map<String, dynamic>)['rain'] = {
+      ...(j['readings'] as Map<String, dynamic>)['rain'] as Map<String, dynamic>,
+      'km': 580.2,
+    };
+    (j['readings'] as Map<String, dynamic>)['pm25'] = {
+      ...(j['readings'] as Map<String, dynamic>)['pm25'] as Map<String, dynamic>,
+      'severity': 'ok',
+    };
+    j['rivers'] = [
+      for (final r in j['rivers'] as List) {...r as Map<String, dynamic>, 'km': 300},
+    ];
+    await pumpApp(tester, api: FakeApi(report: j));
+    expect(find.text('เชียงใหม่'), findsOneWidget);
+    expect(find.byType(ReadingTile), findsOneWidget); // PM2.5 only
+    expect(find.text('น้ำในคลองและแม่น้ำ'), findsNothing);
+    // The server counted the far rain gauge; what is shown is all normal.
+    expect(find.text('แถวนี้ตอนนี้ปกติดี'), findsOneWidget);
   });
 }

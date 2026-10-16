@@ -166,6 +166,8 @@ class AreaReport {
       flood = j['flood'] == null ? null : FloodCounts.fromJson(j['flood'] as Map<String, dynamic>),
       rivers = [for (final r in j['rivers'] as List) AreaReading.fromJson(r as Map<String, dynamic>)],
       quake = j['quake'] == null ? null : Quake.fromJson(j['quake'] as Map<String, dynamic>),
+      // Older deploys send no `nasa` key at all; treat it like null.
+      nasa = j['nasa'] == null ? null : NasaNear.fromJson(j['nasa'] as Map<String, dynamic>),
       feeds = [for (final f in j['feeds'] as List) Feed.fromJson(f as Map<String, dynamic>)];
 
   static AreaReading? _reading(Object? j) => j == null ? null : AreaReading.fromJson(j as Map<String, dynamic>);
@@ -186,5 +188,69 @@ class AreaReport {
   final FloodCounts? flood;
   final List<AreaReading> rivers;
   final Quake? quake;
+
+  /// NASA fires/events near the district centre. Display only, never an alert; null when neither feed exists.
+  final NasaNear? nasa;
   final List<Feed> feeds;
+}
+
+/// FIRMS hotspots from the past 24 h within [radiusKm] of the district centre.
+class FiresNear {
+  const FiresNear({required this.count, required this.nearestKm, required this.radiusKm});
+
+  FiresNear.fromJson(Map<String, dynamic> j)
+    : count = j['count'] as int,
+      nearestKm = (j['nearestKm'] as num?)?.toDouble(),
+      radiusKm = _num(j['radiusKm']);
+
+  final int count;
+  final double? nearestKm;
+  final double radiusKm;
+}
+
+/// An open EONET event (storm, volcano…) near the district, nearest first.
+class NasaEventNear {
+  const NasaEventNear({
+    required this.id,
+    required this.category,
+    required this.title,
+    required this.km,
+    required this.updatedAt,
+    this.windKts,
+    this.url,
+  });
+
+  NasaEventNear.fromJson(Map<String, dynamic> j)
+    : id = j['id'] as String,
+      category = j['category'] as String,
+      title = j['title'] as String,
+      km = _num(j['km']),
+      updatedAt = _time(j['updatedAt']),
+      windKts = (j['windKts'] as num?)?.toDouble(),
+      url = j['url'] as String?;
+
+  final String id;
+
+  /// 'severeStorms' | 'volcanoes' | 'floods' | 'landslides'; kept as a string so a new category never breaks parsing.
+  final String category;
+  final String title;
+  final double km;
+  final DateTime updatedAt;
+  final double? windKts;
+  final String? url;
+}
+
+/// `nasa` in `/v1/area` (NasaNear in packages/core/src/nasa.ts).
+class NasaNear {
+  const NasaNear({required this.fires, required this.events});
+
+  NasaNear.fromJson(Map<String, dynamic> j)
+    : fires = FiresNear.fromJson(j['fires'] as Map<String, dynamic>),
+      events = [for (final e in j['events'] as List) NasaEventNear.fromJson(e as Map<String, dynamic>)];
+
+  final FiresNear fires;
+  final List<NasaEventNear> events;
+
+  /// Nothing to report: one calm line instead of a full card.
+  bool get quiet => fires.count == 0 && events.isEmpty;
 }
