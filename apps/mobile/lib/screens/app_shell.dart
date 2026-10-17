@@ -11,6 +11,7 @@ import 'alerts_screen.dart';
 import 'home_screen.dart';
 import 'map_screen.dart';
 import 'settings_screen.dart';
+import 'sources_screen.dart';
 
 /// Design system NavigationBar: four fixed destinations, labels always shown, `line` along the top.
 class AppShell extends StatefulWidget {
@@ -36,6 +37,8 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   static const _alertsTab = 2;
   int _tab = 0;
+  late final AppLifecycleListener _lifecycle;
+  bool _notGovOpen = false;
 
   @override
   void initState() {
@@ -43,12 +46,27 @@ class _AppShellState extends State<AppShell> {
     alertsTabRequest.addListener(_openAlerts);
     // A notification tap that started the app came in before this shell existed.
     if (alertsTabRequest.take()) _tab = _alertsTab;
+    // Opening the app, or coming back to it on a new day.
+    _lifecycle = AppLifecycleListener(onResume: _showNotGov);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _showNotGov());
   }
 
   @override
   void dispose() {
+    _lifecycle.dispose();
     alertsTabRequest.removeListener(_openAlerts);
     super.dispose();
+  }
+
+  /// The not-government notice, on the first open of the day unless turned off.
+  Future<void> _showNotGov() async {
+    final settings = widget.settings;
+    if (!mounted || _notGovOpen || !settings.shouldShowNotGov(widget.clock())) return;
+    _notGovOpen = true;
+    settings.notGovShownOn = AppSettings.dayKey(widget.clock());
+    final hide = await showDialog<bool>(context: context, builder: (_) => const NotGovernmentDialog());
+    _notGovOpen = false;
+    if (hide ?? false) settings.notGovHidden = true;
   }
 
   /// A tapped alert notification: back to the shell from any page on top of it, on the Alerts tab.

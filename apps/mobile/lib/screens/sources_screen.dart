@@ -81,11 +81,11 @@ class SourcesScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   spacing: HwSize.space3,
                   children: [
-                    Icon(Icons.info_outline_rounded, color: c.ink),
+                    Icon(Icons.info_outline_rounded, color: c.sevDangerInk),
                     Expanded(
                       child: Text(
                         l.disclaimerNotGov,
-                        style: text.bodyLarge!.copyWith(color: c.ink, fontWeight: FontWeight.w600),
+                        style: text.bodyLarge!.copyWith(color: c.sevDangerInk, fontWeight: FontWeight.w700),
                       ),
                     ),
                   ],
@@ -191,6 +191,60 @@ class _SourceRow extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Shown on the first open of each day: the app is not a government app, in bold red. Pops with true when
+/// "don't show again" was ticked.
+class NotGovernmentDialog extends StatefulWidget {
+  const NotGovernmentDialog({super.key});
+
+  @override
+  State<NotGovernmentDialog> createState() => _NotGovernmentDialogState();
+}
+
+class _NotGovernmentDialogState extends State<NotGovernmentDialog> {
+  bool _hide = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final c = context.hw;
+    final text = Theme.of(context).textTheme;
+    return AlertDialog(
+      key: const ValueKey('not-gov-dialog'),
+      icon: Icon(Icons.info_outline_rounded, color: c.sevDangerInk),
+      title: Text(
+        l.notGovTitle,
+        style: text.headlineSmall!.copyWith(color: c.sevDangerInk, fontWeight: FontWeight.w700),
+      ),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(l.disclaimerNotGov, style: text.bodyLarge),
+            CheckboxListTile(
+              contentPadding: EdgeInsets.zero,
+              controlAffinity: ListTileControlAffinity.leading,
+              title: Text(l.notGovDontShow),
+              value: _hide,
+              onChanged: (v) => setState(() => _hide = v ?? false),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () {
+            Navigator.of(context).pop(_hide);
+            openSources(context);
+          },
+          child: Text(l.sourcesTitle),
+        ),
+        FilledButton(onPressed: () => Navigator.of(context).pop(_hide), child: Text(l.notGovAck)),
+      ],
     );
   }
 }

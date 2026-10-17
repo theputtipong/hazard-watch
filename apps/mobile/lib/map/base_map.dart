@@ -7,6 +7,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:vector_map_tiles/vector_map_tiles.dart';
 import 'package:vector_tile_renderer/vector_tile_renderer.dart' as vtr;
 
+import '../l10n/gen/app_localizations.dart';
 import '../theme/hw_app_theme.dart';
 import '../widgets/source_link.dart';
 
@@ -157,7 +158,8 @@ class _BaseMapState extends State<BaseMap> {
   }
 }
 
-/// Credits the tile data, as the map licences require.
+/// Credits the tile data, as the map licences require: a small ⓘ in the map's corner (a full touch target) that opens
+/// the linked credit, so the credit line never covers the map.
 class BaseMapAttribution extends StatelessWidget {
   const BaseMapAttribution({super.key});
 
@@ -165,14 +167,34 @@ class BaseMapAttribution extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.hw;
     return Align(
-      alignment: Alignment.bottomRight,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: HwSize.space1, vertical: 2),
-        color: c.surface.withValues(alpha: MapConfig.creditPanelAlpha),
-        child: SourceText(
-          MapConfig.attribution,
-          sources: MapConfig.attributionLinks,
-          style: Theme.of(context).textTheme.labelSmall!.copyWith(color: c.inkMuted),
+      alignment: Alignment.bottomLeft,
+      child: IconButton(
+        key: const ValueKey('base-map-credit'),
+        tooltip: AppLocalizations.of(context).mapBaseCredit,
+        constraints: const BoxConstraints.tightFor(width: HwSize.touchTarget, height: HwSize.touchTarget),
+        padding: EdgeInsets.zero,
+        onPressed: () => showModalBottomSheet<void>(
+          context: context,
+          showDragHandle: true,
+          builder: (context) => SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(HwSize.space4, 0, HwSize.space4, HwSize.space4),
+              child: SourceText(
+                MapConfig.attribution,
+                sources: MapConfig.attributionLinks,
+                style: Theme.of(context).textTheme.bodySmall!.copyWith(color: context.hw.inkMuted),
+              ),
+            ),
+          ),
+        ),
+        icon: Material(
+          key: const ValueKey('base-map-credit-panel'),
+          color: c.surface.withValues(alpha: MapConfig.creditPanelAlpha),
+          shape: const CircleBorder(),
+          child: Padding(
+            padding: const EdgeInsets.all(2),
+            child: Icon(Icons.info_outline, size: 16, color: c.inkMuted),
+          ),
         ),
       ),
     );

@@ -43,10 +43,7 @@ void main() {
       final titles = tester.widgetList<AlertCard>(find.byType(AlertCard)).map((a) => a.title).toList();
       expect(titles, ['ระวังมาก: น้ำท่วมบนถนนที่พระนคร', 'ระวังมาก: ฝุ่นเยอะที่พระนคร']);
       final credits = find.descendant(of: find.byType(AlertCard), matching: find.byType(SourceLink));
-      expect(tester.widgetList<SourceLink>(credits).map((s) => s.label), [
-        'ข้อมูลจาก กรุงเทพมหานคร · weather.bangkok.go.th',
-        'ข้อมูลจาก กรมควบคุมมลพิษ · air4thai.pcd.go.th',
-      ]);
+      expect(tester.widgetList<SourceLink>(credits).map((s) => s.label), ['กทม.', 'กรมควบคุมมลพิษ']);
       // Something is at caution or above, so the calm message must not show.
       expect(find.text('แถวนี้ตอนนี้ปกติดี'), findsNothing);
 
@@ -60,9 +57,7 @@ void main() {
         contains(matches(RegExp(r'^ข้อมูลจาก กรมควบคุมมลพิษ · \d\d:\d\d\u00a0น\. · 0\.2 กม\.$'))),
       );
       // Play policy: every credited source is a link to its original page.
-      final pcd = tester.widget<SourceLink>(
-        find.widgetWithText(SourceLink, 'ข้อมูลจาก กรมควบคุมมลพิษ · air4thai.pcd.go.th').first,
-      );
+      final pcd = tester.widget<SourceLink>(find.widgetWithText(SourceLink, 'กรมควบคุมมลพิษ').first);
       expect(pcd.url, 'https://air4thai.pcd.go.th');
       expect(tester.getSize(find.byWidget(pcd)).height, greaterThanOrEqualTo(HwSize.touchTarget));
       expect(find.text('น้ำสูง ยังไม่ล้น · 86%'), findsOneWidget);
@@ -230,6 +225,64 @@ void main() {
       expect(find.descendant(of: banner, matching: find.widgetWithText(TextButton, 'Data sources')), findsOneWidget);
     });
 
+    testWidgets('data freshness is one card of small tiles, two to a row', (tester) async {
+      await pumpApp(tester);
+      final card = find.byKey(const ValueKey('feeds-card'));
+      await tester.scrollUntilVisible(card, 300, scrollable: _homeList);
+      expect(find.descendant(of: card, matching: find.text('ข้อมูลอัปเดตล่าสุดเมื่อไหร่')), findsOneWidget);
+      expect(find.descendant(of: card, matching: find.byType(FeedStatusRow)), findsNWidgets(8));
+      expect(find.descendant(of: card, matching: find.byKey(const ValueKey('feeds-sources'))), findsOneWidget);
+      final flood = tester.getRect(find.byKey(const ValueKey('feed-tile:flood')));
+      final rain = tester.getRect(find.byKey(const ValueKey('feed-tile:rain')));
+      final water = tester.getRect(find.byKey(const ValueKey('feed-tile:waterlevel')));
+      // Side by side, then the next row.
+      expect(rain.top, flood.top);
+      expect(rain.left, greaterThan(flood.right));
+      expect(water.top, greaterThan(flood.bottom));
+      expect(flood.width, lessThan(tester.getRect(card).width / 2));
+    });
+
+    testWidgets('each freshness tile is at most three lines: name, age, links; longer text is cut with …', (
+      tester,
+    ) async {
+      final j = fixtureJson();
+      // The quakes tile's age as long as a failing feed's note gets, in English (longer words).
+      for (final f in (j['feeds'] as List).cast<Map<String, dynamic>>()) {
+        if (f['topic'] == 'quakes') {
+          f['state'] = 'down';
+          f['failingSince'] = j['generatedAt'];
+        }
+      }
+      await pumpApp(
+        tester,
+        api: FakeApi(report: j),
+        lang: 'en',
+      );
+      final card = find.byKey(const ValueKey('feeds-card'));
+      await tester.scrollUntilVisible(card, 300, scrollable: _homeList);
+      final heights = {
+        for (final topic in ['flood', 'quakes', 'dams'])
+          topic: tester.getSize(find.byKey(ValueKey('feed-tile:$topic'))).height,
+      };
+      // Two links (quakes, dams) or a long failing note never make a tile taller than a one-link tile.
+      expect(heights.values.toSet(), hasLength(1), reason: '$heights');
+      for (final t in tester.widgetList<Text>(find.descendant(of: card, matching: find.byType(Text)))) {
+        if (find
+            .descendant(of: find.byKey(const ValueKey('feeds-sources')), matching: find.byWidget(t))
+            .evaluate()
+            .isNotEmpty) {
+          continue;
+        }
+        if (t.data == 'When the data last updated' || t.data == ', ') continue; // the card title, a link separator
+        expect((t.maxLines, t.overflow), (1, TextOverflow.ellipsis), reason: t.data);
+      }
+      // The full wording stays for screen readers.
+      final quakes = tester.widget<FeedStatusRow>(
+        find.descendant(of: find.byKey(const ValueKey('feed-tile:quakes')), matching: find.byType(FeedStatusRow)),
+      );
+      expect(tester.getSemantics(find.byWidget(quakes)).label, '${quakes.name}, ${quakes.age}');
+    });
+
     testWidgets('the data freshness list links every source behind its feeds', (tester) async {
       await pumpApp(tester);
       final link = find.byKey(const ValueKey('feeds-sources'));
@@ -237,6 +290,9 @@ void main() {
       expect(find.descendant(of: link, matching: find.text('แหล่งข้อมูลทั้งหมด')), findsOneWidget);
       // Right after the last feed row.
       expect(tester.getTopLeft(link).dy, greaterThan(tester.getTopLeft(find.byType(FeedStatusRow).last).dy));
+      // The card is one list item: built before it is on screen.
+      await tester.ensureVisible(link);
+      await tester.pumpAndSettle();
       await tester.tap(link);
       await tester.pumpAndSettle();
       expect(find.byType(SourcesScreen), findsOneWidget);
@@ -258,7 +314,8 @@ void main() {
       final names = <String>{};
       Future<List<(String, String)>> linksOf(String topic) async {
         final row = find.byKey(ValueKey('feed-sources:$topic'));
-        await tester.scrollUntilVisible(row, 100, scrollable: _homeList);
+        // Small steps: the one-line rows are short, and a big step skips a feed's name row before it is ever built.
+        await tester.scrollUntilVisible(row, 50, scrollable: _homeList);
         names.addAll(tester.widgetList<FeedStatusRow>(find.byType(FeedStatusRow)).map((r) => r.name));
         return [
           for (final link in tester.widgetList<SourceLink>(find.descendant(of: row, matching: find.byType(SourceLink))))
@@ -266,28 +323,20 @@ void main() {
         ];
       }
 
-      expect(await linksOf('flood'), [
-        ('ข้อมูลจาก กรุงเทพมหานคร · weather.bangkok.go.th', 'https://weather.bangkok.go.th/flood'),
-      ]);
-      expect(await linksOf('rain'), [
-        ('ข้อมูลจาก กรุงเทพมหานคร · weather.bangkok.go.th', 'https://weather.bangkok.go.th/rain'),
-      ]);
-      expect(await linksOf('waterlevel'), [
-        ('ข้อมูลจาก สถาบันสารสนเทศทรัพยากรน้ำ (สสน.) · thaiwater.net', 'https://www.thaiwater.net'),
-      ]);
-      expect(await linksOf('pm25'), [('ข้อมูลจาก กรมควบคุมมลพิษ · air4thai.pcd.go.th', 'https://air4thai.pcd.go.th')]);
+      expect(await linksOf('flood'), [('ข้อมูลจาก กทม.', 'https://weather.bangkok.go.th/flood')]);
+      expect(await linksOf('rain'), [('ข้อมูลจาก กทม.', 'https://weather.bangkok.go.th/rain')]);
+      expect(await linksOf('waterlevel'), [('ข้อมูลจาก ThaiWater', 'https://www.thaiwater.net')]);
+      expect(await linksOf('pm25'), [('ข้อมูลจาก กรมควบคุมมลพิษ', 'https://air4thai.pcd.go.th')]);
       expect(await linksOf('quakes'), [
-        ('ข้อมูลจาก กรมอุตุนิยมวิทยา · earthquake.tmd.go.th', 'https://earthquake.tmd.go.th'),
-        ('สำนักสำรวจธรณีวิทยาสหรัฐฯ (USGS) · earthquake.usgs.gov', 'https://earthquake.usgs.gov'),
+        ('ข้อมูลจาก กรมอุตุฯ', 'https://earthquake.tmd.go.th'),
+        ('USGS', 'https://earthquake.usgs.gov'),
       ]);
       expect(find.textContaining('แหล่งข้อมูลมีปัญหา ตั้งแต่'), findsOneWidget); // the quakes feed is down
-      expect(await linksOf('fires'), [
-        ('ข้อมูลจาก NASA FIRMS · firms.modaps.eosdis.nasa.gov', 'https://firms.modaps.eosdis.nasa.gov'),
-      ]);
-      expect(await linksOf('events'), [('ข้อมูลจาก NASA EONET · eonet.gsfc.nasa.gov', 'https://eonet.gsfc.nasa.gov')]);
+      expect(await linksOf('fires'), [('ข้อมูลจาก NASA FIRMS', 'https://firms.modaps.eosdis.nasa.gov')]);
+      expect(await linksOf('events'), [('ข้อมูลจาก NASA EONET', 'https://eonet.gsfc.nasa.gov')]);
       expect(await linksOf('dams'), [
-        ('ข้อมูลจาก สถาบันสารสนเทศทรัพยากรน้ำ (สสน.) · thaiwater.net', 'https://www.thaiwater.net'),
-        ('กรมชลประทาน · app.rid.go.th', 'https://app.rid.go.th/reservoir'),
+        ('ข้อมูลจาก ThaiWater', 'https://www.thaiwater.net'),
+        ('กรมชลประทาน', 'https://app.rid.go.th/reservoir'),
       ]);
       await tester.scrollUntilVisible(find.byType(NotGovernmentNote), 300, scrollable: _homeList);
       expect(find.byKey(const ValueKey('feed-sources:radar')), findsNothing);
@@ -313,6 +362,9 @@ void main() {
         matching: find.byType(SourceLink),
       );
       await tester.scrollUntilVisible(rain, -100, scrollable: _homeList);
+      // The card is one list item: built before it is on screen.
+      await tester.ensureVisible(rain);
+      await tester.pumpAndSettle();
       await tester.tap(rain);
       await tester.pumpAndSettle();
       expect(opened, [Uri.parse('https://weather.bangkok.go.th/rain')]);
@@ -364,10 +416,7 @@ void main() {
       // Play policy: the credit links both agencies behind the dam data, ThaiWater and the Royal Irrigation Department.
       final links = tester.widgetList<SourceLink>(find.descendant(of: card, matching: find.byType(SourceLink)));
       expect(links.map((s) => s.url), ['https://www.thaiwater.net', 'https://app.rid.go.th/reservoir']);
-      expect(links.map((s) => s.label), [
-        'สถาบันสารสนเทศทรัพยากรน้ำ (สสน.) · thaiwater.net',
-        'กรมชลประทาน · app.rid.go.th',
-      ]);
+      expect(links.map((s) => s.label), ['ThaiWater', 'กรมชลประทาน']);
       for (final link in links) {
         expect(tester.getSize(find.byWidget(link)).height, greaterThanOrEqualTo(HwSize.touchTarget));
       }

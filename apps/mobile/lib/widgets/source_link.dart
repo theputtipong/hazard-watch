@@ -85,28 +85,27 @@ String sourceShortName(AppLocalizations l, String id) => switch (id) {
   _ => sourceName(l, id),
 };
 
-/// "ข้อมูลจาก กรมอุตุนิยมวิทยา · earthquake.tmd.go.th" for [url]; [name] stands in for an agency the app does not know.
+/// "ข้อมูลจาก กรมอุตุฯ" for [url], by the short name people know (the sources page gives full names and sites); [name]
+/// stands in for a source the app does not know.
 String sourceLinkLabel(AppLocalizations l, String url, {String? name}) {
   final id = sourceIdForUrl(url);
-  final agency = (id == null ? null : sourceAgency(l, id)) ?? name;
-  final domain = linkDomain(url);
-  if (agency == null || domain == null) return name ?? url;
-  return l.sourceDataFrom(agency, domain);
+  final short = id == null ? name : sourceShortName(l, id);
+  return short == null ? url : '${l.commonSource} $short';
 }
 
 /// The words [AppLocalizations.sourceDataFrom] puts before the agency ("ข้อมูลจาก ").
 String _dataFromPrefix(AppLocalizations l) => l.sourceDataFrom('\u0000', '').split('\u0000').first;
 
-/// Link text is never smaller than this, so a credit stays readable (bodySmall is 13).
-const double _minLinkFontSize = 14;
+/// Link text is never smaller than this, so a credit stays readable: bodySmall, the design system's smallest text.
+const double _minLinkFontSize = 13;
 
 /// Attribution text ("ข้อมูลจาก กรมอุตุฯ · 17:00 น.") with each source as a link to its original page.
-/// Google Play requires apps showing government data to link the original source wherever the data is credited, and
-/// the link must say whose data it is and where it goes: with [describe] on, each known source's name is shown as its
-/// agency's full name and site ("ข้อมูลจาก กรมอุตุนิยมวิทยา · earthquake.tmd.go.th · 17:00 น."), the "ข้อมูลจาก" before
-/// it becoming part of the link.
+/// Google Play requires apps showing government data to link the original source wherever the data is credited. Names
+/// stay short as written ("กรมอุตุฯ"); the sources page gives each agency's full name and site. With [describe] on,
+/// each known source's name is shown as its agency's full name and site ("ข้อมูลจาก กรมอุตุนิยมวิทยา ·
+/// earthquake.tmd.go.th · 17:00 น."), the "ข้อมูลจาก" before it becoming part of the link.
 class SourceText extends StatelessWidget {
-  const SourceText(this.text, {super.key, required this.sources, this.style, this.describe = true});
+  const SourceText(this.text, {super.key, required this.sources, this.style, this.describe = false});
 
   final String text;
 
@@ -114,7 +113,7 @@ class SourceText extends StatelessWidget {
   final List<SourceRef> sources;
   final TextStyle? style;
 
-  /// False keeps each name exactly as written (NASA's own credit wording).
+  /// False (the default) keeps each name exactly as written ("กทม.", NASA's own credit wording).
   final bool describe;
 
   @override
@@ -157,11 +156,14 @@ class SourceText extends StatelessWidget {
 /// One tappable link, at least a full touch target in size, underlined in the theme's link colour.
 /// With an empty [label] it reads "ข้อมูลจาก {agency} · {domain}" for [url].
 class SourceLink extends StatelessWidget {
-  const SourceLink({super.key, this.label = '', required this.url, this.style});
+  const SourceLink({super.key, this.label = '', required this.url, this.style, this.oneLine = false});
 
   final String label;
   final String url;
   final TextStyle? style;
+
+  /// One line, cut with … when it does not fit (screen readers still get the whole label).
+  final bool oneLine;
 
   @override
   Widget build(BuildContext context) {
@@ -188,6 +190,8 @@ class SourceLink extends StatelessWidget {
             heightFactor: 1,
             child: Text(
               shown,
+              maxLines: oneLine ? 1 : null,
+              overflow: oneLine ? TextOverflow.ellipsis : null,
               style: base.copyWith(
                 color: c.accent,
                 fontSize: size < _minLinkFontSize ? _minLinkFontSize : size,

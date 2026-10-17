@@ -21,6 +21,8 @@ class AppSettings extends ChangeNotifier {
   District? _district;
   bool _notify = false;
   QuakePrefs _quake = QuakePrefs.standard;
+  bool _notGovHidden = false;
+  String? _notGovShownOn;
 
   ThemeMode get themeMode => _themeMode;
   bool get cvd => _cvd;
@@ -28,6 +30,12 @@ class AppSettings extends ChangeNotifier {
   District? get district => _district;
   bool get notify => _notify;
   QuakePrefs get quake => _quake;
+
+  /// "Don't show again" ticked on the opening not-government notice.
+  bool get notGovHidden => _notGovHidden;
+
+  /// The day ([dayKey]) the opening notice last showed.
+  String? get notGovShownOn => _notGovShownOn;
 
   set themeMode(ThemeMode v) => _set(() => _themeMode = v, () => _prefs?.setString(_kTheme, v.name));
   set cvd(bool v) => _set(() => _cvd = v, () => _prefs?.setBool(_kCvd, v));
@@ -43,8 +51,24 @@ class AppSettings extends ChangeNotifier {
     await _prefs?.setInt(_kQuakeKm, v.maxDistanceKm);
   });
 
+  set notGovHidden(bool v) => _set(() => _notGovHidden = v, () => _prefs?.setBool(_kNotGovHidden, v));
+  set notGovShownOn(String? v) => _set(
+    () => _notGovShownOn = v,
+    () => v == null ? _prefs?.remove(_kNotGovShownOn) : _prefs?.setString(_kNotGovShownOn, v),
+  );
+
+  /// The opening notice shows on the first open of each day (the phone's own date) until it is turned off.
+  bool shouldShowNotGov(DateTime now) => !_notGovHidden && _notGovShownOn != dayKey(now);
+
+  /// "2026-10-18" in the phone's time zone.
+  static String dayKey(DateTime t) {
+    final d = t.toLocal();
+    return '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+  }
+
   static const _kTheme = 'theme', _kCvd = 'cvd', _kLang = 'lang', _kDistrict = 'district';
   static const _kNotify = 'notify', _kQuakeMag = 'quakeMinMag', _kQuakeKm = 'quakeMaxKm';
+  static const _kNotGovHidden = 'notGovHidden', _kNotGovShownOn = 'notGovShownOn';
 
   /// Reads saved choices; anything missing or unreadable keeps its default.
   Future<void> load() async {
@@ -56,6 +80,8 @@ class AppSettings extends ChangeNotifier {
     final lang = await p.getString(_kLang);
     if (lang == 'th' || lang == 'en') _locale = Locale(lang!);
     _notify = await p.getBool(_kNotify) ?? _notify;
+    _notGovHidden = await p.getBool(_kNotGovHidden) ?? _notGovHidden;
+    _notGovShownOn = await p.getString(_kNotGovShownOn);
     final mag = await p.getDouble(_kQuakeMag);
     final km = await p.getInt(_kQuakeKm);
     _quake = QuakePrefs(

@@ -302,25 +302,55 @@ class _HomeScreenState extends State<HomeScreen> {
       // Display only: never part of calm or the alerts above.
       if (r.dams.isNotEmpty) ...[const SizedBox(height: HwSize.space3), DamCard(dams: r.dams)],
       if (nasa != null) ...[const SizedBox(height: HwSize.space3), _nasaCard(l, r, nasa, now)],
-      const SizedBox(height: HwSize.space6),
-      Text(l.feedsTitle, style: text.labelLarge!.copyWith(color: c.inkMuted)),
-      const SizedBox(height: HwSize.space2),
-      for (final (i, feed) in v.feeds.where((f) => feedSourceIds(f.topic).isNotEmpty).indexed) ...[
-        if (i > 0) Divider(height: 1, color: c.line),
-        FeedStatusRow(name: homeFeedName(l, feed.topic), state: feed.state, age: feedAgeText(l, feed, now)),
-        _FeedSources(key: ValueKey('feed-sources:${feed.topic}'), ids: feedSourceIds(feed.topic)),
-      ],
-      // Each feed links its own agencies; the sources page lists them all.
-      Align(
-        alignment: Alignment.centerLeft,
-        child: TextButton(
-          key: const ValueKey('feeds-sources'),
-          style: TextButton.styleFrom(
-            padding: EdgeInsets.zero,
-            minimumSize: const Size(HwSize.touchTarget, HwSize.touchTarget),
+      const SizedBox(height: HwSize.space3),
+      // One card of small tiles, two to a row, so the list stays short.
+      HwCard(
+        key: const ValueKey('feeds-card'),
+        title: l.feedsTitle,
+        // Each feed links its own agencies; the sources page lists them all.
+        source: Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton(
+            key: const ValueKey('feeds-sources'),
+            style: TextButton.styleFrom(
+              padding: EdgeInsets.zero,
+              minimumSize: const Size(HwSize.touchTarget, HwSize.touchTarget),
+            ),
+            onPressed: () => openSources(context),
+            child: Text(l.homeAllSources),
           ),
-          onPressed: () => openSources(context),
-          child: Text(l.homeAllSources),
+        ),
+        child: LayoutBuilder(
+          builder: (context, box) {
+            final width = (box.maxWidth - HwSize.space2) / 2;
+            return Wrap(
+              spacing: HwSize.space2,
+              runSpacing: HwSize.space2,
+              children: [
+                for (final feed in v.feeds.where((f) => feedSourceIds(f.topic).isNotEmpty))
+                  Container(
+                    key: ValueKey('feed-tile:${feed.topic}'),
+                    width: width,
+                    padding: const EdgeInsets.symmetric(horizontal: HwSize.space3, vertical: HwSize.space2),
+                    decoration: BoxDecoration(
+                      color: c.surfaceSunken,
+                      borderRadius: BorderRadius.circular(HwSize.radiusControl),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        FeedStatusRow(
+                          name: homeFeedName(l, feed.topic),
+                          state: feed.state,
+                          age: feedAgeText(l, feed, now),
+                        ),
+                        _FeedSources(key: ValueKey('feed-sources:${feed.topic}'), ids: feedSourceIds(feed.topic)),
+                      ],
+                    ),
+                  ),
+              ],
+            );
+          },
         ),
       ),
       const SizedBox(height: HwSize.space4),
@@ -504,7 +534,11 @@ class NotGovernmentBanner extends StatelessWidget {
       key: const ValueKey('home-not-gov'),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(l.disclaimerNotGov, style: text.bodySmall!.copyWith(color: c.inkMuted)),
+        // Bold red so it is the first thing read on Home.
+        Text(
+          l.disclaimerNotGov,
+          style: text.bodySmall!.copyWith(color: c.sevDangerInk, fontWeight: FontWeight.w700),
+        ),
         TextButton(
           style: TextButton.styleFrom(
             padding: EdgeInsets.zero,
@@ -549,8 +583,8 @@ class _Header extends StatelessWidget {
   }
 }
 
-/// Under a feed's name: "ข้อมูลจาก {agency} · {domain}" for its first source, "{agency} · {domain}" for the rest, each a
-/// link to the source's page. Indented to line up with the feed's name, past its status mark.
+/// Under a feed's name, on one line: "ข้อมูลจาก กทม." for its first source by short name, then the rest's short names,
+/// each a link to the source's page. Indented to line up with the feed's name, past its status mark.
 class _FeedSources extends StatelessWidget {
   const _FeedSources({super.key, required this.ids});
 
@@ -563,20 +597,22 @@ class _FeedSources extends StatelessWidget {
     final style = Theme.of(context).textTheme.bodySmall!.copyWith(color: c.inkMuted);
     final links = [
       for (final id in ids)
-        if ((sourceAgency(l, id), sourceDomain(id), sourceUrl(id)) case (final agency?, final domain?, final url?))
-          (agency: agency, domain: domain, url: url),
+        if (sourceUrl(id) case final url?) (name: sourceShortName(l, id), url: url),
     ];
     return Padding(
-      padding: const EdgeInsets.only(left: 20 + HwSize.space2),
-      child: Wrap(
-        crossAxisAlignment: WrapCrossAlignment.center,
+      padding: const EdgeInsets.only(left: FeedStatusRow.markWidth + HwSize.space2),
+      // One line, so a tile stays three lines; a name that does not fit is cut with ….
+      child: Row(
         children: [
           for (final (i, s) in links.indexed) ...[
             if (i > 0) ExcludeSemantics(child: Text(', ', style: style)),
-            SourceLink(
-              label: i == 0 ? l.sourceDataFrom(s.agency, s.domain) : '${s.agency} · ${s.domain}',
-              url: s.url,
-              style: style,
+            Flexible(
+              child: SourceLink(
+                label: i == 0 ? '${l.commonSource} ${s.name}' : s.name,
+                url: s.url,
+                style: style,
+                oneLine: true,
+              ),
             ),
           ],
         ],

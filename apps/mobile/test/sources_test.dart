@@ -124,10 +124,13 @@ void main() {
   });
 
   group('SourceText', () {
-    testWidgets('links each source by its full agency name and site, and keeps the rest as plain text', (tester) async {
+    testWidgets('describe: true links each source by its full agency name and site, the rest plain text', (
+      tester,
+    ) async {
       await pumpThemed(
         tester,
         const SourceText(
+          describe: true,
           'ข้อมูลจาก กรมอุตุฯ และ USGS · 17:00 น.',
           sources: [
             (name: 'กรมอุตุฯ', url: 'https://earthquake.tmd.go.th'),
@@ -157,7 +160,7 @@ void main() {
       expect(usgs.flagsCollection.isLink, isTrue);
     });
 
-    testWidgets('a link is underlined in the link colour and never smaller than 14', (tester) async {
+    testWidgets('a link is underlined in the link colour and keeps the bodySmall size of its credit', (tester) async {
       late HwColors c;
       await pumpThemed(
         tester,
@@ -173,10 +176,22 @@ void main() {
         ),
       );
       final text = tester.widget<Text>(find.descendant(of: find.byType(SourceLink), matching: find.byType(Text)));
-      expect(text.data, 'ข้อมูลจาก กรุงเทพมหานคร · weather.bangkok.go.th');
+      expect(text.data, 'กทม.');
       expect(text.style!.decoration, TextDecoration.underline);
       expect(text.style!.color, c.accent);
-      expect(text.style!.fontSize, greaterThanOrEqualTo(14));
+      expect(text.style!.fontSize, 13);
+    });
+
+    testWidgets('by default the credit keeps its short names as written', (tester) async {
+      await pumpThemed(
+        tester,
+        const SourceText(
+          'ข้อมูลจาก กทม. · 17:00 น.',
+          sources: [(name: 'กทม.', url: 'https://weather.bangkok.go.th/rain')],
+        ),
+      );
+      expect(tester.widget<SourceLink>(find.byType(SourceLink)).label, 'กทม.');
+      expect(find.textContaining('กรุงเทพมหานคร', findRichText: true), findsNothing);
     });
 
     testWidgets('describe: false keeps the credit wording as written', (tester) async {
@@ -191,9 +206,9 @@ void main() {
       expect(tester.widget<SourceLink>(find.byType(SourceLink)).label, 'NASA FIRMS');
     });
 
-    testWidgets('a link without a label names the agency and site of its url', (tester) async {
+    testWidgets('a link without a label names the source of its url by its short name', (tester) async {
       await pumpThemed(tester, const SourceLink(url: 'https://app.rid.go.th/reservoir'));
-      expect(find.text('ข้อมูลจาก กรมชลประทาน · app.rid.go.th'), findsOneWidget);
+      expect(find.text('ข้อมูลจาก กรมชลประทาน'), findsOneWidget);
     });
 
     testWidgets('a tap opens the link outside the app', (tester) async {
@@ -261,19 +276,15 @@ void main() {
             ),
           ),
         );
-        final tmd = tester.getSemantics(
-          find.widgetWithText(SourceLink, 'ข้อมูลจาก กรมอุตุนิยมวิทยา · earthquake.tmd.go.th'),
-        );
-        final usgs = tester.getSemantics(
-          find.widgetWithText(SourceLink, 'สำนักสำรวจธรณีวิทยาสหรัฐฯ (USGS) · earthquake.usgs.gov'),
-        );
+        final tmd = tester.getSemantics(find.widgetWithText(SourceLink, 'กรมอุตุฯ'));
+        final usgs = tester.getSemantics(find.widgetWithText(SourceLink, 'USGS'));
         expect(tmd.id, isNot(usgs.id));
         for (final node in [tmd, usgs]) {
           final data = node.getSemanticsData();
           expect(data.hasAction(SemanticsAction.tap), isTrue);
           expect(data.flagsCollection.isLink, isTrue);
         }
-        expect(tmd.label, 'ข้อมูลจาก กรมอุตุนิยมวิทยา · earthquake.tmd.go.th, เปิดเว็บไซต์ต้นทาง');
+        expect(tmd.label, 'กรมอุตุฯ, เปิดเว็บไซต์ต้นทาง');
         await semanticsTap(tester, usgs);
         await semanticsTap(tester, tmd);
         expect(opened, [Uri.parse('https://earthquake.usgs.gov'), Uri.parse('https://earthquake.tmd.go.th')]);

@@ -146,11 +146,14 @@ class _MapScreenState extends State<MapScreen> {
     if (_mapReady) _goToArea();
   }
 
-  Future<void> _load() async {
+  /// [thaiOnly] (the refresh button) takes only the Thai feeds from the new snapshot; USGS and NASA stay as they were.
+  Future<void> _load({bool thaiOnly = false}) async {
     setState(() => _loading = true);
     try {
-      final snapshot = await widget.api.snapshot();
+      final fresh = await widget.api.snapshot();
       if (!mounted) return;
+      final old = _snapshot;
+      final snapshot = thaiOnly && old != null ? old.withThaiFeedsFrom(fresh) : fresh;
       setState(() {
         _snapshot = snapshot;
         _error = null;
@@ -184,6 +187,11 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   double get _areaZoom => widget.settings.district == null ? MapConfig.regionZoom : MapConfig.areaZoom;
+
+  void _zoomBy(double step) {
+    final camera = _map.camera;
+    _map.move(camera.center, (camera.zoom + step).clamp(NasaMapConfig.worldMinZoom, MapConfig.maxZoom));
+  }
 
   void _goToArea() {
     setState(() {
@@ -339,6 +347,25 @@ class _MapScreenState extends State<MapScreen> {
                     onRetry: _locating ? null : _hintAction?.onPressed,
                   ),
                 ),
+              _MapButton(
+                key: const ValueKey('refresh-thai'),
+                icon: Icons.refresh,
+                tooltip: l.mapRefreshThai,
+                busy: _loading,
+                onPressed: _loading ? null : () => _load(thaiOnly: true),
+              ),
+              _MapButton(
+                key: const ValueKey('zoom-in'),
+                icon: Icons.add,
+                tooltip: l.mapZoomIn,
+                onPressed: () => _zoomBy(1),
+              ),
+              _MapButton(
+                key: const ValueKey('zoom-out'),
+                icon: Icons.remove,
+                tooltip: l.mapZoomOut,
+                onPressed: () => _zoomBy(-1),
+              ),
               // NASA layers get their own sheet (seven of them) rather than more chips; outlined while any is on.
               _MapButton(
                 key: const ValueKey('nasa-button'),
@@ -891,9 +918,9 @@ List<String> mapCreditSourceIds(Set<MapLayer> layers, NasaLayerState nasa) {
   return ids.toList();
 }
 
-/// "ข้อมูลบนแผนที่: กรุงเทพมหานคร · weather.bangkok.go.th, สถาบันสารสนเทศทรัพยากรน้ำ (สสน.) · thaiwater.net, …": the
-/// agencies behind what the map shows by their full names, each name and site a link to its page. Always on while any layer is (Google Play: government data must name
-/// and link its source where it is shown).
+/// "ข้อมูลบนแผนที่: กทม. · ThaiWater · กรมอุตุฯ · … ⓘ": one line (scrolling sideways when long) naming the agencies
+/// behind what the map shows, each short name a link to its page; ⓘ lists them by full name and site. Always on while
+/// any layer is (Google Play: government data must name and link its source where it is shown).
 class MapDataCredit extends StatelessWidget {
   const MapDataCredit({super.key, required this.sourceIds});
 
@@ -905,30 +932,74 @@ class MapDataCredit extends StatelessWidget {
     final c = context.hw;
     final style = Theme.of(context).textTheme.bodySmall!.copyWith(color: c.inkMuted);
     final [before, after] = l.mapDataCredit('\u0000').split('\u0000');
-    final links = <String, String>{};
-    for (final id in sourceIds) {
-      final url = sourceUrl(id);
-      final domain = sourceDomain(id);
-      if (url == null || domain == null) continue;
-      // BMA flood and rain share a name and site: one link, to the first layer's page.
-      links.putIfAbsent('${sourceAgency(l, id) ?? sourceShortName(l, id)} · $domain', () => url);
-    }
+    final links = _mapCreditLinks(l, sourceIds);
     return Semantics(
       container: true,
       label: before.trim(),
-      child: Wrap(
-        crossAxisAlignment: WrapCrossAlignment.center,
+      // One line however many layers are on: the names scroll sideways and ⓘ stays at the end.
+      child: Row(
         children: [
-          if (before.isNotEmpty) Text(before, style: style),
-          for (final (i, MapEntry(key: label, value: url)) in links.entries.indexed) ...[
-            if (i > 0) ExcludeSemantics(child: Text(', ', style: style)),
-            SourceLink(key: ValueKey('map-credit:$url'), label: label, url: url, style: style),
-          ],
-          if (after.isNotEmpty) Text(after, style: style),
+          Expanded(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  if (before.isNotEmpty) Text(before, style: style),
+                  for (final (i, (:short, full: _, :url)) in links.indexed) ...[
+                    if (i > 0) ExcludeSemantics(child: Text(' · ', style: style)),
+                    SourceLink(key: ValueKey('map-credit:$url'), label: short, url: url, style: style),
+                  ],
+                  if (after.isNotEmpty) Text(after, style: style),
+                ],
+              ),
+            ),
+          ),
+          IconButton(
+            key: const ValueKey('map-credit-more'),
+            tooltip: l.mapDataCreditAll,
+            constraints: const BoxConstraints.tightFor(width: HwSize.touchTarget, height: HwSize.touchTarget),
+            padding: EdgeInsets.zero,
+            icon: Icon(Icons.info_outline, size: 16, color: c.inkMuted),
+            onPressed: () => showModalBottomSheet<void>(
+              context: context,
+              showDragHandle: true,
+              isScrollControlled: true,
+              builder: (context) => SafeArea(
+                child: SingleChildScrollView(
+                  key: const ValueKey('map-credit-sheet'),
+                  padding: const EdgeInsets.fromLTRB(HwSize.space4, 0, HwSize.space4, HwSize.space4),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Semantics(
+                        header: true,
+                        child: Text(l.mapDataCreditAll, style: Theme.of(context).textTheme.titleMedium),
+                      ),
+                      for (final (short: _, :full, :url) in links) SourceLink(label: full, url: url, style: style),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
+}
+
+/// Each agency once, by short name ("กทม.") and full name and site ("กรุงเทพมหานคร · weather.bangkok.go.th").
+/// BMA flood and rain share a name and site: one link, to the first layer's page.
+List<({String short, String full, String url})> _mapCreditLinks(AppLocalizations l, List<String> sourceIds) {
+  final links = <String, ({String short, String full, String url})>{};
+  for (final id in sourceIds) {
+    final url = sourceUrl(id);
+    final domain = sourceDomain(id);
+    if (url == null || domain == null) continue;
+    final full = '${sourceAgency(l, id) ?? sourceShortName(l, id)} · $domain';
+    links.putIfAbsent(full, () => (short: sourceShortName(l, id), full: full, url: url));
+  }
+  return links.values.toList();
 }
 
 /// The map's one credit panel, under the map so the map buttons stay clear: the dam legend, NASA's credit (with the
@@ -974,7 +1045,7 @@ class _MapCredits extends StatelessWidget {
                 text,
                 sources: nasaSourceRefs,
                 describe: false,
-                style: Theme.of(context).textTheme.labelSmall!.copyWith(color: c.inkMuted),
+                style: Theme.of(context).textTheme.bodySmall!.copyWith(color: c.inkMuted),
               ),
             // What the raster's colours mean, compact; the layer sheet adds the caveat note.
             if (nasaLegend(state) case final legend?)

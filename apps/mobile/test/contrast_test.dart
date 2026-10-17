@@ -6,6 +6,7 @@ import 'package:hazardwatch/l10n/gen/app_localizations.dart';
 import 'package:hazardwatch/map/base_map.dart';
 import 'package:hazardwatch/map/map_markers.dart';
 import 'package:hazardwatch/map/nasa_map.dart';
+import 'package:hazardwatch/screens/home_screen.dart';
 import 'package:hazardwatch/screens/map_screen.dart';
 import 'package:hazardwatch/screens/sources_screen.dart';
 import 'package:hazardwatch/theme/hw_app_theme.dart';
@@ -267,17 +268,17 @@ void main() {
         }
       });
 
-      testWidgets('map credit text reads on its panel over any base map', (tester) async {
+      testWidgets('map credit ⓘ button reads on its panel over any base map', (tester) async {
         await _pump(tester, const SizedBox(width: 400, height: 80, child: BaseMapAttribution()), brightness, cvd);
-        final panel = tester
-            .widget<Container>(find.descendant(of: find.byType(BaseMapAttribution), matching: find.byType(Container)))
-            .color!;
+        final panel = tester.widget<Material>(find.byKey(const ValueKey('base-map-credit-panel'))).color!;
         expect(panel.a, closeTo(MapConfig.creditPanelAlpha, 0.01));
-        final fg = _textColour(tester, find.byType(BaseMapAttribution));
+        final fg = tester
+            .widget<Icon>(find.descendant(of: find.byType(BaseMapAttribution), matching: find.byType(Icon)))
+            .color!;
         // Whatever is under it: either theme's land colour, a satellite image anywhere from black to white.
         for (final under in [_lightMap, _darkMap, Colors.black, Colors.white]) {
           final bg = Color.alphaBlend(panel, under);
-          expect(contrastRatio(fg, bg), greaterThanOrEqualTo(_text), reason: 'credit $fg on panel over $under');
+          expect(contrastRatio(fg, bg), greaterThanOrEqualTo(_nonText), reason: 'credit icon $fg on panel over $under');
         }
       });
 
@@ -299,6 +300,10 @@ void main() {
           expect(_ratio(fg, c.surface), greaterThanOrEqualTo(_text), reason: '${link.data}: $fg on ${c.surface}');
           expect(link.style!.decoration, TextDecoration.underline);
         }
+        final more = tester.widget<Icon>(
+          find.descendant(of: find.byKey(const ValueKey('map-credit-more')), matching: find.byType(Icon)),
+        );
+        expect(contrastRatio(more.color!, c.surface), greaterThanOrEqualTo(_nonText), reason: 'ⓘ button');
       });
 
       testWidgets('the not-government note at the top of the sources page reads on its box', (tester) async {
@@ -308,6 +313,15 @@ void main() {
           find.descendant(of: find.byKey(const ValueKey('not-gov')), matching: find.byType(Text)),
         );
         expect(contrastRatio(note.style!.color!, c.surfaceSunken), greaterThanOrEqualTo(_text));
+      });
+
+      testWidgets('the red not-government line reads on Home and in the opening notice', (tester) async {
+        await _pump(tester, const NotGovernmentBanner(), brightness, cvd);
+        final c = tester.element(find.byType(NotGovernmentBanner)).hw;
+        final red = tester.widget<Text>(find.textContaining('ไม่ใช่แอปของรัฐ')).style!.color!;
+        // Home sits on bg; the opening notice is a dialog on surface.
+        expect(contrastRatio(red, c.bg), greaterThanOrEqualTo(_text), reason: 'banner on bg');
+        expect(contrastRatio(red, c.surface), greaterThanOrEqualTo(_text), reason: 'notice on surface');
       });
 
       testWidgets('every ColorScheme container pair M3 widgets fall back on reads as text', (tester) async {

@@ -4,7 +4,8 @@ import '../api/models.dart';
 import '../theme/hw_app_theme.dart';
 
 /// Design system FeedStatus (`.m-feed`): state shown by shape (dot / ring / cross), never by sev-* colour.
-/// The age text wraps under itself rather than being cut.
+/// Compact, for a small tile: the name, then the age under it, one line each (cut with … when longer; screen readers
+/// get the full text).
 class FeedStatusRow extends StatelessWidget {
   const FeedStatusRow({super.key, required this.name, required this.state, required this.age});
 
@@ -12,30 +13,43 @@ class FeedStatusRow extends StatelessWidget {
   final FeedState state;
   final String age;
 
+  /// The state mark's column; the name and anything under it line up past it.
+  static const double markWidth = 16;
+
   @override
   Widget build(BuildContext context) {
     final c = context.hw;
     final text = Theme.of(context).textTheme;
+    // Its own node: inside a card it would otherwise merge into the card's title.
     return Semantics(
+      container: true,
       label: '$name, $age',
       excludeSemantics: true,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(minHeight: HwSize.touchTarget),
-        child: Row(
-          spacing: HwSize.space2,
-          children: [
-            SizedBox(width: 20, child: Center(child: _Mark(state))),
-            Expanded(child: Text(name, style: text.bodyLarge)),
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 170),
-              child: Text(
-                age,
-                textAlign: TextAlign.right,
-                style: text.bodySmall!.copyWith(color: state == FeedState.down ? c.ink : c.inkMuted),
-              ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        spacing: HwSize.space2,
+        children: [
+          // Centred on the name's first line (labelLarge: 14 × 1.571).
+          SizedBox(
+            width: markWidth,
+            height: 22,
+            child: Center(child: _Mark(state)),
+          ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(name, style: text.labelLarge, maxLines: 1, overflow: TextOverflow.ellipsis),
+                Text(
+                  age,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: text.bodySmall!.copyWith(color: state == FeedState.down ? c.ink : c.inkMuted),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

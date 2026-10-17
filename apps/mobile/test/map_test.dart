@@ -532,8 +532,11 @@ void main() {
       expect((tile.value, tile.unit, tile.level, tile.note), ('25', 'ซม.', HwLevel.warning, 'น้ำท่วม'));
       expect(tile.meta, startsWith('ข้อมูลจาก กทม. · เวลาวัด '));
       expect(tile.sources, [(name: 'กทม.', url: 'https://weather.bangkok.go.th/flood')]);
-      // The link names the agency in full and its site.
-      expect(find.widgetWithText(SourceLink, 'ข้อมูลจาก กรุงเทพมหานคร · weather.bangkok.go.th'), findsOneWidget);
+      // The link keeps the short name; the sources page has the full name and site.
+      expect(
+        find.descendant(of: find.byType(ReadingTile), matching: find.widgetWithText(SourceLink, 'กทม.')),
+        findsOneWidget,
+      );
     });
 
     /// (shown text, url) of each link in the credit strip under the map.
@@ -544,6 +547,46 @@ void main() {
         (link.label, link.url),
     ];
 
+    testWidgets('zoom buttons step the map in and out by one level', (tester) async {
+      await pumpMap(tester);
+      final map = MapController.of(tester.element(find.byType(MarkerLayer).first));
+      final start = map.camera.zoom;
+      for (final key in ['zoom-in', 'zoom-out']) {
+        final size = tester.getSize(find.byKey(ValueKey(key)));
+        expect(size.width, greaterThanOrEqualTo(HwSize.touchTarget));
+        expect(size.height, greaterThanOrEqualTo(HwSize.touchTarget));
+      }
+      await tester.tap(find.byKey(const ValueKey('zoom-in')));
+      await tester.pump();
+      expect(map.camera.zoom, start + 1);
+      await tester.tap(find.byKey(const ValueKey('zoom-out')));
+      await tester.tap(find.byKey(const ValueKey('zoom-out')));
+      await tester.pump();
+      expect(map.camera.zoom, start - 1);
+    });
+
+    testWidgets('the base map credit is an ⓘ button that opens its linked sources', (tester) async {
+      final opened = <Uri>[];
+      final realLaunchLink = launchLink;
+      launchLink = (uri) async {
+        opened.add(uri);
+        return true;
+      };
+      addTearDown(() => launchLink = realLaunchLink);
+      await pumpMap(tester);
+      expect(find.text('OpenStreetMap contributors'), findsNothing);
+      final button = find.byKey(const ValueKey('base-map-credit'));
+      expect(tester.getSize(button).height, greaterThanOrEqualTo(HwSize.touchTarget));
+      await tester.tap(button);
+      await tester.pumpAndSettle();
+      expect([
+        for (final link in tester.widgetList<SourceLink>(find.byType(SourceLink))) link.url,
+      ], containsAllInOrder(MapConfig.attributionLinks.map((s) => s.url)));
+      await tester.tap(find.widgetWithText(SourceLink, 'OpenStreetMap contributors'));
+      await tester.pumpAndSettle();
+      expect(opened, [Uri.parse('https://www.openstreetmap.org/copyright')]);
+    });
+
     testWidgets('the default map credits and links every agency it shows, under the map and clear of its controls', (
       tester,
     ) async {
@@ -551,17 +594,19 @@ void main() {
       final strip = find.byKey(const ValueKey('map-data-credit'));
       expect(strip, findsOneWidget);
       expect(find.descendant(of: strip, matching: find.text('ข้อมูลบนแผนที่: ')), findsOneWidget);
+      // One compact line of short names, each still a link to its page.
       expect(creditLinks(tester), [
-        ('กรุงเทพมหานคร · weather.bangkok.go.th', 'https://weather.bangkok.go.th/flood'),
-        ('สถาบันสารสนเทศทรัพยากรน้ำ (สสน.) · thaiwater.net', 'https://www.thaiwater.net'),
-        ('กรมอุตุนิยมวิทยา · earthquake.tmd.go.th', 'https://earthquake.tmd.go.th'),
-        ('สำนักสำรวจธรณีวิทยาสหรัฐฯ (USGS) · earthquake.usgs.gov', 'https://earthquake.usgs.gov'),
-        ('NASA FIRMS · firms.modaps.eosdis.nasa.gov', 'https://firms.modaps.eosdis.nasa.gov'),
+        ('กทม.', 'https://weather.bangkok.go.th/flood'),
+        ('ThaiWater', 'https://www.thaiwater.net'),
+        ('กรมอุตุฯ', 'https://earthquake.tmd.go.th'),
+        ('USGS', 'https://earthquake.usgs.gov'),
+        ('NASA FIRMS', 'https://firms.modaps.eosdis.nasa.gov'),
       ]);
       // Below the map itself, so no map button or pin sits over it.
       final map = tester.getRect(find.byType(FlutterMap));
       expect(tester.getRect(strip).top, greaterThanOrEqualTo(map.bottom));
       for (final button in tester.widgetList<IconButton>(find.byType(IconButton))) {
+        if (find.descendant(of: strip, matching: find.byWidget(button)).evaluate().isNotEmpty) continue;
         expect(tester.getRect(find.byWidget(button)).bottom, lessThanOrEqualTo(map.bottom));
       }
       for (final link in tester.widgetList<SourceLink>(find.descendant(of: strip, matching: find.byType(SourceLink)))) {
@@ -577,24 +622,116 @@ void main() {
         return true;
       };
       addTearDown(() => launchLink = realLaunchLink);
-      await tester.tap(find.widgetWithText(SourceLink, 'กรมอุตุนิยมวิทยา · earthquake.tmd.go.th'));
+      await tester.tap(find.widgetWithText(SourceLink, 'กรมอุตุฯ'));
       await tester.pumpAndSettle();
       expect(opened, [Uri.parse('https://earthquake.tmd.go.th')]);
+
+      // ⓘ at the end of the line lists every agency by its full name and site.
+      final more = find.byKey(const ValueKey('map-credit-more'));
+      expect(tester.getSize(more).height, greaterThanOrEqualTo(HwSize.touchTarget));
+      await tester.tap(more);
+      await tester.pumpAndSettle();
+      expect(
+        [
+          for (final link in tester.widgetList<SourceLink>(
+            find.descendant(of: find.byKey(const ValueKey('map-credit-sheet')), matching: find.byType(SourceLink)),
+          ))
+            (link.label, link.url),
+        ],
+        [
+          ('กรุงเทพมหานคร · weather.bangkok.go.th', 'https://weather.bangkok.go.th/flood'),
+          ('สถาบันสารสนเทศทรัพยากรน้ำ (สสน.) · thaiwater.net', 'https://www.thaiwater.net'),
+          ('กรมอุตุนิยมวิทยา · earthquake.tmd.go.th', 'https://earthquake.tmd.go.th'),
+          ('สำนักสำรวจธรณีวิทยาสหรัฐฯ (USGS) · earthquake.usgs.gov', 'https://earthquake.usgs.gov'),
+          ('NASA FIRMS · firms.modaps.eosdis.nasa.gov', 'https://firms.modaps.eosdis.nasa.gov'),
+        ],
+      );
+      await tester.tap(find.widgetWithText(SourceLink, 'สำนักสำรวจธรณีวิทยาสหรัฐฯ (USGS) · earthquake.usgs.gov'));
+      await tester.pumpAndSettle();
+      expect(opened.last, Uri.parse('https://earthquake.usgs.gov'));
+    });
+
+    testWidgets('the credit strip stays one line on a narrow phone with every source on; ⓘ stays in view', (
+      tester,
+    ) async {
+      const ids = ['bma-flood', 'air4thai', 'thaiwater', 'tmd', 'usgs', 'rid', 'nasa-gibs', 'nasa-firms', 'nasa-eonet'];
+      await pumpThemed(tester, const SizedBox(width: 320, child: MapDataCredit(sourceIds: ids)));
+      expect(tester.takeException(), isNull);
+      final strip = tester.getRect(find.byType(MapDataCredit));
+      expect(strip.height, HwSize.touchTarget);
+      final more = tester.getRect(find.byKey(const ValueKey('map-credit-more')));
+      expect(more.right, lessThanOrEqualTo(strip.right));
+      // Every source is still a link on the line, reached by scrolling it sideways.
+      expect(find.byType(SourceLink, skipOffstage: false), findsNWidgets(9));
     });
 
     testWidgets('the credit strip follows the layers: BMA rain links its own page once flood is off', (tester) async {
       await pumpMap(tester);
       await tester.tap(find.widgetWithText(FilterChip, 'ฝุ่น PM2.5'));
       await tester.pumpAndSettle();
-      expect(creditLinks(tester), contains(('กรมควบคุมมลพิษ · air4thai.pcd.go.th', 'https://air4thai.pcd.go.th')));
+      expect(creditLinks(tester), contains(('กรมควบคุมมลพิษ', 'https://air4thai.pcd.go.th')));
       final flood = find.widgetWithText(FilterChip, 'น้ำท่วมบนถนน');
       await tester.ensureVisible(flood);
       await tester.tap(flood);
       await tester.pumpAndSettle();
-      expect(creditLinks(tester).first, (
-        'กรุงเทพมหานคร · weather.bangkok.go.th',
-        'https://weather.bangkok.go.th/rain',
-      ));
+      expect(creditLinks(tester).first, ('กทม.', 'https://weather.bangkok.go.th/rain'));
+    });
+
+    test('a Thai refresh takes only Thai feeds from the new snapshot; USGS and NASA stay as they were', () {
+      Map<String, dynamic> feed(String id) => {
+        'ok': true,
+        'fetchedAt': '2026-10-05T08:00:00Z',
+        'items': [
+          {'id': id},
+        ],
+      };
+      MapSnapshot snap(String tag) => MapSnapshot.fromJson({
+        'edge': {
+          'feeds': {
+            for (final k in ['pm25', 'quakesTmd', 'quakesUsgs', 'fires', 'events']) k: feed('$k-$tag'),
+          },
+        },
+        'runner': {
+          'feeds': {
+            for (final k in ['flood', 'rain', 'waterlevel', 'radar', 'cctv', 'dams']) k: feed('$k-$tag'),
+          },
+        },
+      });
+      final merged = snap('old').withThaiFeedsFrom(snap('new'));
+      expect(
+        {for (final e in merged.feeds.entries) e.key: e.value.items.single['id']},
+        {
+          'pm25': 'pm25-new',
+          'quakesTmd': 'quakesTmd-new',
+          'flood': 'flood-new',
+          'rain': 'rain-new',
+          'waterlevel': 'waterlevel-new',
+          'radar': 'radar-new',
+          'cctv': 'cctv-new',
+          'dams': 'dams-new',
+          'quakesUsgs': 'quakesUsgs-old',
+          'fires': 'fires-old',
+          'events': 'events-old',
+        },
+      );
+    });
+
+    testWidgets('the Thai refresh button reloads the map data', (tester) async {
+      final (_, api) = await pumpMap(tester);
+      expect(find.byKey(const ValueKey('f2')), findsOneWidget);
+      final fresh = snapshotJson();
+      final flood = _feeds(fresh, 'runner')['flood'] as Map<String, dynamic>;
+      flood['items'] = [
+        for (final o in flood['items'] as List)
+          if ((o as Map)['id'] != 'f2') o,
+      ];
+      api.snapshotData = fresh;
+      final button = find.byKey(const ValueKey('refresh-thai'));
+      expect(tester.getSize(button).height, greaterThanOrEqualTo(HwSize.touchTarget));
+      await tester.tap(button);
+      await tester.pumpAndSettle();
+      expect(api.snapshotCalls, 2);
+      expect(find.byKey(const ValueKey('f2')), findsNothing);
     });
 
     test('credit sources come from the active layers, each once', () {
@@ -712,12 +849,9 @@ void main() {
         // The credit strip under the map links both dam sources; the legend itself carries no second copy.
         expect(find.descendant(of: legend, matching: find.byType(SourceLink)), findsNothing);
         expect(creditLinks(tester).sublist(creditLinks(tester).length - 1), [
-          ('กรมชลประทาน · app.rid.go.th', 'https://app.rid.go.th/reservoir'),
+          ('กรมชลประทาน', 'https://app.rid.go.th/reservoir'),
         ]);
-        expect(
-          creditLinks(tester),
-          contains(('สถาบันสารสนเทศทรัพยากรน้ำ (สสน.) · thaiwater.net', 'https://www.thaiwater.net')),
-        );
+        expect(creditLinks(tester), contains(('ThaiWater', 'https://www.thaiwater.net')));
         // NASA credits stay off: only the dam legend.
         expect(find.byKey(const ValueKey('nasa-credits')), findsNothing);
 
@@ -745,7 +879,7 @@ void main() {
         final link = tester
             .widgetList<SourceLink>(find.descendant(of: sheet, matching: find.byType(SourceLink)))
             .firstWhere((l) => l.url == sourceUrl('thaiwater'));
-        expect(link.label, contains('thaiwater.net'));
+        expect(link.label, 'ThaiWater');
         expect(tester.getSemantics(find.byWidget(link)).flagsCollection.isLink, isTrue);
       });
     });
@@ -1039,11 +1173,11 @@ void main() {
       expect(find.descendant(of: sheet, matching: find.text(NasaAttribution.firms)), findsOneWidget);
       // NASA is US-government data: the sheet links FIRMS itself (Google Play's source-link rule).
       expect(sourceUrl('nasa-firms'), 'https://firms.modaps.eosdis.nasa.gov');
-      // The link says whose data it is and where it goes.
-      expect(links(tester, sheet), [('ข้อมูลจาก NASA FIRMS · firms.modaps.eosdis.nasa.gov', sourceUrl('nasa-firms'))]);
+      // The link says whose data it is.
+      expect(links(tester, sheet), [('ข้อมูลจาก NASA FIRMS', sourceUrl('nasa-firms'))]);
       final semantics = tester.getSemantics(find.descendant(of: sheet, matching: find.byType(SourceLink)));
       expect(semantics.flagsCollection.isLink, isTrue);
-      expect(semantics.label, startsWith('ข้อมูลจาก NASA FIRMS · firms.modaps.eosdis.nasa.gov, '));
+      expect(semantics.label, startsWith('ข้อมูลจาก NASA FIRMS, '));
     });
 
     testWidgets('a storm sheet links its EONET page', (tester) async {
@@ -1054,7 +1188,7 @@ void main() {
       await tester.tap(find.byType(EventPin));
       await tester.pumpAndSettle();
       expect(links(tester, find.byType(BottomSheet)), [
-        ('ข้อมูลจาก NASA EONET · eonet.gsfc.nasa.gov', 'https://eonet.gsfc.nasa.gov/api/v3/events/EONET_1'),
+        ('ข้อมูลจาก NASA EONET', 'https://eonet.gsfc.nasa.gov/api/v3/events/EONET_1'),
       ]);
     });
 
@@ -1069,7 +1203,7 @@ void main() {
       await tester.tap(find.byType(EventPin));
       await tester.pumpAndSettle();
       expect(links(tester, find.byType(BottomSheet)), [
-        ('ข้อมูลจาก NASA EONET · eonet.gsfc.nasa.gov', 'https://eonet.gsfc.nasa.gov'),
+        ('ข้อมูลจาก NASA EONET', 'https://eonet.gsfc.nasa.gov'),
         ('หน้าเหตุการณ์ · gdacs.org', 'https://www.gdacs.org/report.aspx?eventid=1001'),
       ]);
       // No bare address anywhere in the sheet.

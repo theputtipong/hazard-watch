@@ -110,12 +110,16 @@ Future<AppSettings> pumpApp(
   bool withDistrict = true,
   DeviceBma? bma,
   DateTime? now,
+
+  /// The daily not-government notice already seen today, so it does not cover what a test looks at.
+  bool notGovSeen = true,
 }) async {
   final settings = AppSettings()
     ..themeMode = mode
     ..cvd = cvd
     ..locale = Locale(lang)
     ..district = withDistrict ? fixtureDistrict() : null;
+  if (notGovSeen) settings.notGovShownOn = AppSettings.dayKey(now ?? fixtureNow);
   await tester.pumpWidget(
     HazardWatchApp(
       settings: settings,

@@ -47,8 +47,21 @@ class MapSnapshot {
             for (final e in feeds.entries) e.key: SourceFeed.fromJson(e.value as Map<String, dynamic>),
       };
 
+  MapSnapshot._(this.feeds);
+
   /// By snapshot key: pm25, quakesTmd, quakesUsgs, flood, rain, waterlevel, radar, cctv, fires, events, dams.
   final Map<String, SourceFeed> feeds;
+
+  /// Feeds from Thai agencies (BMA, ThaiWater, TMD, PCD, RID); USGS and NASA are not among them.
+  static const thaiFeedKeys = {'pm25', 'quakesTmd', 'flood', 'rain', 'waterlevel', 'radar', 'cctv', 'dams'};
+
+  /// This snapshot with its Thai feeds replaced by [fresh]'s; every other feed stays as it was.
+  MapSnapshot withThaiFeedsFrom(MapSnapshot fresh) => MapSnapshot._({
+    for (final e in feeds.entries)
+      if (!thaiFeedKeys.contains(e.key)) e.key: e.value,
+    for (final e in fresh.feeds.entries)
+      if (thaiFeedKeys.contains(e.key)) e.key: e.value,
+  });
 }
 
 /// One marker. [value] is flood depth (cm), rain (mm/h), % of bank-full, PM2.5 (µg/m³), quake magnitude or dam
