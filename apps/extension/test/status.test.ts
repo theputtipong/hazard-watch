@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { DashboardSnapshot, FireHotspot, NasaEvent, Observation } from '@hw/core';
 import {
   DISTRICTS,
+  damLines,
   PROVINCES,
   districtAt,
   districtById,
@@ -150,5 +151,53 @@ describe('readings near me', () => {
     const far = obs({ id: 'far', location: { lat: 13.9, lng: 100.6 } });
     const offline = obs({ id: 'off', location: siam, offline: true });
     expect(nearestLive([far, near, offline], siam, undefined, now)?.id).toBe('near');
+  });
+});
+
+describe('damLines', () => {
+  const hoursAgo = (h: number) => minsAgo(h * 60);
+  const dam = (th: string, en: string, lat: number, lng: number, size: 'large' | 'medium', pct: number, over: Partial<Observation> = {}, usablePct: number | null = 50) =>
+    obs({ kind: 'dam', source: 'thaiwater', name: { th, en }, location: { lat, lng }, value: pct, unit: '%', observedAt: hoursAgo(20), extra: { size, usablePct, province: 'x' } as never, ...over });
+  const snap = (items: Observation[]) => snapshot({ runnerFeeds: { dams: feed(items) } });
+  // Pasak Jolasid ~125 km north of Siam; Bhumibol ~400 km away; a medium reservoir ~18 km away and one ~60 km away.
+  const pasak = dam('เขื่อนป่าสักชลสิทธิ์', 'Pasak Jolasid Dam', 14.87, 101.08, 'large', 64.6);
+  const bhumibol = dam('เขื่อนภูมิพล', 'Bhumibol Dam', 17.24, 98.97, 'large', 80);
+  const nearMedium = dam('อ่างทดสอบ', 'อ่างทดสอบ', 13.9, 100.6, 'medium', 101);
+  const farMedium = dam('อ่างไกล', 'อ่างไกล', 14.25, 100.7, 'medium', 50);
+
+  it('is empty without a dams feed or with nothing in range', () => {
+    expect(damLines(snapshot(), siam, 'th', { now })).toEqual([]);
+    expect(damLines(snap([bhumibol, farMedium]), siam, 'th', { now })).toEqual([]);
+  });
+
+  it('shows the nearest large dam within 300 km only', () => {
+    const closerLarge = dam('เขื่อนใกล้', 'Near Dam', 14.5, 100.9, 'large', 30);
+    expect(damLines(snap([bhumibol, pasak]), siam, 'th', { now })).toEqual(['เขื่อนป่าสักชลสิทธิ์ 65% · ปกติ']);
+    expect(damLines(snap([pasak, closerLarge]), siam, 'en', { now })).toEqual(['Near Dam 30% · Low']);
+  });
+
+  it('shows the large dam then the medium reservoir', () => {
+    expect(damLines(snap([nearMedium, farMedium, pasak]), siam, 'en', { now })).toEqual(['Pasak Jolasid Dam 65% · Normal', 'อ่างทดสอบ 101% · Over capacity']);
+  });
+
+  it('skips stale reports and missing values', () => {
+    const stale = { ...pasak, observedAt: hoursAgo(61) };
+    const noValue = { ...nearMedium, value: null };
+    expect(damLines(snap([stale, noValue]), siam, 'th', { now })).toEqual([]);
+    expect(damLines(snap([{ ...pasak, observedAt: hoursAgo(59) }]), siam, 'th', { now })).toHaveLength(1);
+  });
+
+  it('labels each status band', () => {
+    const line = (pct: number, usable: number | null) => damLines(snap([dam('เขื่อน', 'Dam', 14.87, 101.08, 'large', pct, {}, usable)]), siam, 'th', { now })[0];
+    expect(line(105, 90)).toBe('เขื่อน 105% · เกินความจุ');
+    expect(line(85, 80)).toBe('เขื่อน 85% · น้ำมาก');
+    expect(line(60, 50)).toBe('เขื่อน 60% · ปกติ');
+    expect(line(40, 35)).toBe('เขื่อน 40% · น้ำน้อย');
+    expect(line(20, 2)).toBe('เขื่อน 20% · น้ำน้อยวิกฤต');
+  });
+
+  it('never adds dams to local alerts', () => {
+    const district = districtAt(siam)!;
+    expect(localAlerts(snap([dam('เขื่อน', 'Dam', siam.lat, siam.lng, 'large', 120)]), district, undefined, now)).toEqual([]);
   });
 });

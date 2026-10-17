@@ -50,7 +50,7 @@ export const WEB = {
       /** No dark style: tiles are CSS-inverted in dark mode (.hw-tiles-invert). */
       invertInDark: true,
     } satisfies RasterTileSource,
-    defaultLayers: { zones: true, radar: true, flood: true, water: true, pm25: false, cctv: false } satisfies Record<LayerKey, boolean>,
+    defaultLayers: { zones: true, radar: true, flood: true, water: true, pm25: false, cctv: false, dam: false } satisfies Record<LayerKey, boolean>,
     defaultRadar: 'nkm',
     radarOpacity: 0.75,
     radarStaleMinutes: 60, // ThaiWater frames normally arrive 35–50 min after the scan
@@ -61,7 +61,7 @@ export const WEB = {
     staleOpacity: 0.4,
     /** Normal flood points stay small dots so problems stand out. */
     markerRadius: { floodNormal: 4 },
-    iconSize: { you: 34, floodWatch: 26, floodWarn: 30, floodDanger: 34, pm25: 30, water: 30, cctv: 24 },
+    iconSize: { you: 34, floodWatch: 26, floodWarn: 30, floodDanger: 34, pm25: 30, water: 30, cctv: 24, damLarge: 30, damMedium: 22 },
     youColor: palettes.light.accent,
     locateZoom: 14,
     legendOpenMinWidth: 640,

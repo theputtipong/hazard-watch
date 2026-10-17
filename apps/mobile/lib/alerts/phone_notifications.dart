@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:ui';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:workmanager/workmanager.dart';
@@ -11,6 +12,7 @@ import '../l10n/gen/app_localizations.dart';
 import '../settings.dart';
 import '../theme/hw_theme.dart';
 import 'alert_check.dart';
+import 'alert_sources.dart';
 import 'area_alerts.dart';
 
 // No push service: the phone polls /v1/area in the background and notifies itself. Android runs the task about every
@@ -76,6 +78,54 @@ Future<void> initPhoneNotifications(AppSettings settings) async {
   } on Object {
     // The app still works without background checks; the next start tries again.
   }
+  try {
+    // A tap that started the app arrives here rather than through the callback.
+    final launch = await (await _plugin()).getNotificationAppLaunchDetails();
+    if (launch?.didNotificationLaunchApp ?? false) onNotificationTap(launch!.notificationResponse?.payload);
+  } on Object {
+    // Without it the app opens on Home as usual.
+  }
+}
+
+/// The payload every alert notification carries: tapping one opens the app on the Alerts tab.
+const alertsTabPayload = 'tab:alerts';
+
+/// Asks the app shell to show the Alerts tab. [pending] stays set until the shell takes it, so a tap that started the
+/// app is not lost before the shell is built.
+class AlertsTabRequest extends ChangeNotifier {
+  bool _pending = false;
+
+  bool get pending => _pending;
+
+  void request() {
+    _pending = true;
+    notifyListeners();
+  }
+
+  /// True once per request.
+  bool take() {
+    final was = _pending;
+    _pending = false;
+    return was;
+  }
+}
+
+final alertsTabRequest = AlertsTabRequest();
+
+/// A tapped notification: an alert opens the Alerts tab; anything else just opens the app.
+void onNotificationTap(String? payload) {
+  if (payload == alertsTabPayload) alertsTabRequest.request();
+}
+
+/// What an alert notification says: title, the body followed by the credit line, and the credit alone (Android shows
+/// it as the small header text). The credit names the agency and its site, as everywhere the app shows its data.
+typedef AlertNotificationText = ({String title, String body, String? credit});
+
+AlertNotificationText alertNotificationText(HazardAlert alert, Locale locale) {
+  final l = lookupAppLocalizations(locale);
+  final body = alert.body.of(locale);
+  final credit = alertCreditLine(l, alert.kind);
+  return (title: alert.title.of(locale), body: credit == null ? body : '$body\n$credit', credit: credit);
 }
 
 FlutterLocalNotificationsPlugin? _initialized;
@@ -93,6 +143,7 @@ Future<FlutterLocalNotificationsPlugin> _plugin() async {
         requestSoundPermission: false,
       ),
     ),
+    onDidReceiveNotificationResponse: (r) => onNotificationTap(r.payload),
   );
   return _initialized = plugin;
 }
@@ -112,17 +163,20 @@ class LocalAlertNotifier implements AlertNotifier {
     final plugin = await _plugin();
     final l = lookupAppLocalizations(locale);
     final urgent = alert.level == HwLevel.danger;
+    final text = alertNotificationText(alert, locale);
     await plugin.show(
       id: notificationId(alert.key),
-      title: alert.title.of(locale),
-      body: alert.body.of(locale),
+      title: text.title,
+      body: text.body,
+      payload: alertsTabPayload,
       notificationDetails: NotificationDetails(
         android: AndroidNotificationDetails(
           _channelId,
           l.notifyChannel,
           importance: urgent ? Importance.max : Importance.high,
           priority: urgent ? Priority.max : Priority.high,
-          styleInformation: BigTextStyleInformation(alert.body.of(locale)),
+          subText: text.credit,
+          styleInformation: BigTextStyleInformation(text.body),
         ),
         iOS: DarwinNotificationDetails(
           interruptionLevel: urgent ? InterruptionLevel.timeSensitive : InterruptionLevel.active,

@@ -7,6 +7,7 @@ import {
   SEVERITIES,
   type AlertConfig,
   type CctvCamera,
+  type DamExtra,
   type FireHotspot,
   type HazardKind,
   type LatLng,
@@ -244,6 +245,60 @@ const nasaEvent: ItemCheck = (raw, now) => {
   } satisfies NasaEvent;
 };
 
+/** ThaiWater storage % of normal capacity; live peaks are ~125 %, so 300 only stops absurd values. */
+const DAM_PCT: [number, number] = [0, 300];
+/** Usable water %: slightly negative below dead storage, above 100 when over capacity. */
+const DAM_USABLE_PCT: [number, number] = [-100, 300];
+/** Largest Thai reservoirs hold ~18,000 MCM; derived capacities of tiny reservoirs stay far below. */
+const DAM_MCM: [number, number] = [0, 30_000];
+/** Inflow/release in MCM per day; live peaks are ~70. */
+const DAM_FLOW_MCM: [number, number] = [-100, 1_000];
+const DAM_SIZES: readonly DamExtra['size'][] = ['large', 'medium'];
+
+const optNum = (v: unknown, field: string, range: [number, number]): number | null => (v === null || v === undefined ? null : num(v, field, range));
+const optStr = (v: unknown, field: string): string => {
+  if (typeof v !== 'string') return fail(`${field}: expected string`);
+  if (v.length > MAX.extraString) return fail(`${field}: longer than ${MAX.extraString}`);
+  return v;
+};
+
+function damExtra(v: unknown): DamExtra {
+  if (!isRecord(v)) return fail('extra: expected object');
+  if (!DAM_SIZES.includes(v.size as DamExtra['size'])) return fail('extra.size: unknown');
+  return {
+    storageMcm: optNum(v.storageMcm, 'extra.storageMcm', DAM_MCM),
+    capacityMcm: optNum(v.capacityMcm, 'extra.capacityMcm', DAM_MCM),
+    usablePct: optNum(v.usablePct, 'extra.usablePct', DAM_USABLE_PCT),
+    inflowMcm: optNum(v.inflowMcm, 'extra.inflowMcm', DAM_FLOW_MCM),
+    releaseMcm: optNum(v.releaseMcm, 'extra.releaseMcm', DAM_FLOW_MCM),
+    size: v.size as DamExtra['size'],
+    basin: v.basin === null || v.basin === undefined ? null : optStr(v.basin, 'extra.basin'),
+    // Empty when ThaiWater gave no province (the adapter then kept the row by coordinates).
+    province: optStr(v.province, 'extra.province'),
+    agency: optStr(v.agency, 'extra.agency'),
+  };
+}
+
+/** ThaiWater dams (display only). Rebuilt from DamExtra's known keys, never the generic extra copier. */
+const dam: ItemCheck = (raw, now) => {
+  if (!isRecord(raw)) return fail('item: expected object');
+  if (raw.kind !== 'dam') return fail('kind: expected dam');
+  if (raw.source !== 'thaiwater') return fail('source: expected thaiwater');
+  if (!SEVERITIES.includes(raw.severity as Observation['severity'])) return fail('severity: unknown');
+  return {
+    id: str(raw.id, 'id', MAX.id),
+    kind: 'dam',
+    source: 'thaiwater',
+    name: text(raw.name, 'name'),
+    location: location(raw.location),
+    observedAt: time(raw.observedAt, 'observedAt', now),
+    value: num(raw.value, 'value', DAM_PCT),
+    unit: str(raw.unit, 'unit', MAX.unit),
+    severity: raw.severity as Observation['severity'],
+    extra: damExtra(raw.extra),
+  } satisfies Observation;
+};
+
 export const RUNNER_SPEC: Record<RunnerFeed, FeedSpec> = {
   flood: { source: 'bma-flood', maxItems: 2000, item: observation('flood', 'bma-flood') },
   rain: { source: 'bma-rain', maxItems: 2000, item: observation('rain', 'bma-rain') },
@@ -253,6 +308,8 @@ export const RUNNER_SPEC: Record<RunnerFeed, FeedSpec> = {
   // Display only: not in ALERT_FEEDS, so they never drive pushes or suspiciousJump.
   fires: { source: 'nasa-firms', maxItems: FIRE_CAP, item: fire },
   events: { source: 'nasa-eonet', maxItems: EVENT_CAP, item: nasaEvent },
+  // ~480 live (35 large + ~445 medium); room for more medium reservoirs reporting on time.
+  dams: { source: 'thaiwater', maxItems: 700, item: dam },
 };
 
 export interface Dropped {

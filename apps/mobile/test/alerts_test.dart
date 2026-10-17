@@ -335,6 +335,74 @@ void main() {
     expect(notificationId('flood:TH1001'), greaterThanOrEqualTo(0));
   });
 
+  group('notification text', () {
+    HazardAlert of(String kind) => HazardAlert(
+      key: '$kind:x',
+      kind: kind,
+      level: HwLevel.warning,
+      title: const LocalizedText('หัวเรื่อง', 'Title'),
+      body: const LocalizedText('รายละเอียด', 'Details'),
+      at: t0,
+    );
+
+    test('every alert credits its agency and site under the body', () {
+      final th = {
+        'quake': 'ข้อมูลจาก กรมอุตุนิยมวิทยา · earthquake.tmd.go.th',
+        'flood': 'ข้อมูลจาก กรุงเทพมหานคร · weather.bangkok.go.th',
+        'rain': 'ข้อมูลจาก กรุงเทพมหานคร · weather.bangkok.go.th',
+        'water': 'ข้อมูลจาก สถาบันสารสนเทศทรัพยากรน้ำ (สสน.) · thaiwater.net',
+        'pm25': 'ข้อมูลจาก กรมควบคุมมลพิษ · air4thai.pcd.go.th',
+      };
+      for (final MapEntry(key: kind, value: credit) in th.entries) {
+        final n = alertNotificationText(of(kind), const Locale('th'));
+        expect(n.title, 'หัวเรื่อง');
+        expect(n.credit, credit, reason: kind);
+        expect(n.body, 'รายละเอียด\n$credit', reason: kind);
+      }
+      final en = alertNotificationText(of('quake'), const Locale('en'));
+      expect(en.body, 'Details\nData from Thai Meteorological Department (TMD) · earthquake.tmd.go.th');
+    });
+
+    test('a kind with no known source keeps the body as it is', () {
+      final n = alertNotificationText(of('other'), const Locale('th'));
+      expect(n.credit, isNull);
+      expect(n.body, 'รายละเอียด');
+    });
+  });
+
+  group('notification tap', () {
+    int tab(WidgetTester tester) => tester.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex;
+
+    testWidgets('opens the Alerts tab, from any page on top', (tester) async {
+      await pumpApp(tester, lang: 'en');
+      expect(tab(tester), 0);
+      await tester.tap(find.widgetWithText(TextButton, 'Data sources').first);
+      await tester.pumpAndSettle();
+      expect(find.byType(SourcesScreen), findsOneWidget);
+
+      onNotificationTap(alertsTabPayload);
+      await tester.pumpAndSettle();
+      expect(find.byType(SourcesScreen), findsNothing);
+      expect(tab(tester), 2);
+      expect(alertsTabRequest.pending, isFalse);
+    });
+
+    testWidgets('a tap that started the app opens it on the Alerts tab', (tester) async {
+      onNotificationTap(alertsTabPayload);
+      await pumpApp(tester, lang: 'en');
+      expect(tab(tester), 2);
+      expect(alertsTabRequest.pending, isFalse);
+    });
+
+    testWidgets('any other payload leaves the tab alone', (tester) async {
+      await pumpApp(tester, lang: 'en');
+      onNotificationTap(null);
+      onNotificationTap('something-else');
+      await tester.pumpAndSettle();
+      expect(tab(tester), 0);
+    });
+  });
+
   testWidgets('alerts tab loads when shown, grouped by level, with times', (tester) async {
     final api = FakeApi();
     await pumpApp(tester, api: api, lang: 'en');
@@ -357,7 +425,7 @@ void main() {
     ]);
     final links = find.descendant(of: cards, matching: find.byType(SourceLink));
     expect(tester.widgetList<SourceLink>(links).map((s) => s.url), [
-      'https://weather.bangkok.go.th',
+      'https://weather.bangkok.go.th/flood',
       'https://air4thai.pcd.go.th',
     ]);
     final notifyOff = find.text('Phone notifications are off. You can turn them on in Settings');

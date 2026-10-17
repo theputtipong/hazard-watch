@@ -2,7 +2,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import type { DashboardSnapshot } from '@hw/core';
 import { describe, expect, it } from 'vitest';
-import { buildAreaReport, districtAt, districtList, findDistrict } from '../src/area';
+import { buildAreaReport, DAM_PICK, districtAt, districtList, findDistrict } from '../src/area';
 
 // The mobile app's tests parse this exact response, so the two sides cannot drift.
 // Regenerate after changing the report: UPDATE_FIXTURES=1 pnpm --filter @hw/ingest test
@@ -62,7 +62,7 @@ const snapshot = {
   },
 } as unknown as DashboardSnapshot;
 
-// NASA feeds ride on a copy so snapshot.json (the map fixture) stays as it was.
+// NASA and dam feeds ride on a copy so snapshot.json (the map fixture) stays as it was.
 const fire = (id: string, at: { lat: number; lng: number }, detectedAt = '2026-10-05T06:30:00Z') => ({
   id,
   location: at,
@@ -95,7 +95,46 @@ const nasaFeeds = {
     { id: 'EONET_2', category: 'volcanoes', title: 'Far Volcano', location: { lat: -6.1, lng: 105.4 }, track: [], updatedAt: '2026-10-01T00:00:00Z', url: null },
   ]),
 };
-const withNasa = { ...snapshot, runner: { ...snapshot.runner!, feeds: { ...snapshot.runner!.feeds, ...nasaFeeds } } } as unknown as DashboardSnapshot;
+// ThaiWater dams: daily, observedAt is 00:00 ICT of the report day. Distances from Phra Nakhon's centre in comments.
+const TODAY = '2026-10-04T17:00:00.000Z';
+const dam = (
+  id: string,
+  size: 'large' | 'medium',
+  at: { lat: number; lng: number },
+  o: { value?: number; usablePct?: number | null; basin?: string | null; province?: string; observedAt?: string; severity?: string } = {},
+) => ({
+  id: `thaiwater-dam:${size}:${id}`,
+  kind: 'dam',
+  source: 'thaiwater',
+  name: { th: `เขื่อน ${id}`, en: size === 'large' ? `Dam ${id}` : `เขื่อน ${id}` },
+  location: at,
+  observedAt: o.observedAt ?? TODAY,
+  value: o.value ?? 62.5,
+  unit: '%',
+  severity: o.severity ?? 'ok',
+  extra: {
+    storageMcm: 600.5,
+    capacityMcm: 960.8,
+    usablePct: o.usablePct === undefined ? 55.1 : o.usablePct,
+    inflowMcm: size === 'large' ? 4.2 : null,
+    releaseMcm: size === 'large' ? 1.5 : null,
+    size,
+    basin: o.basin === undefined ? 'ลุ่มน้ำอื่น' : o.basin,
+    province: o.province ?? 'จังหวัดอื่น',
+    agency: 'กรมชลประทาน',
+  },
+});
+const pasak = dam('pasak', 'large', { lat: 14.87, lng: 101.07 }, { value: 105.2, basin: 'ลุ่มน้ำป่าสัก', province: 'ลพบุรี', severity: 'danger' }); // 138 km
+const srin = dam('srin', 'large', { lat: 14.41, lng: 99.13 }, { basin: 'ลุ่มน้ำแม่กลอง', province: 'กาญจนบุรี' }); // 165 km
+const bhumi = dam('bhumi', 'large', { lat: 17.24, lng: 98.97 }, { basin: 'ลุ่มน้ำปิง', province: 'ตาก' }); // 421 km
+const m1 = dam('m1', 'medium', { lat: 13.95, lng: 100.75 }, { value: 35, usablePct: 20, basin: 'ลุ่มน้ำบางปะกง', province: 'ฉะเชิงเทรา' }); // 34.7 km
+const mFar = dam('mfar', 'medium', { lat: 14.5, lng: 100.6 }, { basin: 'ลุ่มน้ำบางปะกง' }); // 83 km
+const damFeed = (items: unknown[]) => ({ dams: feed('thaiwater', items) });
+
+const withNasa = {
+  ...snapshot,
+  runner: { ...snapshot.runner!, feeds: { ...snapshot.runner!.feeds, ...nasaFeeds, ...damFeed([pasak, srin, bhumi, m1, mFar]) } },
+} as unknown as DashboardSnapshot;
 
 describe('buildAreaReport', () => {
   const report = buildAreaReport(withNasa, phraNakhon, now);
@@ -166,6 +205,90 @@ describe('buildAreaReport', () => {
 
   it('leaves nasa null when neither NASA feed exists', () => {
     expect(buildAreaReport(snapshot, phraNakhon, now).nasa).toBeNull();
+  });
+
+  it('lists dams near the district: nearest large within 300 km, nearest medium within 50 km', () => {
+    expect(report.dams.map((d) => d.id)).toEqual(['thaiwater-dam:medium:m1', 'thaiwater-dam:large:pasak']);
+    expect(report.dams[0]).toEqual({
+      id: 'thaiwater-dam:medium:m1',
+      name: { th: 'เขื่อน m1', en: 'เขื่อน m1' },
+      size: 'medium',
+      km: 34.7,
+      storagePct: 35,
+      usablePct: 20,
+      storageMcm: 600.5,
+      capacityMcm: 960.8,
+      inflowMcm: null,
+      releaseMcm: null,
+      status: 'critical',
+      province: 'ฉะเชิงเทรา',
+      basin: 'ลุ่มน้ำบางปะกง',
+      observedAt: TODAY,
+      stale: false,
+    });
+    expect(report.dams[1]).toMatchObject({ size: 'large', status: 'over', inflowMcm: 4.2, releaseMcm: 1.5 });
+  });
+
+  const dams = (items: unknown[], base: DashboardSnapshot = snapshot) =>
+    buildAreaReport({ ...base, runner: { ...base.runner!, feeds: { ...base.runner!.feeds, ...damFeed(items) } } } as unknown as DashboardSnapshot, phraNakhon, now);
+  const ids = (items: unknown[]) => dams(items).dams.map((d) => d.id.replace(/^thaiwater-dam:(large|medium):/, ''));
+
+  it('fills the last slot with a large dam in the same province before a nearer unrelated one', () => {
+    const bkk = dam('bkk', 'large', { lat: 15.5, lng: 100.5 }, { province: 'กรุงเทพมหานคร' }); // 194 km
+    expect(ids([pasak, srin, m1, bkk])).toEqual(['m1', 'pasak', 'bkk']);
+  });
+
+  it('takes the district basin from the nearest dam within 50 km', () => {
+    const sameBasin = dam('basin', 'large', { lat: 16.0, lng: 100.2 }, { basin: 'ลุ่มน้ำบางปะกง' }); // 252 km
+    expect(ids([pasak, srin, m1, sameBasin])).toEqual(['m1', 'pasak', 'basin']);
+    // Without a dam within 50 km there is no district basin, so it is not picked.
+    expect(ids([pasak, srin, sameBasin])).toEqual(['pasak']);
+  });
+
+  // ThaiWater numbers large and medium dams separately; the size in the id keeps twins apart.
+  it('keeps a large and a medium dam that share a ThaiWater id', () => {
+    const twinLarge = dam('7', 'large', { lat: 14.87, lng: 101.07 }); // 138 km
+    const twinMedium = dam('7', 'medium', { lat: 13.95, lng: 100.75 }); // 34.7 km
+    expect(dams([twinLarge, twinMedium]).dams.map((d) => [d.id, d.size])).toEqual([
+      ['thaiwater-dam:medium:7', 'medium'],
+      ['thaiwater-dam:large:7', 'large'],
+    ]);
+  });
+
+  it('then fills with further medium reservoirs within 50 km, never beyond the limits', () => {
+    const m2 = dam('m2', 'medium', { lat: 13.85, lng: 100.62 }); // 16.8 km
+    const m3 = dam('m3', 'medium', { lat: 14.0, lng: 100.3 }); // 34.6 km
+    expect(ids([pasak, m1, m2, m3, mFar])).toEqual(['m2', 'm3', 'pasak']);
+    expect(ids([bhumi, mFar])).toEqual([]);
+    expect(DAM_PICK).toEqual({ max: 3, largeKm: 300, mediumKm: 50 });
+  });
+
+  it('flags dams whose report is older than yesterday as stale', () => {
+    const yesterday = dam('y', 'medium', { lat: 13.85, lng: 100.62 }, { observedAt: '2026-10-03T17:00:00.000Z' });
+    const older = dam('o', 'medium', { lat: 14.0, lng: 100.3 }, { observedAt: '2026-10-02T17:00:00.000Z' });
+    expect(dams([yesterday, older]).dams.map((d) => [d.id, d.stale])).toEqual([
+      ['thaiwater-dam:medium:y', false],
+      ['thaiwater-dam:medium:o', true],
+    ]);
+  });
+
+  it('keeps dams out of alerts, severity and calm (display only)', () => {
+    const overInside = dam('in', 'medium', inside, { value: 150, severity: 'danger' });
+    const calmSnapshot = {
+      edge: null,
+      runner: { updatedAt: now.toISOString(), feeds: { waterlevel: feed('thaiwater', [obs({ id: 'w', kind: 'waterlevel', value: 40, severity: 'ok', at: far })]) } },
+    } as unknown as DashboardSnapshot;
+    const withDam = dams([overInside, pasak], calmSnapshot);
+    expect(withDam).toMatchObject({ severity: 'ok', calm: true, alerts: [] });
+    expect(withDam.dams.map((d) => d.status)).toEqual(['over', 'over']);
+    // Same alerts and level as without any dam feed.
+    const plain = buildAreaReport(snapshot, phraNakhon, now);
+    expect(dams([overInside])).toMatchObject({ alerts: plain.alerts, severity: plain.severity, calm: plain.calm });
+  });
+
+  it('always has dams, empty when the feed is missing', () => {
+    expect(buildAreaReport(snapshot, phraNakhon, now).dams).toEqual([]);
+    expect(buildAreaReport({ edge: null, runner: null } as DashboardSnapshot, phraNakhon, now).dams).toEqual([]);
   });
 
   it('matches the contract fixture the app tests read', () => {

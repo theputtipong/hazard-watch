@@ -15,7 +15,7 @@ import { bmaTrafficCameras } from './adapters/cctv';
 import { eonetEvents } from './adapters/eonet';
 import { firmsFires } from './adapters/firms';
 import { tmdQuakes, usgsQuakes } from './adapters/quakes';
-import { thaiwaterLevels, thaiwaterRadars } from './adapters/thaiwater';
+import { thaiwaterDams, thaiwaterLevels, thaiwaterRadars } from './adapters/thaiwater';
 
 /** `edge`: fetchable from Cloudflare Workers. `runner`: blocked there, fetched by GitHub Actions. */
 export const FEEDS = {
@@ -29,6 +29,8 @@ export const FEEDS = {
     // NASA hosts are untested from Cloudflare egress, and the FIRMS CSVs are too big to parse in 10 ms CPU.
     fires: firmsFires,
     events: eonetEvents,
+    // ThaiWater `analyst/dam` (1 MB, daily): same host and 429s as the other ThaiWater feeds.
+    dams: thaiwaterDams,
   },
 } as const;
 

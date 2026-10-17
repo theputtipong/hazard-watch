@@ -1,6 +1,8 @@
 import {
   DEFAULT_CONFIG,
   districtAlerts,
+  FEED_TOPIC_MAX_AGE_MINUTES,
+  damStatus,
   distanceKm,
   inZone,
   isStale,
@@ -10,6 +12,7 @@ import {
   worst,
   type Alert,
   type AlertConfig,
+  type DamExtra,
   type DashboardSnapshot,
   type LatLng,
   type Observation,
@@ -144,4 +147,39 @@ export function nasaLines(
   const e = near.events[0];
   if (e) lines.push(`${t(`nasa.event.${e.category}`, lang)} ${e.title} · ${t('nasa.event.km', lang, { km: Math.round(e.km).toLocaleString() })}`);
   return lines;
+}
+
+/** Same window as the API's damStale: daily reports count from the end of their report day (36 h + 24 h). */
+const DAM_STALE_MS = ((FEED_TOPIC_MAX_AGE_MINUTES.dams ?? 36 * 60) + 24 * 60) * 60_000;
+/** Same limits as the API's pickDams (DAM_PICK). */
+const DAM_LARGE_KM = 300;
+const DAM_MEDIUM_KM = 50;
+
+/**
+ * At most two lines, "<name> <storage %> · <status>": the nearest large dam within 300 km and the nearest medium
+ * reservoir within 50 km, large first. Stale reports are skipped. Display only: dams never reach localAlerts or
+ * notifications. Empty when the snapshot has no dams feed or nothing is in range.
+ */
+export function damLines(
+  snapshot: DashboardSnapshot,
+  from: LatLng,
+  lang: Lang,
+  { cfg = DEFAULT_CONFIG, now = new Date() }: { cfg?: AlertConfig; now?: Date } = {},
+): string[] {
+  const nearest = { large: null as (Observation & { km: number }) | null, medium: null as (Observation & { km: number }) | null };
+  for (const o of snapshot.runner?.feeds.dams?.items ?? []) {
+    const size = (o.extra as DamExtra | undefined)?.size;
+    if (o.kind !== 'dam' || o.value === null || !o.extra || (size !== 'large' && size !== 'medium')) continue;
+    if (now.getTime() - Date.parse(o.observedAt) > DAM_STALE_MS) continue;
+    const km = distanceKm(from, o.location);
+    if (km > (size === 'large' ? DAM_LARGE_KM : DAM_MEDIUM_KM)) continue;
+    const best = nearest[size];
+    if (!best || km < best.km) nearest[size] = { ...o, km };
+  }
+  return [nearest.large, nearest.medium]
+    .filter((d) => d !== null)
+    .map((d) => {
+      const status = damStatus(d.value!, (d.extra as DamExtra).usablePct, cfg);
+      return `${d.name[lang] || d.name.th} ${Math.round(d.value!)}% · ${t(`dam.status.${status}`, lang)}`;
+    });
 }

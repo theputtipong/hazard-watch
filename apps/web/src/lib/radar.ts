@@ -1,4 +1,19 @@
-import { distanceKm, RADARS, type LatLng, type RadarSpec } from '@hw/core';
+import { distanceKm, RADARS, SOURCE_META, type LatLng, type RadarSpec, type SourceMeta } from '@hw/core';
+
+/**
+ * Who to credit (and link) for a radar image. Images reach us through ThaiWater; TMD and BMA radars link to the agency
+ * site that publishes them. DRRAA has no entry in SOURCE_META yet, so its images are credited to ThaiWater, the host.
+ */
+const RADAR_CREDIT: Record<RadarSpec['agency'], SourceMeta> = {
+  tmd: SOURCE_META['tmd-radar'],
+  bma: SOURCE_META['bma-rain'],
+  drraa: SOURCE_META.thaiwater,
+};
+
+export const radarCredit = (radarId: string): SourceMeta | null => {
+  const r = RADARS[radarId];
+  return r ? RADAR_CREDIT[r.agency] : null;
+};
 
 const area = (r: RadarSpec) => (r.bounds[1][0] - r.bounds[0][0]) * (r.bounds[1][1] - r.bounds[0][1]);
 

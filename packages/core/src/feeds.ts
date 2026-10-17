@@ -1,12 +1,18 @@
 import { t, type Lang } from './i18n';
 import type { DashboardSnapshot, SourceResult } from './types';
 
-/** Design system FeedStatus order; both quake sources count as one topic. NASA topics go last: they are context, not alerts. */
-export const FEED_TOPICS = ['flood', 'rain', 'waterlevel', 'radar', 'pm25', 'quakes', 'fires', 'events'] as const;
+/** Design system FeedStatus order; both quake sources count as one topic. NASA topics and dams go last: they are context, not alerts. */
+export const FEED_TOPICS = ['flood', 'rain', 'waterlevel', 'radar', 'pm25', 'quakes', 'fires', 'events', 'dams'] as const;
 export type FeedTopic = (typeof FEED_TOPICS)[number];
 
 /** Must match the group limits in tools/monitor/config.json. */
 export const FEED_MAX_AGE_MINUTES = { edge: 60, runner: 360 } as const;
+
+/**
+ * Per-topic overrides of the group limit. Must match `feeds.<name>.maxStaleMinutes` in tools/monitor/config.json.
+ * dams: ThaiWater publishes once a day, so 24 h + runner lag ≈ 36 h.
+ */
+export const FEED_TOPIC_MAX_AGE_MINUTES: Partial<Record<FeedTopic, number>> = { dams: 36 * 60 };
 
 export interface FeedStatus {
   topic: FeedTopic;
@@ -26,6 +32,7 @@ const SOURCES: Record<FeedTopic, { group: 'edge' | 'runner'; feeds: string[] }> 
   // Fetched by the runner: FIRMS CSVs are too big to parse inside the Worker's CPU budget.
   fires: { group: 'runner', feeds: ['fires'] },
   events: { group: 'runner', feeds: ['events'] },
+  dams: { group: 'runner', feeds: ['dams'] },
 };
 
 const RANK = { live: 0, stale: 1, down: 2 } as const;
@@ -45,7 +52,7 @@ export function feedStatuses(snapshot: DashboardSnapshot, now = new Date()): Fee
     const results = feeds
       .map((f) => (snapshot[group]?.feeds as Record<string, SourceResult<unknown> | undefined> | undefined)?.[f])
       .filter((r): r is SourceResult<unknown> => !!r)
-      .map((r) => one(r, FEED_MAX_AGE_MINUTES[group], now));
+      .map((r) => one(r, FEED_TOPIC_MAX_AGE_MINUTES[topic] ?? FEED_MAX_AGE_MINUTES[group], now));
     if (!results.length) continue;
     // Several sources for one topic: the topic is as good as its best source.
     const best = results.reduce((a, b) => (RANK[b.state] < RANK[a.state] || (b.state === a.state && (b.lastOkAt ?? '') > (a.lastOkAt ?? '')) ? b : a));

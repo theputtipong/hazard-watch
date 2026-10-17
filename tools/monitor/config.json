@@ -11,8 +11,9 @@
     "runner": { "maxStaleMinutes": 360 }
   },
   "feeds": {
-    "$comment": "Per-feed overrides. cctv is fetched once a day (INGEST.runnerFeedEveryHours.cctv = 24): 24 h + 6 h runner lag = 1800 min. NASA fires (FIRMS) and events (EONET) are runner feeds fetched every run, so the runner default (360 min) already tolerates a short NASA outage without opening an issue; no override needed.",
-    "cctv": { "maxStaleMinutes": 1800 }
+    "$comment": "Per-feed overrides. cctv is fetched once a day (INGEST.runnerFeedEveryHours.cctv = 24): 24 h + 6 h runner lag = 1800 min. NASA fires (FIRMS) and events (EONET) are runner feeds fetched every run, so the runner default (360 min) already tolerates a short NASA outage without opening an issue; no override needed. dams: ThaiWater publishes once a day, so 24 h + runner lag = 2160 min (FEED_TOPIC_MAX_AGE_MINUTES.dams in packages/core/src/feeds.ts).",
+    "cctv": { "maxStaleMinutes": 1800 },
+    "dams": { "maxStaleMinutes": 2160 }
   },
   "$ignoreComment": "flood and rain: BMA answers 403 to both Cloudflare and GitHub Actions IPs. Remove once a working fetch path exists.",
   "ignore": ["flood", "rain"]

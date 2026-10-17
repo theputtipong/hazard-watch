@@ -18,8 +18,8 @@ import { t, type Lang, type MessageKey } from '@hw/core/i18n';
 import { WEB } from '@/config';
 import { mapCredits } from '@/content/sources';
 import { fetchSnapshot, fetchWeather } from '@/lib/api';
-import { radarFor, radarGroups } from '@/lib/radar';
-import { floodCounts, LOCAL_KM, nearest, quakeSummary, uniqueBy, withinKm } from '@/lib/derive';
+import { radarCredit, radarFor, radarGroups } from '@/lib/radar';
+import { damReading, floodCounts, isDam, LOCAL_KM, nearest, pickDams, quakeSummary, uniqueBy, withinKm } from '@/lib/derive';
 import { feedFreshness, freshnessNote } from '@/lib/freshness';
 import { useLocation } from '@/lib/useLocation';
 import { useZones } from '@/lib/useZones';
@@ -38,6 +38,7 @@ import { CctvList } from './CctvList';
 import { FeedStatus } from './FeedStatus';
 import { FloodCard, Pm25Card, QuakeCard, WaterLevelCard, WeatherCard } from './HazardCards';
 import { NasaCard } from './NasaCard';
+import { DamCard } from './DamCard';
 import { Header } from './Header';
 import { SourceLinks } from './SourceLinks';
 import type { LayerKey, Layers } from '@/lib/layers';
@@ -52,6 +53,7 @@ const LAYER_LABEL: Partial<Record<LayerKey | 'firms' | 'events', MessageKey>> = 
   water: 'layer.water',
   pm25: 'layer.pm25',
   cctv: 'layer.cctv',
+  dam: 'layer.dam',
   firms: 'layer.nasa.firms',
   events: 'layer.nasa.events',
 };
@@ -219,9 +221,22 @@ export function Dashboard({ lang, initialArea }: { lang: Lang; initialArea?: str
       }),
     [lang, regionName, updatedAt, weather, view, focusZone, zones.focusSummary],
   );
+  // Dams are display only (never alerts, calm or the spoken summary). Same picking rules as the app's /v1/area.
+  const dams = useMemo(() => {
+    const feed = snapshot?.runner?.feeds.dams;
+    const items = feed?.items ?? [];
+    const now = new Date();
+    const failed = feedFreshness(feed, DEFAULT_CONFIG, now, () => undefined);
+    return {
+      all: items.filter(isDam).map((o) => damReading(o, null, DEFAULT_CONFIG, now)),
+      near: pickDams(items, location, province?.properties.name_th ?? null, DEFAULT_CONFIG, now),
+      note: failed?.state === 'failed' ? freshnessNote(failed, lang) : undefined,
+    };
+  }, [snapshot, location, province, lang]);
   const radarIds = (snapshot?.runner?.feeds.radar?.items ?? []).map((f) => f.radarId);
   const radarId = radarChoice ?? radarFor(location, radarIds, WEB.map.defaultRadar);
   const radarFrame = snapshot?.runner?.feeds.radar?.items.find((f) => f.radarId === radarId) ?? null;
+  const radarSource = radarCredit(radarId);
   const radarOld = !!radarFrame && loadedAt - new Date(radarFrame.time).getTime() > WEB.map.radarStaleMinutes * 60_000;
   const clock = (iso: string) =>
     new Date(iso).toLocaleTimeString(lang === 'th' ? 'th-TH' : 'en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok' });
@@ -350,6 +365,7 @@ export function Dashboard({ lang, initialArea }: { lang: Lang; initialArea?: str
             dark={prefs.dark}
             fires={snapshot?.runner?.feeds.fires ?? null}
             events={snapshot?.runner?.feeds.events ?? null}
+            dams={dams.all}
           />
           {layers.radar && (
             <div className="flex flex-wrap items-center gap-2 border-t border-line px-3.5 py-2.5 text-body">
@@ -383,6 +399,17 @@ export function Dashboard({ lang, initialArea }: { lang: Lang; initialArea?: str
               {radarFrame?.echoPixels !== undefined && radarFrame.echoPixels < WEB.map.radarMinEchoPixels && (
                 <span className="rounded-control bg-surface-sunken px-2 py-0.5 text-caption text-ink-muted">{t('radar.clear', lang)}</span>
               )}
+              {radarSource && (
+                <a
+                  href={radarSource.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`${t('source.dataFrom', lang, { agency: radarSource.agency[lang], domain: radarSource.domain })}, ${t('sources.openLink', lang)}`}
+                  className="inline-flex min-h-11 items-center text-caption text-accent underline underline-offset-4"
+                >
+                  {t('source.dataFrom', lang, { agency: radarSource.agency[lang], domain: radarSource.domain })}
+                </a>
+              )}
             </div>
           )}
           <div id="zones" className="scroll-mt-4">
@@ -399,6 +426,7 @@ export function Dashboard({ lang, initialArea }: { lang: Lang; initialArea?: str
           )}
           <QuakeCard lang={lang} alerts={view.quakes.alerts} latest={view.quakes.latestRegional} available={view.quakeAvailable} note={view.notes.quake} />
           <WaterLevelCard lang={lang} nearest={view.nearestWater} high={view.highWater} note={view.notes.water} />
+          <DamCard lang={lang} dams={dams.near} note={dams.note} />
           <NasaCard lang={lang} near={view.nasa} updatedAt={view.nasaAt} note={view.nasaNote} />
           <AlertsCard lang={lang} district={alertArea.district} subdistrict={alertArea.subdistrict} />
         </aside>

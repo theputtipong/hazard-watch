@@ -469,6 +469,87 @@
   "@layerNasaFireWms": {
     "description": "layer.nasa.fireWms"
   },
+  "layerDam": "เขื่อนและอ่างเก็บน้ำ",
+  "@layerDam": {
+    "description": "layer.dam"
+  },
+  "cardDam": "เขื่อนและอ่างเก็บน้ำ",
+  "@cardDam": {
+    "description": "card.dam"
+  },
+  "damStatusOver": "เกินความจุ",
+  "@damStatusOver": {
+    "description": "dam.status.over"
+  },
+  "damStatusHigh": "น้ำมาก",
+  "@damStatusHigh": {
+    "description": "dam.status.high"
+  },
+  "damStatusNormal": "ปกติ",
+  "@damStatusNormal": {
+    "description": "dam.status.normal"
+  },
+  "damStatusLow": "น้ำน้อย",
+  "@damStatusLow": {
+    "description": "dam.status.low"
+  },
+  "damStatusCritical": "น้ำน้อยวิกฤต",
+  "@damStatusCritical": {
+    "description": "dam.status.critical"
+  },
+  "damStorage": "น้ำในเขื่อน",
+  "@damStorage": {
+    "description": "dam.storage"
+  },
+  "damStoragePct": "น้ำในเขื่อน {pct}%",
+  "@damStoragePct": {
+    "description": "dam.storagePct",
+    "placeholders": {
+      "pct": {
+        "type": "String"
+      }
+    }
+  },
+  "damUsable": "น้ำใช้การได้",
+  "@damUsable": {
+    "description": "dam.usable"
+  },
+  "damInflow": "ไหลเข้า",
+  "@damInflow": {
+    "description": "dam.inflow"
+  },
+  "damRelease": "ระบาย",
+  "@damRelease": {
+    "description": "dam.release"
+  },
+  "damCapacity": "ความจุ",
+  "@damCapacity": {
+    "description": "dam.capacity"
+  },
+  "damUnitMcm": "ล้าน ลบ.ม.",
+  "@damUnitMcm": {
+    "description": "dam.unitMcm"
+  },
+  "damUnitMcmPerDay": "ล้าน ลบ.ม./วัน",
+  "@damUnitMcmPerDay": {
+    "description": "dam.unitMcmPerDay"
+  },
+  "damSizeLarge": "เขื่อนขนาดใหญ่",
+  "@damSizeLarge": {
+    "description": "dam.size.large"
+  },
+  "damSizeMedium": "อ่างเก็บน้ำขนาดกลาง",
+  "@damSizeMedium": {
+    "description": "dam.size.medium"
+  },
+  "damNote": "ข้อมูลประกอบ ไม่ใช่การแจ้งเตือน",
+  "@damNote": {
+    "description": "dam.note"
+  },
+  "damCredit": "ข้อมูลเขื่อนจาก ThaiWater และ กรมชลประทาน",
+  "@damCredit": {
+    "description": "dam.credit"
+  },
   "nasaCardTitle": "ไฟและพายุจากดาวเทียม NASA",
   "@nasaCardTitle": {
     "description": "nasa.card.title"
@@ -532,7 +613,7 @@
       }
     }
   },
-  "nasaDisclaimer": "ข้อมูลดาวเทียมจาก NASA อาจช้ากว่าเหตุการณ์จริงหลายชั่วโมง ไม่ใช่ประกาศเตือนภัยทางการ",
+  "nasaDisclaimer": "ข้อมูลดาวเทียมจาก NASA อาจช้ากว่าเหตุการณ์จริงหลายชั่วโมง ไม่ใช่ประกาศเตือนภัยของหน่วยงานใด",
   "@nasaDisclaimer": {
     "description": "nasa.disclaimer"
   },
@@ -1527,6 +1608,10 @@
   "@feedsNameEvents": {
     "description": "feeds.name.events"
   },
+  "feedsNameDams": "เขื่อนและอ่างเก็บน้ำ",
+  "@feedsNameDams": {
+    "description": "feeds.name.dams"
+  },
   "timeJustNow": "เมื่อสักครู่",
   "@timeJustNow": {
     "description": "time.justNow"
@@ -1676,7 +1761,7 @@
   "@footerCoffee": {
     "description": "footer.coffee"
   },
-  "footerCredits": "ข้อมูลจาก กรมอุตุนิยมวิทยา · สำนักการระบายน้ำ กทม. · สสน. (ThaiWater) · กรมควบคุมมลพิษ · GISTDA · USGS · NASA (FIRMS, EONET, GIBS) · Open-Meteo · ขอบเขตพื้นที่: กรุงเทพมหานคร, geoBoundaries, OCHA/กรมแผนที่ทหาร · แผนที่ OpenFreeMap © OpenMapTiles ข้อมูลจากผู้ร่วมพัฒนา OpenStreetMap",
+  "footerCredits": "ข้อมูลจาก กรมอุตุนิยมวิทยา · สำนักการระบายน้ำ กทม. · สสน. (ThaiWater) · กรมชลประทาน · กรมควบคุมมลพิษ · GISTDA · USGS · NASA (FIRMS, EONET, GIBS) · Open-Meteo · ขอบเขตพื้นที่: กรุงเทพมหานคร, geoBoundaries, OCHA/กรมแผนที่ทหาร · แผนที่ OpenFreeMap © OpenMapTiles ข้อมูลจากผู้ร่วมพัฒนา OpenStreetMap",
   "@footerCredits": {
     "description": "footer.credits"
   },
@@ -1684,11 +1769,72 @@
   "@sourcesTitle": {
     "description": "sources.title"
   },
+  "disclaimerNotGov": "HazardWatch เป็นแอปอิสระ ไม่ใช่แอปของรัฐ ไม่ได้สังกัดหรือเป็นตัวแทนของหน่วยงานรัฐใด ข้อมูลมาจากแหล่งเปิดของหน่วยงานด้านล่าง",
+  "@disclaimerNotGov": {
+    "description": "disclaimer.notGov"
+  },
+  "sourceDataFrom": "ข้อมูลจาก {agency} · {domain}",
+  "@sourceDataFrom": {
+    "description": "source.dataFrom",
+    "placeholders": {
+      "agency": {
+        "type": "String"
+      },
+      "domain": {
+        "type": "String"
+      }
+    }
+  },
+  "mapDataCredit": "ข้อมูลบนแผนที่: {sources}",
+  "@mapDataCredit": {
+    "description": "map.dataCredit",
+    "placeholders": {
+      "sources": {
+        "type": "String"
+      }
+    }
+  },
+  "agencyTmd": "กรมอุตุนิยมวิทยา",
+  "@agencyTmd": {
+    "description": "agency.tmd"
+  },
+  "agencyAir4thai": "กรมควบคุมมลพิษ",
+  "@agencyAir4thai": {
+    "description": "agency.air4thai"
+  },
+  "agencyBma": "กรุงเทพมหานคร",
+  "@agencyBma": {
+    "description": "agency.bma"
+  },
+  "agencyThaiwater": "สถาบันสารสนเทศทรัพยากรน้ำ (สสน.)",
+  "@agencyThaiwater": {
+    "description": "agency.thaiwater"
+  },
+  "agencyRid": "กรมชลประทาน",
+  "@agencyRid": {
+    "description": "agency.rid"
+  },
+  "agencyUsgs": "สำนักสำรวจธรณีวิทยาสหรัฐฯ (USGS)",
+  "@agencyUsgs": {
+    "description": "agency.usgs"
+  },
+  "agencyGistda": "สำนักงานพัฒนาเทคโนโลยีอวกาศและภูมิสารสนเทศ (GISTDA)",
+  "@agencyGistda": {
+    "description": "agency.gistda"
+  },
+  "agencyNasa": "NASA",
+  "@agencyNasa": {
+    "description": "agency.nasa"
+  },
+  "agencyOpenMeteo": "Open-Meteo",
+  "@agencyOpenMeteo": {
+    "description": "agency.openMeteo"
+  },
   "sourcesIntro": "ข้อมูลในแอปมาจากหน่วยงานเหล่านี้ แตะเพื่อเปิดเว็บไซต์ต้นทาง",
   "@sourcesIntro": {
     "description": "sources.intro"
   },
-  "sourcesDisclaimer": "เฝ้าระวังภัย (HazardWatch) เป็นแอปอิสระ ไม่ได้เป็นของหรือเป็นตัวแทนของหน่วยงานรัฐใด ประกาศเตือนภัยอย่างเป็นทางการ ให้ติดตามจากช่องทางของหน่วยงานโดยตรง",
+  "sourcesDisclaimer": "เฝ้าระวังภัย (HazardWatch) เป็นแอปอิสระ ไม่ได้เป็นของหรือเป็นตัวแทนของหน่วยงานรัฐใด ประกาศเตือนภัย ให้ติดตามจากเว็บไซต์และช่องทางของหน่วยงานนั้นโดยตรง",
   "@sourcesDisclaimer": {
     "description": "sources.disclaimer"
   },
@@ -1700,7 +1846,7 @@
   "@sourcesOpenLink": {
     "description": "sources.openLink"
   },
-  "sourcesDescTmd": "สภาพอากาศและแผ่นดินไหว",
+  "sourcesDescTmd": "แผ่นดินไหวในไทยและประเทศใกล้เคียง",
   "@sourcesDescTmd": {
     "description": "sources.desc.tmd"
   },
@@ -1712,9 +1858,13 @@
   "@sourcesDescBma": {
     "description": "sources.desc.bma"
   },
-  "sourcesDescThaiwater": "ระดับน้ำและเรดาร์ฝน",
+  "sourcesDescThaiwater": "ระดับน้ำในคลองและแม่น้ำ และข้อมูลเขื่อนที่รวบรวมไว้",
   "@sourcesDescThaiwater": {
     "description": "sources.desc.thaiwater"
+  },
+  "sourcesDescRid": "น้ำในเขื่อนและอ่างเก็บน้ำ",
+  "@sourcesDescRid": {
+    "description": "sources.desc.rid"
   },
   "sourcesDescUsgs": "แผ่นดินไหวทั่วโลก",
   "@sourcesDescUsgs": {
@@ -1774,6 +1924,15 @@
   "@navHome": {
     "description": "nav.home"
   },
+  "damDataDate": "ข้อมูลวันที่ {date}",
+  "@damDataDate": {
+    "description": "dam.dataDate",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "navMap": "แผนที่",
   "@navMap": {
     "description": "nav.map"
@@ -1802,6 +1961,10 @@
         "type": "String"
       }
     }
+  },
+  "homeAllSources": "แหล่งข้อมูลทั้งหมด",
+  "@homeAllSources": {
+    "description": "home.allSources"
   },
   "alertsEmpty": "ตอนนี้ไม่มีการแจ้งเตือนในเขตนี้",
   "@alertsEmpty": {
@@ -2096,5 +2259,22 @@
   "locationTimeout": "หาตำแหน่งไม่ทัน ลองใหม่ หรือเลือกเขต/อำเภอเองด้านล่าง",
   "@locationTimeout": {
     "description": "location.timeout"
+  },
+  "sourcesDescBmaFlood": "น้ำท่วมบนถนนในกรุงเทพฯ",
+  "@sourcesDescBmaFlood": {
+    "description": "sources.desc.bmaFlood"
+  },
+  "sourcesDescBmaRain": "ปริมาณฝนจากเครื่องวัดฝนในกรุงเทพฯ",
+  "@sourcesDescBmaRain": {
+    "description": "sources.desc.bmaRain"
+  },
+  "mapEventPage": "หน้าเหตุการณ์ · {domain}",
+  "@mapEventPage": {
+    "description": "map.eventPage",
+    "placeholders": {
+      "domain": {
+        "type": "String"
+      }
+    }
   }
 }

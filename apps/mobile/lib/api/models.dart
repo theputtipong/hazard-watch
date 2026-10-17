@@ -168,6 +168,8 @@ class AreaReport {
       quake = j['quake'] == null ? null : Quake.fromJson(j['quake'] as Map<String, dynamic>),
       // Older deploys send no `nasa` key at all; treat it like null.
       nasa = j['nasa'] == null ? null : NasaNear.fromJson(j['nasa'] as Map<String, dynamic>),
+      // Older deploys send no `dams` key; treat it like an empty list.
+      dams = [for (final d in j['dams'] as List? ?? const []) DamReading.fromJson(d as Map<String, dynamic>)],
       feeds = [for (final f in j['feeds'] as List) Feed.fromJson(f as Map<String, dynamic>)];
 
   static AreaReading? _reading(Object? j) => j == null ? null : AreaReading.fromJson(j as Map<String, dynamic>);
@@ -191,7 +193,93 @@ class AreaReport {
 
   /// NASA fires/events near the district centre. Display only, never an alert; null when neither feed exists.
   final NasaNear? nasa;
+
+  /// ThaiWater dams and reservoirs near the district, nearest first. Display only, never an alert; empty when none.
+  final List<DamReading> dams;
   final List<Feed> feeds;
+}
+
+/// damStatus() in packages/core/src/severity.ts.
+enum DamStatus {
+  critical,
+  low,
+  normal,
+  high,
+  over;
+
+  /// Display colour only (damSeverity in packages/core/src/severity.ts): over → danger, high → watch, else normal.
+  HwLevel get level => switch (this) {
+    DamStatus.over => HwLevel.danger,
+    DamStatus.high => HwLevel.watch,
+    _ => HwLevel.normal,
+  };
+}
+
+enum DamSize { large, medium }
+
+double? _numOrNull(Object? v) => (v as num?)?.toDouble();
+
+/// One ThaiWater dam (DamReading in apps/ingest/src/area.ts). Volumes are million m³, flows million m³ per day.
+class DamReading {
+  const DamReading({
+    required this.id,
+    required this.name,
+    required this.size,
+    required this.km,
+    required this.storagePct,
+    required this.usablePct,
+    required this.storageMcm,
+    required this.capacityMcm,
+    required this.inflowMcm,
+    required this.releaseMcm,
+    required this.status,
+    required this.province,
+    required this.basin,
+    required this.observedAt,
+    required this.stale,
+  });
+
+  DamReading.fromJson(Map<String, dynamic> j)
+    : id = j['id'] as String,
+      name = LocalizedText.fromJson(j['name'] as Map<String, dynamic>),
+      size = j['size'] == 'large' ? DamSize.large : DamSize.medium,
+      km = _num(j['km']),
+      storagePct = _num(j['storagePct']),
+      usablePct = _numOrNull(j['usablePct']),
+      storageMcm = _numOrNull(j['storageMcm']),
+      capacityMcm = _numOrNull(j['capacityMcm']),
+      inflowMcm = _numOrNull(j['inflowMcm']),
+      releaseMcm = _numOrNull(j['releaseMcm']),
+      // A status this build does not know yet reads as normal rather than failing the whole report.
+      status = DamStatus.values.asNameMap()[j['status']] ?? DamStatus.normal,
+      province = j['province'] as String? ?? '',
+      basin = j['basin'] as String?,
+      observedAt = _time(j['observedAt']),
+      stale = j['stale'] as bool? ?? false;
+
+  final String id;
+
+  /// Medium reservoirs have a Thai name only; `en` repeats it.
+  final LocalizedText name;
+  final DamSize size;
+  final double km;
+
+  /// Storage as % of normal capacity (ThaiWater % รนก.).
+  final double storagePct;
+  final double? usablePct;
+  final double? storageMcm;
+  final double? capacityMcm;
+  final double? inflowMcm;
+  final double? releaseMcm;
+  final DamStatus status;
+  final String province;
+  final String? basin;
+
+  /// Start (00:00 ICT) of the report day: the data is daily, so show the date, never a clock time.
+  final DateTime observedAt;
+  final bool stale;
+
+  HwLevel get level => status.level;
 }
 
 /// FIRMS hotspots from the past 24 h within [radiusKm] of the district centre.

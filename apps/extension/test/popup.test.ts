@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { filterPlaces, fold, groupDistricts, pickProvince, restorePick, type PickItem } from '../src/popup';
+import { damCredit, filterPlaces, fold, groupDistricts, pickProvince, restorePick, type PickItem } from '../src/popup';
 import { DISTRICTS, PROVINCES } from '../src/status';
 
 const P = (id: string, th: string, en: string): PickItem => ({ id, parent: null, name_th: th, name_en: en });
@@ -77,5 +77,12 @@ describe('popup picker helpers', () => {
     const all = filterPlaces('', PROVINCES, groupDistricts(items, 'th'), 'th');
     expect([...all.districts.values()].reduce((n, l) => n + l.length, 0)).toBe(DISTRICTS.length);
     expect(filterPlaces('เชียงใหม่', PROVINCES, groupDistricts(items, 'th'), 'th').provinces.map((p) => p.id)).toContain('TH50');
+  });
+});
+
+describe('dam credit', () => {
+  it('links ThaiWater in both languages', () => {
+    expect(damCredit('th')).toEqual({ label: 'ThaiWater (สสน.)', href: 'https://www.thaiwater.net' });
+    expect(damCredit('en')).toEqual({ label: 'ThaiWater (HII)', href: 'https://www.thaiwater.net' });
   });
 });

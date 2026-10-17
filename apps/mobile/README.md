@@ -23,6 +23,16 @@ iOS and Android app: an extra channel next to the web, PWA and extension, readin
   credits are in `lib/map/nasa_layers.g.dart`, generated from `packages/core/src/nasa.ts` by `tool/gen_nasa.mjs` (part
   of `pnpm --filter @hw/mobile generate`; `pnpm test` fails if stale). Home shows a NASA card (`lib/widgets/nasa_card.dart`)
   from the `nasa` part of `/v1/area`: fires within 25 km, events within 500 km. Display only, never a notification.
+- Dams (display only, never a notification or alert, not part of the district's level): `/v1/area` sends `dams`, up to
+  3 ThaiWater (RID) dams picked by the server (nearest large dam within 300 km, nearest medium reservoir within 50 km,
+  then large dams in the same province or basin, then further medium reservoirs within 50 km), read into `DamReading` (`lib/api/models.dart`: storage and usable %,
+  volumes in million m³, inflow/release per day, `DamStatus` over/high/normal/low/critical, report day, `stale`). A
+  missing `dams` reads as empty and an unknown status as normal, so older servers still work. Home shows a dam card
+  (`lib/widgets/dam_card.dart`) only when the list is not empty. The Map has a "Dams & reservoirs" layer (off by
+  default) from `runner.feeds.dams` in `/v1/snapshot`: hexagon pins (large bigger than medium), status worked out on
+  the phone with the bands in `CoreConfig` (`lib/bma/rules.dart`, checked against core `DEFAULT_CONFIG.dam` by a
+  test), a pin sheet and a legend. The card, pin sheet and legend credit "ThaiWater (HII) and the Royal Irrigation
+  Department" with ThaiWater linked (`DamCredit`).
 - Area picker (`lib/screens/area_picker_screen.dart`): use my location first, then search (Thai or English, spaces
   ignored) or province → district across all 77 provinces and 928 districts.
 - Alerts tab: the followed district's alerts from `/v1/area` (flood and rain from the phone's BMA copy when that is

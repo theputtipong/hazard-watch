@@ -44,6 +44,7 @@ String feedName(AppLocalizations l, String topic) => switch (topic) {
   'radar' => l.feedsNameRadar,
   'pm25' => l.feedsNamePm25,
   'quakes' => l.feedsNameQuakes,
+  'dams' => l.feedsNameDams,
   _ => topic,
 };
 

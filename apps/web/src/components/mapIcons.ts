@@ -11,6 +11,9 @@ const CAMERA =
   '<rect x="3" y="7.5" width="12" height="9" rx="2" fill="#fff"/><path d="M15.5 11l5.5-3v8l-5.5-3z" fill="#fff"/>';
 const FLAME =
   '<path d="M12 2.8c.6 3.2 4.7 5.3 4.7 10.2a4.7 4.7 0 0 1-9.4 0c0-2.4 1.2-3.9 2.4-5.1.1 1.6.8 2.7 1.9 3.1-.4-3.1-.3-5.6.4-8.2z" fill="#fff"/>';
+/** Dam wall (right) holding back water (waves, left). `currentColor` so the glyph can be ink or white on its fill. */
+const DAM =
+  '<path d="M13 4.5h4l3 15h-7z" fill="currentColor"/><path d="M3.5 10.5c1.5-1 3-1 4.5 0s3 1 4 0M3.5 14.5c1.5-1 3-1 4.5 0s3 1 4 0M3.5 18.5c1.5-1 3-1 4.5 0s3 1 4 0" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round"/>';
 /** EONET categories: storm swirl, volcano cone, water drop, sliding slope. */
 const EVENT_GLYPH: Record<NasaEventCategory, string> = {
   severeStorms:
@@ -106,4 +109,14 @@ export function eventIcon(category: NasaEventCategory) {
   return round(`event-${category}`, s, WEB.map.eventColor, svg(EVENT_GLYPH[category], s * 0.66));
 }
 
-export const LEGEND_GLYPH = { person: PERSON, drop: DROP, camera: CAMERA, flame: FLAME, storm: EVENT_GLYPH.severeStorms };
+/**
+ * ThaiWater dam (display only, never an alert): large dams are bigger pins than medium reservoirs; fill follows
+ * damSeverity (over → danger, high → watch, else normal grey). No alert badge, since a dam is never an alert.
+ */
+export function damIcon(size: 'large' | 'medium', severity: Severity, colors: Record<Severity, string>) {
+  const s = size === 'large' ? WEB.map.iconSize.damLarge : WEB.map.iconSize.damMedium;
+  const c = colors[severity];
+  return round(`dam-${size}-${c}`, s, c, `<span style="display:grid;color:${onFill(c)}">${svg(DAM, s * 0.66)}</span>`);
+}
+
+export const LEGEND_GLYPH = { person: PERSON, drop: DROP, camera: CAMERA, flame: FLAME, storm: EVENT_GLYPH.severeStorms, dam: DAM };

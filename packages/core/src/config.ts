@@ -12,6 +12,7 @@ export interface AlertConfig {
     humidity: string;
     distance: string;
     windSpeed: string;
+    dam: string;
   };
   pm25: {
     /** WHO 2021 guideline + interim targets. */
@@ -48,6 +49,23 @@ export interface AlertConfig {
     warn24hMm: number;
     danger24hMm: number;
   };
+  /**
+   * Dam storage bands from ThaiWater's own `dam.setting.scale` (% of normal storage, รนก.):
+   * >overPct เกินความจุ · >highPct–overPct น้ำมาก · >lowPct–highPct ปกติ · >criticalPct–lowPct น้ำน้อย ·
+   * usable water (% ใช้การได้) ≤ criticalUsablePct น้ำน้อยวิกฤต. Display-only: dams are never pushed or zoned.
+   */
+  dam: {
+    /** Above this storage % = 'over' (เกินความจุ), severity 'danger'. */
+    overPct: number;
+    /** Above this storage % = 'high' (น้ำมาก), severity 'watch'. */
+    highPct: number;
+    /** Above this storage % = 'normal' (ปกติ). */
+    lowPct: number;
+    /** Above this storage % = 'low' (น้ำน้อย); at or below, with no usable % known, 'critical'. */
+    criticalPct: number;
+    /** Usable water at or below this % = 'critical' (น้ำน้อยวิกฤต), ThaiWater `rule_web`. */
+    criticalUsablePct: number;
+  };
   zones: {
     /** Earthquakes are regional, so they are not zoned. */
     kinds: HazardKind[];
@@ -83,6 +101,7 @@ export const DEFAULT_CONFIG: AlertConfig = {
     humidity: '%',
     distance: 'km',
     windSpeed: 'km/h',
+    dam: '%',
   },
   pm25: {
     bands: { ok: 15, watch: 37.5, warn: 75 },
@@ -113,6 +132,13 @@ export const DEFAULT_CONFIG: AlertConfig = {
     watch24hMm: 35.1,
     warn24hMm: 60,
     danger24hMm: 90.1,
+  },
+  dam: {
+    overPct: 100,
+    highPct: 80,
+    lowPct: 50,
+    criticalPct: 30,
+    criticalUsablePct: 30,
   },
   zones: {
     kinds: ['flood', 'pm25', 'rain', 'waterlevel'],

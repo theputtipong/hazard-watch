@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../api/hazard_api.dart';
+import '../api/models.dart';
 import '../bma/device_bma.dart';
 import '../format.dart';
 import '../l10n/gen/app_localizations.dart';
@@ -14,7 +15,9 @@ import '../map/map_markers.dart';
 import '../map/nasa_layers.g.dart';
 import '../map/nasa_map.dart';
 import '../settings.dart';
+import '../sources_meta.g.dart';
 import '../theme/hw_app_theme.dart';
+import '../widgets/dam_card.dart';
 import '../widgets/reading_tile.dart';
 import '../widgets/source_link.dart';
 
@@ -261,7 +264,8 @@ class _MapScreenState extends State<MapScreen> {
     final fires = nasa.firms && snapshot != null ? firePoints(snapshot) : const <FirePoint>[];
     final events = nasa.events && snapshot != null ? eventPoints(snapshot) : const <EventPoint>[];
 
-    return Stack(
+    final credit = mapCreditSourceIds(_layers, nasa);
+    final map = Stack(
       children: [
         ColoredBox(
           color: c.surfaceSunken,
@@ -294,7 +298,6 @@ class _MapScreenState extends State<MapScreen> {
                     ),
                 ],
               ),
-              if (nasa.anyOn) _NasaCredits(state: nasa, snapshot: snapshot, now: now),
               const BaseMapAttribution(),
             ],
           ),
@@ -360,6 +363,24 @@ class _MapScreenState extends State<MapScreen> {
         ),
       ],
     );
+    if (credit.isEmpty) return map;
+    // Under the map, not over it, so it never hides a control or a pin and always sits on a solid panel.
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Expanded(child: map),
+        ConstrainedBox(
+          constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.4),
+          child: _MapCredits(
+            state: nasa,
+            snapshot: snapshot,
+            now: now,
+            dams: _layers.contains(MapLayer.dam),
+            sources: credit,
+          ),
+        ),
+      ],
+    );
   }
 
   String? _status(AppLocalizations l, MapSnapshot? snapshot, DateTime now) {
@@ -384,7 +405,11 @@ class _MapScreenState extends State<MapScreen> {
       height: hit,
       child: Semantics(
         button: true,
-        label: l.mapPin(layerName(l, p.layer), p.name.of(locale), p.level.label(locale)),
+        label: l.mapPin(
+          layerName(l, p.layer),
+          p.name.of(locale),
+          p.dam == null ? p.level.label(locale) : damStatusText(l, p.dam!.status),
+        ),
         excludeSemantics: true,
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
@@ -418,8 +443,8 @@ class _MapScreenState extends State<MapScreen> {
             title: '${eventName(l, e.category)}: ${e.title}',
             lines: [if (e.windKts != null) '${numberText(e.windKts!)} kt', clockText(l, e.updatedAt, now)],
             credit: NasaAttribution.eonet,
-            // The event's own EONET page when the feed gives one, else EONET itself.
-            source: sourceRef('NASA EONET ↗', 'nasa-eonet', url: e.url),
+            source: eventSheetLinks(l, e.url).source,
+            page: eventSheetLinks(l, e.url).page,
           ),
           child: Center(child: EventPin(category: e.category)),
         ),
@@ -436,7 +461,7 @@ class _MapScreenState extends State<MapScreen> {
         clockText(l, f.at, now),
       ],
       credit: NasaAttribution.firms,
-      source: sourceRef('NASA FIRMS ↗', 'nasa-firms'),
+      source: sourceRef('NASA FIRMS', 'nasa-firms'),
     );
   }
 
@@ -445,6 +470,7 @@ class _MapScreenState extends State<MapScreen> {
     required List<String> lines,
     required String credit,
     SourceRef? source,
+    SourceRef? page,
   }) => showModalBottomSheet<void>(
     context: context,
     showDragHandle: true,
@@ -464,7 +490,13 @@ class _MapScreenState extends State<MapScreen> {
               if (source != null)
                 Align(
                   alignment: Alignment.centerLeft,
-                  child: SourceLink(label: source.name, url: source.url),
+                  // "ข้อมูลจาก NASA EONET · eonet.gsfc.nasa.gov": agency and site, as Google Play asks.
+                  child: SourceLink(url: source.url),
+                ),
+              if (page != null)
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: SourceLink(key: const ValueKey('sheet-page'), label: page.name, url: page.url),
                 ),
               Text(credit, style: text.bodySmall!.copyWith(color: c.inkMuted)),
             ],
@@ -486,6 +518,7 @@ String layerName(AppLocalizations l, MapLayer layer) => switch (layer) {
   MapLayer.water => l.layerWater,
   MapLayer.pm25 => l.layerPm25,
   MapLayer.quake => l.layerQuake,
+  MapLayer.dam => l.layerDam,
 };
 
 /// A sample pin per layer, so the chips double as the legend.
@@ -500,6 +533,7 @@ PinStyle _legendPin(MapLayer layer) => switch (layer) {
   MapLayer.water => const PinStyle(shape: PinShape.roundedSquare, size: Size.square(18), level: HwLevel.watch),
   MapLayer.pm25 => const PinStyle(shape: PinShape.circle, size: Size.square(18), level: HwLevel.watch),
   MapLayer.quake => const PinStyle(shape: PinShape.diamond, size: Size.square(20), level: HwLevel.watch),
+  MapLayer.dam => const PinStyle(shape: PinShape.hexagon, size: Size.square(20), level: HwLevel.normal),
 };
 
 class _LayerChips extends StatelessWidget {
@@ -656,6 +690,7 @@ class PointSheet extends StatelessWidget {
     final p = point;
     final place = p.name.of(locale);
     final what = layerName(l, p.layer);
+    if (p.dam case final dam?) return _DamSheet(dam: dam, title: what);
     final v = p.value;
     final (value, unit) = switch (p.layer) {
       MapLayer.flood => (v == null ? '—' : numberText(v), v == null ? null : l.unitCm),
@@ -663,6 +698,7 @@ class PointSheet extends StatelessWidget {
       MapLayer.water => ('${v!.round()}%', l.waterOfBank),
       MapLayer.pm25 => (numberText(v!), p.unit),
       MapLayer.quake => ('M${v!.toStringAsFixed(1)}', null),
+      MapLayer.dam => ('${v!.round()}%', null),
     };
     final note = p.stale
         ? l.freshStale(clockText(l, p.at, now))
@@ -695,6 +731,8 @@ class PointSheet extends StatelessWidget {
               l.mapQuakeFrom(area, kmText(p.km!)),
               if (p.depthKm != null) l.mapQuakeDepth(numberText(p.depthKm!)),
             ].join(' · '),
+            // Dam points always carry [MapPoint.dam] and take the sheet above.
+            MapLayer.dam => '',
           };
     final meta = [
       '${l.commonSource} ${sourceName(l, p.source)}',
@@ -733,6 +771,94 @@ class PointSheet extends StatelessWidget {
   }
 }
 
+/// A dam's sheet: the home card's row, the display-only note and the linked ThaiWater credit.
+class _DamSheet extends StatelessWidget {
+  const _DamSheet({required this.dam, required this.title});
+
+  final DamReading dam;
+
+  /// The layer's name; the dam's own name heads its row, as on the home card.
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final c = context.hw;
+    final text = Theme.of(context).textTheme;
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(HwSize.space4, 0, HwSize.space4, HwSize.space4),
+        child: Column(
+          key: const ValueKey('dam-sheet'),
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          spacing: HwSize.space3,
+          children: [
+            Semantics(header: true, child: Text(title, style: text.titleLarge)),
+            DamRow(dam: dam, showKm: false),
+            Text(
+              [dam.province, if (dam.province.isNotEmpty) '·', l.damNote].join(' '),
+              style: text.bodySmall!.copyWith(color: c.inkMuted),
+            ),
+            DamCredit(style: text.bodySmall!.copyWith(color: c.inkMuted)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// What dam pins mean: colour and words for each status, and size for large dams vs medium reservoirs, then the
+/// linked credit. Low and critically low share the normal colour (damSeverity), so the words carry them.
+class DamLegend extends StatelessWidget {
+  const DamLegend({super.key, this.credit = true});
+
+  /// False on the map, whose credit strip already links both dam sources.
+  final bool credit;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final c = context.hw;
+    final style = Theme.of(context).textTheme.labelSmall!.copyWith(color: c.inkMuted);
+    Widget item(PinStyle pin, String label) => Row(
+      mainAxisSize: MainAxisSize.min,
+      spacing: HwSize.space1,
+      children: [
+        HazardPin(style: pin),
+        Flexible(child: Text(label, style: style)),
+      ],
+    );
+    PinStyle hex(HwLevel level, double size) =>
+        PinStyle(shape: PinShape.hexagon, size: Size.square(size), level: level);
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 260),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        spacing: 2,
+        children: [
+          Wrap(
+            spacing: HwSize.space2,
+            runSpacing: 2,
+            children: [
+              item(hex(DamStatus.over.level, 12), l.damStatusOver),
+              item(hex(DamStatus.high.level, 12), l.damStatusHigh),
+              item(
+                hex(DamStatus.normal.level, 12),
+                [l.damStatusNormal, l.damStatusLow, l.damStatusCritical].join(' · '),
+              ),
+              item(hex(HwLevel.normal, 16), l.damSizeLarge),
+              item(hex(HwLevel.normal, 11), l.damSizeMedium),
+            ],
+          ),
+          if (credit) DamCredit(style: style),
+        ],
+      ),
+    );
+  }
+}
+
 String _day(AppLocalizations l, String isoDay) => DateFormat('d MMM', l.localeName).format(DateTime.parse(isoDay));
 
 /// "Satellite image from ≈ 15 Oct" for a raster; WMS days are exact.
@@ -741,14 +867,86 @@ String nasaRasterDate(AppLocalizations l, NasaLayer layer, DateTime now) {
   return l.nasaDataDate('${d.approx ? '≈ ' : ''}${_day(l, d.date)}');
 }
 
-/// Credits (and the raster's day) for the NASA layers that are on, bottom-left so the map buttons stay clear.
-/// Google Play requires the government source to be linked wherever its data is credited.
-class _NasaCredits extends StatelessWidget {
-  const _NasaCredits({required this.state, required this.snapshot, required this.now});
+/// An EONET event's links: its page when EONET hosts it ("ข้อมูลจาก NASA EONET · eonet.gsfc.nasa.gov"), else EONET
+/// itself as the source plus "หน้าเหตุการณ์ · gdacs.org" for the page the event came from (GDACS, JTWC…), so no link
+/// shows a bare address or puts NASA's name on another site.
+({SourceRef? source, SourceRef? page}) eventSheetLinks(AppLocalizations l, String? url) {
+  final eonet = sourceRef('NASA EONET', 'nasa-eonet');
+  final https = url != null && Uri.tryParse(url)?.scheme == 'https';
+  if (!https) return (source: eonet, page: null);
+  if (sourceIdForUrl(url) == 'nasa-eonet') return (source: sourceRef('NASA EONET', 'nasa-eonet', url: url), page: null);
+  final domain = linkDomain(url);
+  return (source: eonet, page: domain == null ? null : (name: l.mapEventPage(domain), url: url));
+}
+
+/// Every agency whose data the map is showing, in layer order, each once: the map layers' sources, then NASA's.
+List<String> mapCreditSourceIds(Set<MapLayer> layers, NasaLayerState nasa) {
+  final ids = <String>{
+    for (final layer in MapLayer.values)
+      if (layers.contains(layer)) ...layerSourceIds(layer),
+    if (nasa.raster != null) 'nasa-gibs',
+    if (nasa.firms) 'nasa-firms',
+    if (nasa.events) 'nasa-eonet',
+  };
+  return ids.toList();
+}
+
+/// "ข้อมูลบนแผนที่: กรุงเทพมหานคร · weather.bangkok.go.th, สถาบันสารสนเทศทรัพยากรน้ำ (สสน.) · thaiwater.net, …": the
+/// agencies behind what the map shows by their full names, each name and site a link to its page. Always on while any layer is (Google Play: government data must name
+/// and link its source where it is shown).
+class MapDataCredit extends StatelessWidget {
+  const MapDataCredit({super.key, required this.sourceIds});
+
+  final List<String> sourceIds;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final c = context.hw;
+    final style = Theme.of(context).textTheme.bodySmall!.copyWith(color: c.inkMuted);
+    final [before, after] = l.mapDataCredit('\u0000').split('\u0000');
+    final links = <String, String>{};
+    for (final id in sourceIds) {
+      final url = sourceUrl(id);
+      final domain = sourceDomain(id);
+      if (url == null || domain == null) continue;
+      // BMA flood and rain share a name and site: one link, to the first layer's page.
+      links.putIfAbsent('${sourceAgency(l, id) ?? sourceShortName(l, id)} · $domain', () => url);
+    }
+    return Semantics(
+      container: true,
+      label: before.trim(),
+      child: Wrap(
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          if (before.isNotEmpty) Text(before, style: style),
+          for (final (i, MapEntry(key: label, value: url)) in links.entries.indexed) ...[
+            if (i > 0) ExcludeSemantics(child: Text(', ', style: style)),
+            SourceLink(key: ValueKey('map-credit:$url'), label: label, url: url, style: style),
+          ],
+          if (after.isNotEmpty) Text(after, style: style),
+        ],
+      ),
+    );
+  }
+}
+
+/// The map's one credit panel, under the map so the map buttons stay clear: the dam legend, NASA's credit (with the
+/// raster's day) and colour legend, then the linked agencies for every layer that is on.
+class _MapCredits extends StatelessWidget {
+  const _MapCredits({
+    required this.state,
+    required this.snapshot,
+    required this.now,
+    required this.dams,
+    required this.sources,
+  });
 
   final NasaLayerState state;
   final MapSnapshot? snapshot;
   final DateTime now;
+  final bool dams;
+  final List<String> sources;
 
   @override
   Widget build(BuildContext context) {
@@ -756,36 +954,36 @@ class _NasaCredits extends StatelessWidget {
     final c = context.hw;
     final raster = state.raster == null ? null : nasaLayers[state.raster];
     final text = [if (raster != null) nasaRasterDate(l, raster, now), ...nasaCredits(state)].join(' · ');
-    return Align(
-      alignment: Alignment.bottomLeft,
-      child: Padding(
-        padding: const EdgeInsets.only(bottom: HwSize.touchTarget + HwSize.space2, right: HwSize.touchTarget * 2),
+    return DecoratedBox(
+      key: const ValueKey('map-credits'),
+      decoration: BoxDecoration(
+        color: c.surface,
+        border: Border(top: BorderSide(color: c.line)),
+      ),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: HwSize.space4, vertical: HwSize.space1),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              key: const ValueKey('nasa-credits'),
-              padding: const EdgeInsets.symmetric(horizontal: HwSize.space1, vertical: 2),
-              color: c.surface.withValues(alpha: MapConfig.creditPanelAlpha),
-              // Each NASA name links to its site; the credit text itself is unchanged.
-              child: SourceText(
+            if (dams) const DamLegend(key: ValueKey('dam-map-legend'), credit: false),
+            if (state.anyOn)
+              // NASA's own credit wording, each NASA name linked to its site.
+              SourceText(
+                key: const ValueKey('nasa-credits'),
                 text,
                 sources: nasaSourceRefs,
+                describe: false,
                 style: Theme.of(context).textTheme.labelSmall!.copyWith(color: c.inkMuted),
               ),
-            ),
             // What the raster's colours mean, compact; the layer sheet adds the caveat note.
             if (nasaLegend(state) case final legend?)
               ConstrainedBox(
+                key: const ValueKey('nasa-map-legend'),
                 constraints: const BoxConstraints(maxWidth: 260),
-                child: Container(
-                  key: const ValueKey('nasa-map-legend'),
-                  padding: const EdgeInsets.symmetric(horizontal: HwSize.space1, vertical: 2),
-                  color: c.surface.withValues(alpha: MapConfig.creditPanelAlpha),
-                  child: NasaLegendView(layerId: state.raster!, legend: legend),
-                ),
+                child: NasaLegendView(layerId: state.raster!, legend: legend),
               ),
+            MapDataCredit(key: const ValueKey('map-data-credit'), sourceIds: sources),
           ],
         ),
       ),
@@ -824,7 +1022,7 @@ class NasaLayerSheet extends StatelessWidget {
     // swallow the link for screen readers and taps.
     Widget credit(String text) => Padding(
       padding: const EdgeInsets.only(bottom: HwSize.space2),
-      child: SourceText(text, sources: nasaSourceRefs, style: note),
+      child: SourceText(text, sources: nasaSourceRefs, style: note, describe: false),
     );
 
     return SafeArea(

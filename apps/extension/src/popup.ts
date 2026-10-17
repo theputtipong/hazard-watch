@@ -7,6 +7,7 @@ import {
   feedStatuses,
   pm25Severity,
   rank,
+  SOURCE_META,
   type Alert,
   type DashboardSnapshot,
   type PushKind,
@@ -16,7 +17,7 @@ import {
 import { t, type Lang, type MessageKey } from '@hw/core/i18n';
 import { fetchSnapshot, fetchWeather, siteLink } from './api';
 import { EXT } from './config';
-import { DISTRICTS, PROVINCES, districtAt, districtById, districtCenter, floodInDistrict, localAlerts, nasaLines, nearestLive, wantedAlerts, type Place } from './status';
+import { DISTRICTS, PROVINCES, damLines, districtAt, districtById, districtCenter, floodInDistrict, localAlerts, nasaLines, nearestLive, wantedAlerts, type Place } from './status';
 import { getSettings, saveSettings, type Settings } from './storage';
 
 // --- Pure picker helpers (exported for tests; no DOM) ---
@@ -64,6 +65,11 @@ export function filterPlaces(query: string, provinces: PickItem[], byProvince: M
     districts.set(p.id, hit);
   }
   return { provinces: kept.sort(byName(lang)), districts };
+}
+
+/** Dam card credit: ThaiWater (HII) as data publisher, linked to its site. */
+export function damCredit(lang: Lang): { label: string; href: string } {
+  return { label: lang === 'th' ? 'ThaiWater (สสน.)' : 'ThaiWater (HII)', href: SOURCE_META.thaiwater.url };
 }
 
 /** Saved district id (incl. pre-77-province Greater Bangkok ids, which kept their ids) → picker state. */
@@ -235,6 +241,19 @@ function nasaCard(lines: string[]) {
     el('h2', { class: 'label muted' }, tr('nasa.card.title')),
     el('ul', { class: 'nasa__lines' }, ...lines.slice(0, 2).map((l) => el('li', {}, l))),
     el('p', { class: 'caption' }, tr('nasa.disclaimer')),
+  );
+}
+
+/** Display only, never notified: at most two dams near the place, with the ThaiWater credit. */
+function damCard(lines: string[]) {
+  if (!lines.length) return null;
+  const credit = damCredit(settings.lang);
+  return el(
+    'section',
+    { class: 'card dams' },
+    el('h2', { class: 'label muted' }, tr('card.dam')),
+    el('ul', { class: 'dams__lines' }, ...lines.slice(0, 2).map((l) => el('li', {}, l))),
+    el('p', { class: 'caption' }, `${tr('dam.note')} · `, el('a', { class: 'link', href: credit.href, target: '_blank', rel: 'noopener noreferrer' }, credit.label)),
   );
 }
 
@@ -426,7 +445,7 @@ function render() {
   if (place && district && snapshot) {
     // Same list as the badge and notifications, so the three never disagree.
     const alerts = wantedAlerts(localAlerts(snapshot, district), settings);
-    parts.push(alertsSection(alerts), readingsCard(snapshot, place), nasaCard(nasaLines(snapshot, district, settings.lang, { from: place.location })), feedsCard(snapshot));
+    parts.push(alertsSection(alerts), readingsCard(snapshot, place), nasaCard(nasaLines(snapshot, district, settings.lang, { from: place.location })), damCard(damLines(snapshot, place.location, settings.lang)), feedsCard(snapshot));
     const at = snapshot.edge?.updatedAt;
     if (at) parts.push(el('p', { class: 'caption' }, `${tr('common.updated')} ${agoText(at, settings.lang)}`));
   } else if (place && !snapshot && error === 'ext.loadFailed') {

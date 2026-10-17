@@ -12,6 +12,7 @@ import {
   type Observation,
   type Severity,
 } from '@hw/core';
+import { damStale } from './area';
 import type { GroupSnapshot } from './store';
 
 export interface SummaryReading {
@@ -27,6 +28,8 @@ export interface Summary {
   /** Gauge values are % of bank-full. */
   water: { worst: SummaryReading; stations: number; alerts: number } | null;
   quake: { magnitude: number; place: LocalizedText; occurredAt: string; distanceKm: number; severity: Severity } | null;
+  /** Display only (never an alert): dams with a current report nationwide, and how many are over 100 % of capacity. */
+  dams: { reporting: number; over: number } | null;
   feeds: { ok: number; total: number };
 }
 
@@ -61,6 +64,9 @@ export function buildSummary(edge: GroupSnapshot | null, runner: GroupSnapshot |
     // TMD first, so on equal magnitude its Thai place name wins over USGS.
     .reduce<Earthquake | null>((best, q) => (best && best.magnitude >= q.magnitude ? best : q), null);
 
+  // Daily data: dams use their own stale rule, not the 3 h sensor limit.
+  const dams = ((feeds.dams?.items ?? []) as Observation[]).filter((o) => o.value !== null && !damStale(o.observedAt, now));
+
   const results = Object.values(feeds);
   const times = [edge?.updatedAt, runner?.updatedAt].filter((t): t is string => !!t).sort();
 
@@ -80,6 +86,7 @@ export function buildSummary(edge: GroupSnapshot | null, runner: GroupSnapshot |
           severity: quakeSeverity(quake, from, cfg),
         }
       : null,
+    dams: dams.length ? { reporting: dams.length, over: dams.filter((o) => o.value! > cfg.dam.overPct).length } : null,
     feeds: { ok: results.filter((r) => r?.ok).length, total: results.length },
   };
 }

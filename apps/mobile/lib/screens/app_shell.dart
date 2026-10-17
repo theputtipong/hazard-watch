@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../alerts/phone_notifications.dart';
 import '../api/hazard_api.dart';
 import '../bma/device_bma.dart';
 import '../l10n/gen/app_localizations.dart';
@@ -33,7 +34,29 @@ class AppShell extends StatefulWidget {
 }
 
 class _AppShellState extends State<AppShell> {
+  static const _alertsTab = 2;
   int _tab = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    alertsTabRequest.addListener(_openAlerts);
+    // A notification tap that started the app came in before this shell existed.
+    if (alertsTabRequest.take()) _tab = _alertsTab;
+  }
+
+  @override
+  void dispose() {
+    alertsTabRequest.removeListener(_openAlerts);
+    super.dispose();
+  }
+
+  /// A tapped alert notification: back to the shell from any page on top of it, on the Alerts tab.
+  void _openAlerts() {
+    if (!alertsTabRequest.take() || !mounted) return;
+    Navigator.of(context).popUntil((r) => r.isFirst);
+    setState(() => _tab = _alertsTab);
+  }
 
   @override
   Widget build(BuildContext context) {

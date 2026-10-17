@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../api/models.dart';
 import '../format.dart';
 import '../theme/hw_app_theme.dart';
 import 'map_data.dart';
@@ -15,6 +16,10 @@ abstract final class PinSize {
   static const water = 30.0;
   static const rain = 28.0;
   static const quake = 32.0;
+
+  /// Large dams are bigger than medium reservoirs, so size reads at a glance.
+  static const damLarge = 32.0;
+  static const damMedium = 22.0;
   static const you = 34.0;
 
   /// The tappable area around a pin; normal flood dots are packed too tightly for a full touch target.
@@ -22,7 +27,7 @@ abstract final class PinSize {
   static const hitSmall = 24.0;
 }
 
-enum PinShape { dot, circle, roundedSquare, pill, diamond }
+enum PinShape { dot, circle, roundedSquare, pill, diamond, hexagon }
 
 /// How one point is drawn: [label] is the text inside the pin, if any.
 class PinStyle {
@@ -34,7 +39,8 @@ class PinStyle {
   final String? label;
   final IconData? icon;
 
-  bool get badge => level == HwLevel.danger;
+  /// Dams (hexagons) are display only, so an over-full dam gets no alert "!"; its label says how full it is.
+  bool get badge => level == HwLevel.danger && shape != PinShape.hexagon;
 }
 
 PinStyle pinStyle(MapPoint p) {
@@ -82,8 +88,24 @@ PinStyle pinStyle(MapPoint p) {
       level: p.level,
       label: v!.toStringAsFixed(1),
     ),
+    // Hexagons with an ink ring: no other hazard uses the shape, and dams are context rather than alerts.
+    MapLayer.dam when p.dam?.size == DamSize.large => PinStyle(
+      shape: PinShape.hexagon,
+      size: const Size.square(PinSize.damLarge),
+      level: p.level,
+      label: '${v!.round()}%',
+    ),
+    MapLayer.dam => PinStyle(
+      shape: PinShape.hexagon,
+      size: const Size.square(PinSize.damMedium),
+      level: p.level,
+      icon: Icons.water,
+    ),
   };
 }
+
+/// The ring around dam pins: ink is at least 3:1 on either base map (contrast_test), white is not on the light one.
+Color damPinRing(HwColors c) => c.ink;
 
 /// Ink or white, whichever contrasts more on [fill] (design system on-sev / on-sev-danger; onFill in mapIcons.ts).
 Color onFill(Color fill) {
@@ -134,6 +156,17 @@ class HazardPin extends StatelessWidget {
       PinShape.circle => _box(fill, s, const CircleBorder(), content),
       PinShape.roundedSquare => _box(fill, s, _rounded(HwSize.radiusSmall), content),
       PinShape.pill => _box(fill, s, const StadiumBorder(), content),
+      PinShape.hexagon => Container(
+        width: s.width,
+        height: s.height,
+        alignment: Alignment.center,
+        decoration: ShapeDecoration(
+          color: fill,
+          shape: StarBorder.polygon(sides: 6, pointRounding: 0.3, side: BorderSide(color: damPinRing(c), width: 1.5)),
+          shadows: _shadow,
+        ),
+        child: content,
+      ),
       PinShape.diamond => SizedBox.fromSize(
         size: s,
         child: Stack(

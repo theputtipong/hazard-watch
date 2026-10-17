@@ -1,10 +1,15 @@
 import {
+  damSeverity,
+  damStatus,
   distanceKm,
+  FEED_TOPIC_MAX_AGE_MINUTES,
   mergeQuakes,
   quakeAlertFloor,
   quakeSeverity,
   worst,
   type AlertConfig,
+  type DamExtra,
+  type DamStatus,
   type DashboardSnapshot,
   type LatLng,
   type Observation,
@@ -64,4 +69,81 @@ export const LOCAL_KM = { flood: 20, cctv: 15, water: 60 } as const;
 
 export function withinKm<T extends { location: LatLng }>(items: T[], from: LatLng, km: number): boolean {
   return items.some((it) => distanceKm(from, it.location) <= km);
+}
+
+/** One dam for the dam card and map popup; same shape as the ingest `/v1/area` DamReading. */
+export interface DamReading {
+  id: string;
+  name: { th: string; en: string };
+  size: DamExtra['size'];
+  location: LatLng;
+  km: number;
+  storagePct: number;
+  usablePct: number | null;
+  storageMcm: number | null;
+  capacityMcm: number | null;
+  inflowMcm: number | null;
+  releaseMcm: number | null;
+  status: DamStatus;
+  /** Display colour only: over → danger, high → watch, else ok. Dams never raise alerts. */
+  severity: Severity;
+  province: string;
+  basin: string | null;
+  observedAt: string;
+  stale: boolean;
+}
+
+/** Same limits as apps/ingest/src/area.ts DAM_PICK, so the web card picks the dams the app's area report does. */
+export const DAM_PICK = { max: 3, largeKm: 300, mediumKm: 50 } as const;
+
+/** Same as ingest damStale: `observedAt` is 00:00 ICT of the report day, so the 36 h feed limit runs from the day's end. */
+const DAM_STALE_MS = ((FEED_TOPIC_MAX_AGE_MINUTES.dams ?? 36 * 60) + 24 * 60) * 60_000;
+export const damStale = (observedAt: string, now: Date): boolean => now.getTime() - Date.parse(observedAt) > DAM_STALE_MS;
+
+export function damReading(o: Observation, from: LatLng | null, cfg: AlertConfig, now: Date): DamReading {
+  const x = o.extra as DamExtra;
+  const storagePct = o.value!;
+  return {
+    id: o.id,
+    name: o.name,
+    size: x.size,
+    location: o.location,
+    km: from ? Math.round(distanceKm(from, o.location) * 10) / 10 : 0,
+    storagePct,
+    usablePct: x.usablePct ?? null,
+    storageMcm: x.storageMcm ?? null,
+    capacityMcm: x.capacityMcm ?? null,
+    inflowMcm: x.inflowMcm ?? null,
+    releaseMcm: x.releaseMcm ?? null,
+    status: damStatus(storagePct, x.usablePct, cfg),
+    severity: damSeverity(storagePct, x.usablePct, cfg),
+    province: x.province,
+    basin: x.basin ?? null,
+    observedAt: o.observedAt,
+    stale: damStale(o.observedAt, now),
+  };
+}
+
+export const isDam = (o: Observation): boolean => o.kind === 'dam' && o.value !== null && !!o.extra;
+
+/**
+ * Mirrors ingest pickDams: up to 3 dams, by priority (1) nearest large dam ≤ 300 km, (2) nearest medium reservoir
+ * ≤ 50 km, (3) other large dams (≤ 300 km) in the same province or basin, then further medium ones ≤ 50 km;
+ * returned nearest first. The basin is that of the nearest dam within 50 km.
+ */
+export function pickDams(items: Observation[], from: LatLng, province: string | null, cfg: AlertConfig, now = new Date()): DamReading[] {
+  const all = items
+    .filter(isDam)
+    .map((o) => damReading(o, from, cfg, now))
+    .sort((a, b) => a.km - b.km);
+  const large = all.filter((d) => d.size === 'large' && d.km <= DAM_PICK.largeKm);
+  const medium = all.filter((d) => d.size === 'medium' && d.km <= DAM_PICK.mediumKm);
+  const basin = all.find((d) => d.km <= DAM_PICK.mediumKm && d.basin)?.basin ?? null;
+  const related = large.filter((d) => (province && d.province === province) || (basin && d.basin === basin));
+  const picked = new Map<string, DamReading>();
+  for (const d of [large[0], medium[0], ...related, ...medium]) {
+    if (picked.size >= DAM_PICK.max) break;
+    if (d && !picked.has(d.id)) picked.set(d.id, d);
+  }
+  return [...picked.values()].sort((a, b) => a.km - b.km);
 }

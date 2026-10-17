@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hazardwatch/api/hazard_api.dart';
 import 'package:hazardwatch/api/models.dart';
+import 'package:hazardwatch/theme/hw_theme.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
@@ -66,6 +67,58 @@ void main() {
       expect(n.events.single.km, 12.0);
       expect(n.quiet, isFalse);
       expect(NasaNear.fromJson({'fires': j['nasa']['fires'], 'events': <Object>[]}).quiet, isTrue);
+    });
+  });
+
+  group('dams', () {
+    test('parses ThaiWater dams from the ingest fixture, nearest first', () {
+      final dams = AreaReport.fromJson(fixtureJson()).dams;
+      expect(dams.map((d) => d.id), ['thaiwater-dam:medium:m1', 'thaiwater-dam:large:pasak']);
+      final m = dams.first;
+      expect((m.size, m.status, m.level, m.km), (DamSize.medium, DamStatus.critical, HwLevel.normal, 34.7));
+      expect((m.inflowMcm, m.releaseMcm, m.usablePct), (null, null, 20.0));
+      expect(m.name.en, m.name.th); // medium reservoirs have a Thai name only
+      final l = dams.last;
+      expect((l.size, l.status, l.level), (DamSize.large, DamStatus.over, HwLevel.danger));
+      expect((l.storagePct, l.usablePct, l.storageMcm, l.capacityMcm), (105.2, 55.1, 600.5, 960.8));
+      expect((l.inflowMcm, l.releaseMcm), (4.2, 1.5));
+      expect((l.province, l.basin, l.stale), ('ลพบุรี', 'ลุ่มน้ำป่าสัก', false));
+      expect(l.observedAt, DateTime.utc(2026, 10, 4, 17));
+    });
+
+    test('missing on an older deploy, or null, means no dams', () {
+      expect(AreaReport.fromJson(fixtureJson()..remove('dams')).dams, isEmpty);
+      expect(AreaReport.fromJson(fixtureJson()..['dams'] = null).dams, isEmpty);
+    });
+
+    test('status colour follows damSeverity: only over and high are coloured', () {
+      expect(
+        {for (final s in DamStatus.values) s: s.level},
+        {
+          DamStatus.critical: HwLevel.normal,
+          DamStatus.low: HwLevel.normal,
+          DamStatus.normal: HwLevel.normal,
+          DamStatus.high: HwLevel.watch,
+          DamStatus.over: HwLevel.danger,
+        },
+      );
+    });
+
+    test('optional fields may be missing; an unknown status reads as normal', () {
+      final d = DamReading.fromJson({
+        'id': 'thaiwater-dam:medium:x',
+        'name': {'th': 'อ่าง x', 'en': 'อ่าง x'},
+        'size': 'medium',
+        'km': 3,
+        'storagePct': 60,
+        'status': 'brandNew',
+        'observedAt': '2026-10-04T17:00:00.000Z',
+      });
+      expect(
+        (d.usablePct, d.storageMcm, d.capacityMcm, d.basin, d.province, d.stale),
+        (null, null, null, null, '', false),
+      );
+      expect(d.status, DamStatus.normal);
     });
   });
 

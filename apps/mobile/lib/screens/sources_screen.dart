@@ -11,20 +11,27 @@ import '../widgets/source_link.dart';
 Future<void> openSources(BuildContext context) =>
     Navigator.of(context).push<void>(MaterialPageRoute(builder: (_) => const SourcesScreen()));
 
-/// Every agency whose data the app shows, each linked to its own site, then the not-a-government-app note.
+/// The not-a-government-app note first, then every agency whose data the app shows: its full name, site and page,
+/// each row a link to that page (Google Play: government information must name and link its source).
 class SourcesScreen extends StatelessWidget {
   const SourcesScreen({super.key});
 
-  /// Source ids as the API sends them; the BMA feeds share one entry.
-  static const shown = ['tmd', 'air4thai', 'bma-flood', 'thaiwater', 'usgs', 'nasa-firms', 'nasa-eonet', 'nasa-gibs'];
+  /// Source ids as the API sends them; BMA's flood and rain pages are separate links, so each has its own row.
+  static const shown = [
+    'tmd',
+    'air4thai',
+    'bma-flood',
+    'bma-rain',
+    'thaiwater',
+    'rid',
+    'usgs',
+    'nasa-firms',
+    'nasa-eonet',
+    'nasa-gibs',
+  ];
 
-  /// NASA product names are proper nouns, the same in every language.
-  static String name(AppLocalizations l, String id) => switch (id) {
-    'nasa-firms' => 'NASA FIRMS',
-    'nasa-eonet' => 'NASA EONET',
-    'nasa-gibs' => 'NASA GIBS',
-    _ => sourceName(l, id),
-  };
+  /// The agency's full name; NASA product names are proper nouns, the same in every language.
+  static String name(AppLocalizations l, String id) => sourceAgency(l, id) ?? sourceName(l, id);
 
   /// The credit line NASA asks for, kept in English as NASA words it; null for other agencies.
   static String? credit(String id) => switch (id) {
@@ -37,8 +44,10 @@ class SourcesScreen extends StatelessWidget {
   static String description(AppLocalizations l, String id) => switch (id) {
     'tmd' => l.sourcesDescTmd,
     'air4thai' => l.sourcesDescAir4thai,
-    'bma-flood' => l.sourcesDescBma,
+    'bma-flood' => l.sourcesDescBmaFlood,
+    'bma-rain' => l.sourcesDescBmaRain,
     'thaiwater' => l.sourcesDescThaiwater,
+    'rid' => l.sourcesDescRid,
     'usgs' => l.sourcesDescUsgs,
     'nasa-firms' => l.sourcesDescNasaFirms,
     'nasa-eonet' => l.sourcesDescNasaEonet,
@@ -57,6 +66,33 @@ class SourcesScreen extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.all(HwSize.space4),
           children: [
+            // First thing on the page: this app is not the government.
+            Semantics(
+              container: true,
+              child: Container(
+                key: const ValueKey('not-gov'),
+                padding: const EdgeInsets.all(HwSize.space4),
+                decoration: BoxDecoration(
+                  color: c.surfaceSunken,
+                  borderRadius: BorderRadius.circular(HwSize.radiusControl),
+                  border: Border.all(color: c.line),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  spacing: HwSize.space3,
+                  children: [
+                    Icon(Icons.info_outline_rounded, color: c.ink),
+                    Expanded(
+                      child: Text(
+                        l.disclaimerNotGov,
+                        style: text.bodyLarge!.copyWith(color: c.ink, fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: HwSize.space4),
             Text(l.sourcesIntro, style: text.bodyLarge!.copyWith(color: c.inkMuted)),
             const SizedBox(height: HwSize.space3),
             HwCard(
@@ -69,6 +105,7 @@ class SourcesScreen extends StatelessWidget {
                       name: name(l, id),
                       description: description(l, id),
                       credit: credit(id),
+                      domain: sourceDomain(id)!,
                       url: sourceUrl(id)!,
                     ),
                   ],
@@ -91,9 +128,18 @@ class SourcesScreen extends StatelessWidget {
 }
 
 class _SourceRow extends StatelessWidget {
-  const _SourceRow({required this.name, required this.description, required this.url, this.credit});
+  const _SourceRow({
+    required this.name,
+    required this.description,
+    required this.domain,
+    required this.url,
+    this.credit,
+  });
 
   final String name;
+
+  /// The site, shown under the name ("earthquake.tmd.go.th").
+  final String domain;
   final String description;
   final String? credit;
   final String url;
@@ -103,11 +149,10 @@ class _SourceRow extends StatelessWidget {
     final l = AppLocalizations.of(context);
     final c = context.hw;
     final text = Theme.of(context).textTheme;
-    final shownUrl = url.replaceFirst(RegExp(r'^https?://'), '');
     return Semantics(
       container: true,
       link: true,
-      label: [name, description, ?credit, shownUrl, l.sourcesOpenLink].join(', '),
+      label: [name, domain, description, ?credit, url, l.sourcesOpenLink].join(', '),
       onTap: () => openLink(context, url),
       excludeSemantics: true,
       child: InkWell(
@@ -125,11 +170,13 @@ class _SourceRow extends StatelessWidget {
                     spacing: 2,
                     children: [
                       Text(name, style: text.titleMedium),
+                      Text(domain, style: text.bodyMedium!.copyWith(fontWeight: FontWeight.w600)),
                       Text(description, style: text.bodyMedium!.copyWith(color: c.inkMuted)),
                       if (credit != null) Text(credit!, style: text.bodySmall!.copyWith(color: c.inkMuted)),
+                      // The full address, so it is plain where the link goes.
                       Text(
-                        shownUrl,
-                        style: text.bodySmall!.copyWith(
+                        url,
+                        style: text.bodyMedium!.copyWith(
                           color: c.accent,
                           decoration: TextDecoration.underline,
                           decorationColor: c.accent,

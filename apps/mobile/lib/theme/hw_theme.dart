@@ -86,52 +86,76 @@ class HwColors extends ThemeExtension<HwColors> {
 
   /// พื้นของทุกหน้าจอ (Scaffold) และพื้นที่รอบแผนที่
   final Color bg;
+
   /// การ์ด bottom sheet แถบเมนูล่าง (NavigationBar) และ dialog
   final Color surface;
+
   /// ช่องกรอก ราง gauge ตัวบ่งชี้เมนูที่เลือก และ badge ระดับปกติ ในธีมมืดสว่างกว่า surface เพื่อให้แยกได้
   final Color surfaceSunken;
+
   /// เส้นขอบการ์ดและเส้นคั่นรายการ (Divider) ไม่ใช่ขอบของปุ่มหรือช่องกรอก
   final Color line;
+
   /// ขอบของช่องกรอก ปุ่ม outlined สวิตช์ checkbox และแถบจับของ bottom sheet (3:1 บน surface)
   final Color lineControl;
+
   /// ข้อความหลักบน bg, surface และ surface-sunken; และพื้นปุ่ม FilledButton
   final Color ink;
+
   /// ป้ายกำกับ หน่วย แหล่งข้อมูล และเวลาอัปเดต บน bg, surface และ surface-sunken (≥4.5:1)
   final Color inkMuted;
+
   /// ข้อความบนพื้น ink (ปุ่ม FilledButton)
   final Color onInk;
+
   /// กรมท่าของแบรนด์ ใช้กับไอคอน แบรนด์ และ cover เท่านั้น ไม่ใช้ใน UI (ธีมมืดยกให้สว่างขึ้นเพื่อไม่ให้จมหายไปกับ bg)
   final Color brand;
+
   /// ลิงก์ วงแหวน focus และสถานะที่เลือก ไม่ใช่สีของความเสี่ยง
   final Color accent;
+
   /// ข้อความบนพื้น accent
   final Color onAccent;
+
   /// คลื่นน้ำในไอคอนและเส้นระดับน้ำบนแผนที่
   final Color water;
+
   /// สถานะปกติ: แท่ง meter ที่ว่าง และจุดบนแผนที่เมื่อไม่มีความเสี่ยง ปกติไม่ใช้สี
   final Color sevNormal;
+
   /// ระดับ 1 ระวัง: พื้นทึบบนแผนที่และแท่ง meter บน surface (3:1)
   final Color sevWatch;
+
   /// ข้อความระดับระวังบน sev-watch-soft และ surface
   final Color sevWatchInk;
+
   /// พื้น badge และ AlertCard ระดับระวัง
   final Color sevWatchSoft;
+
   /// ระดับ 2 ระวังมาก: พื้นทึบบนแผนที่และแท่ง meter บน surface (3:1)
   final Color sevWarning;
+
   /// ข้อความระดับระวังมากบน sev-warning-soft และ surface
   final Color sevWarningInk;
+
   /// พื้น badge และ AlertCard ระดับระวังมาก
   final Color sevWarningSoft;
+
   /// ระดับ 3 อันตราย: พื้นทึบบนแผนที่และแท่ง meter
   final Color sevDanger;
+
   /// ข้อความระดับอันตรายบน sev-danger-soft และ surface
   final Color sevDangerInk;
+
   /// พื้น badge และ AlertCard ระดับอันตราย
   final Color sevDangerSoft;
+
   /// ข้อความบนพื้นทึบ sev-watch และ sev-warning (เช่น ป้ายบนแผนที่)
   final Color onSev;
+
   /// ข้อความบนพื้นทึบ sev-danger
   final Color onSevDanger;
+
   /// ชั้นมืดหลัง dialog และ bottom sheet แบบเต็มจอ
   final Color scrim;
 
@@ -193,27 +217,27 @@ class HwColors extends ThemeExtension<HwColors> {
 
   /// Solid fill for map pins and gauge bars.
   Color solid(HwLevel l) => switch (l) {
-        HwLevel.normal => sevNormal,
-        HwLevel.watch => sevWatch,
-        HwLevel.warning => sevWarning,
-        HwLevel.danger => sevDanger,
-      };
+    HwLevel.normal => sevNormal,
+    HwLevel.watch => sevWatch,
+    HwLevel.warning => sevWarning,
+    HwLevel.danger => sevDanger,
+  };
 
   /// Text and meter bars on [soft] or surface.
   Color text(HwLevel l) => switch (l) {
-        HwLevel.normal => inkMuted,
-        HwLevel.watch => sevWatchInk,
-        HwLevel.warning => sevWarningInk,
-        HwLevel.danger => sevDangerInk,
-      };
+    HwLevel.normal => inkMuted,
+    HwLevel.watch => sevWatchInk,
+    HwLevel.warning => sevWarningInk,
+    HwLevel.danger => sevDangerInk,
+  };
 
   /// Background of badges and AlertCards.
   Color soft(HwLevel l) => switch (l) {
-        HwLevel.normal => surfaceSunken,
-        HwLevel.watch => sevWatchSoft,
-        HwLevel.warning => sevWarningSoft,
-        HwLevel.danger => sevDangerSoft,
-      };
+    HwLevel.normal => surfaceSunken,
+    HwLevel.watch => sevWatchSoft,
+    HwLevel.warning => sevWarningSoft,
+    HwLevel.danger => sevDangerSoft,
+  };
 
   @override
   HwColors copyWith() => this; // tokens are fixed; change tokens.json instead
@@ -252,15 +276,49 @@ class HwColors extends ThemeExtension<HwColors> {
 }
 
 TextTheme hwTextTheme(Color ink, Color muted) => TextTheme(
-    displaySmall: TextStyle(fontFamily: hwFontFamily, fontSize: 40, height: 1.100, fontWeight: FontWeight.w600, color: ink, letterSpacing: -0.80, fontFeatures: [FontFeature.tabularFigures()]),
-    headlineMedium: TextStyle(fontFamily: hwFontFamily, fontSize: 28, height: 1.143, fontWeight: FontWeight.w600, color: ink, letterSpacing: -0.28, fontFeatures: [FontFeature.tabularFigures()]),
-    headlineSmall: TextStyle(fontFamily: hwFontFamily, fontSize: 24, height: 1.417, fontWeight: FontWeight.w600, color: ink),
-    titleMedium: TextStyle(fontFamily: hwFontFamily, fontSize: 18, height: 1.556, fontWeight: FontWeight.w600, color: ink),
-    bodyLarge: TextStyle(fontFamily: hwFontFamily, fontSize: 16, height: 1.625, fontWeight: FontWeight.w400, color: ink),
-    bodyMedium: TextStyle(fontFamily: hwFontFamily, fontSize: 16, height: 1.625, fontWeight: FontWeight.w400, color: ink),
-    labelLarge: TextStyle(fontFamily: hwFontFamily, fontSize: 14, height: 1.571, fontWeight: FontWeight.w500, color: ink),
-    bodySmall: TextStyle(fontFamily: hwFontFamily, fontSize: 13, height: 1.538, fontWeight: FontWeight.w400, color: muted),
-    );
+  displaySmall: TextStyle(
+    fontFamily: hwFontFamily,
+    fontSize: 40,
+    height: 1.100,
+    fontWeight: FontWeight.w600,
+    color: ink,
+    letterSpacing: -0.80,
+    fontFeatures: [FontFeature.tabularFigures()],
+  ),
+  headlineMedium: TextStyle(
+    fontFamily: hwFontFamily,
+    fontSize: 28,
+    height: 1.143,
+    fontWeight: FontWeight.w600,
+    color: ink,
+    letterSpacing: -0.28,
+    fontFeatures: [FontFeature.tabularFigures()],
+  ),
+  headlineSmall: TextStyle(
+    fontFamily: hwFontFamily,
+    fontSize: 24,
+    height: 1.417,
+    fontWeight: FontWeight.w600,
+    color: ink,
+  ),
+  titleMedium: TextStyle(
+    fontFamily: hwFontFamily,
+    fontSize: 18,
+    height: 1.556,
+    fontWeight: FontWeight.w600,
+    color: ink,
+  ),
+  bodyLarge: TextStyle(fontFamily: hwFontFamily, fontSize: 16, height: 1.625, fontWeight: FontWeight.w400, color: ink),
+  bodyMedium: TextStyle(fontFamily: hwFontFamily, fontSize: 16, height: 1.625, fontWeight: FontWeight.w400, color: ink),
+  labelLarge: TextStyle(fontFamily: hwFontFamily, fontSize: 14, height: 1.571, fontWeight: FontWeight.w500, color: ink),
+  bodySmall: TextStyle(
+    fontFamily: hwFontFamily,
+    fontSize: 13,
+    height: 1.538,
+    fontWeight: FontWeight.w400,
+    color: muted,
+  ),
+);
 
 ThemeData hwTheme(Brightness brightness) {
   final c = brightness == Brightness.dark ? HwColors.dark : HwColors.light;
@@ -294,15 +352,21 @@ ThemeData hwTheme(Brightness brightness) {
     materialTapTargetSize: MaterialTapTargetSize.padded,
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
-        backgroundColor: c.ink, foregroundColor: c.onInk,
-        minimumSize: tap, shape: control, textStyle: text.labelLarge,
+        backgroundColor: c.ink,
+        foregroundColor: c.onInk,
+        minimumSize: tap,
+        shape: control,
+        textStyle: text.labelLarge,
         padding: const EdgeInsets.symmetric(horizontal: HwSize.space6),
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
-        foregroundColor: c.ink, side: BorderSide(color: c.lineControl),
-        minimumSize: tap, shape: control, textStyle: text.labelLarge,
+        foregroundColor: c.ink,
+        side: BorderSide(color: c.lineControl),
+        minimumSize: tap,
+        shape: control,
+        textStyle: text.labelLarge,
         padding: const EdgeInsets.symmetric(horizontal: HwSize.space6),
       ),
     ),
@@ -310,38 +374,61 @@ ThemeData hwTheme(Brightness brightness) {
       style: TextButton.styleFrom(foregroundColor: c.ink, minimumSize: tap, shape: control, textStyle: text.labelLarge),
     ),
     cardTheme: CardThemeData(
-      color: c.surface, elevation: 0, margin: EdgeInsets.zero,
+      color: c.surface,
+      elevation: 0,
+      margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(HwSize.radiusCard), side: BorderSide(color: c.line),
+        borderRadius: BorderRadius.circular(HwSize.radiusCard),
+        side: BorderSide(color: c.line),
       ),
     ),
     dividerTheme: DividerThemeData(color: c.line, thickness: 1, space: 1),
     navigationBarTheme: NavigationBarThemeData(
-      height: 80, backgroundColor: c.surface, indicatorColor: c.surfaceSunken, elevation: 0,
+      height: 80,
+      backgroundColor: c.surface,
+      indicatorColor: c.surfaceSunken,
+      elevation: 0,
       labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-      labelTextStyle: WidgetStateProperty.resolveWith((s) => (text.bodySmall ?? const TextStyle()).copyWith(
-            color: s.contains(WidgetState.selected) ? c.ink : c.inkMuted,
-            fontWeight: s.contains(WidgetState.selected) ? FontWeight.w600 : FontWeight.w500,
-          )),
-      iconTheme: WidgetStateProperty.resolveWith((s) => IconThemeData(
-            size: 24, color: s.contains(WidgetState.selected) ? c.ink : c.inkMuted,
-          )),
+      labelTextStyle: WidgetStateProperty.resolveWith(
+        (s) => (text.bodySmall ?? const TextStyle()).copyWith(
+          color: s.contains(WidgetState.selected) ? c.ink : c.inkMuted,
+          fontWeight: s.contains(WidgetState.selected) ? FontWeight.w600 : FontWeight.w500,
+        ),
+      ),
+      iconTheme: WidgetStateProperty.resolveWith(
+        (s) => IconThemeData(size: 24, color: s.contains(WidgetState.selected) ? c.ink : c.inkMuted),
+      ),
     ),
     badgeTheme: BadgeThemeData(backgroundColor: c.sevDanger, textColor: c.onSevDanger),
     bottomSheetTheme: BottomSheetThemeData(
-      backgroundColor: c.surface, modalBackgroundColor: c.surface, showDragHandle: true,
-      dragHandleColor: c.lineControl, dragHandleSize: const Size(32, 4),
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(HwSize.radiusSheet))),
+      backgroundColor: c.surface,
+      modalBackgroundColor: c.surface,
+      showDragHandle: true,
+      dragHandleColor: c.lineControl,
+      dragHandleSize: const Size(32, 4),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(HwSize.radiusSheet)),
+      ),
     ),
     dialogTheme: DialogThemeData(
       backgroundColor: c.surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(HwSize.radiusSheet)),
     ),
     inputDecorationTheme: InputDecorationTheme(
-      filled: true, fillColor: c.surfaceSunken,
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(HwSize.radiusControl), borderSide: BorderSide(color: c.lineControl)),
-      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(HwSize.radiusControl), borderSide: BorderSide(color: c.lineControl)),
-      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(HwSize.radiusControl), borderSide: BorderSide(color: c.accent, width: 2)),
+      filled: true,
+      fillColor: c.surfaceSunken,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(HwSize.radiusControl),
+        borderSide: BorderSide(color: c.lineControl),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(HwSize.radiusControl),
+        borderSide: BorderSide(color: c.lineControl),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(HwSize.radiusControl),
+        borderSide: BorderSide(color: c.accent, width: 2),
+      ),
     ),
     focusColor: c.accent.withValues(alpha: 0.12),
     checkboxTheme: CheckboxThemeData(

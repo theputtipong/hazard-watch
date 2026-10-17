@@ -15,6 +15,11 @@
     "en": "Turn this on and we'll tell you when something near home needs care."
   },
   "nav.home": { "th": "หน้าแรก", "en": "Home" },
+  "dam.dataDate": { "th": "ข้อมูลวันที่ {date}", "en": "Data for {date}" },
+  "dam.credit": {
+    "th": "ข้อมูลเขื่อนจาก ThaiWater และ กรมชลประทาน",
+    "en": "Dam data from ThaiWater and the Royal Irrigation Department (RID)"
+  },
   "nav.map": { "th": "แผนที่", "en": "Map" },
   "nav.alerts": { "th": "แจ้งเตือน", "en": "Alerts" },
   "nav.settings": { "th": "ตั้งค่า", "en": "Settings" },
@@ -27,6 +32,7 @@
     "en": "The server doesn't support this app version yet"
   },
   "home.alertsMeta": { "th": "อัปเดต {ago}", "en": "Updated {ago}" },
+  "home.allSources": { "th": "แหล่งข้อมูลทั้งหมด", "en": "All data sources" },
   "alerts.empty": { "th": "ตอนนี้ไม่มีการแจ้งเตือนในเขตนี้", "en": "No alerts for this district right now" },
   "alerts.quakeAt": { "th": "เกิดเมื่อ {time}", "en": "Happened at {time}" },
   "alerts.notifyOff": {
@@ -93,5 +99,8 @@
   "location.turnOn": { "th": "เปิดตำแหน่ง", "en": "Turn on location" },
   "location.blocked": { "th": "แอปถูกปิดสิทธิ์ใช้ตำแหน่ง เปิดได้ในการตั้งค่าแอป หรือเลือกเขต/อำเภอเอง", "en": "Location is blocked for this app. Allow it in app settings, or pick a district" },
   "location.openSettings": { "th": "เปิดการตั้งค่าแอป", "en": "Open app settings" },
-  "location.timeout": { "th": "หาตำแหน่งไม่ทัน ลองใหม่ หรือเลือกเขต/อำเภอเองด้านล่าง", "en": "Couldn't find your location in time. Try again, or pick a district below" }
+  "location.timeout": { "th": "หาตำแหน่งไม่ทัน ลองใหม่ หรือเลือกเขต/อำเภอเองด้านล่าง", "en": "Couldn't find your location in time. Try again, or pick a district below" },
+  "sources.desc.bmaFlood": { "th": "น้ำท่วมบนถนนในกรุงเทพฯ", "en": "Flooding on Bangkok roads" },
+  "sources.desc.bmaRain": { "th": "ปริมาณฝนจากเครื่องวัดฝนในกรุงเทพฯ", "en": "Rainfall from Bangkok rain gauges" },
+  "map.eventPage": { "th": "หน้าเหตุการณ์ · {domain}", "en": "Event page · {domain}" }
 }

@@ -18,8 +18,12 @@ export const INGEST = {
   runnerWorkflow: 'fetch-feeds.yml',
   /** Cloudflare sometimes fires a cron twice (~30 s apart); skip dispatch if a run started this recently. */
   runnerDispatchDedupeMinutes: 5,
-  /** Hours between fetches; the BMA data agreement allows at most one CCTV list fetch a day. */
-  runnerFeedEveryHours: { cctv: 24 } as Partial<Record<'flood' | 'rain' | 'waterlevel' | 'radar' | 'cctv', number>>,
+  /**
+   * Hours between fetches; the BMA data agreement allows at most one CCTV list fetch a day. ThaiWater dam data is
+   * daily and `analyst/dam` is ~1 MB, so every 6 h is enough (a skipped feed keeps its stored copy and lastOkAt).
+   * Each value + runner lag must stay under the feed's maxStaleMinutes in tools/monitor/config.json (test/config.test.ts).
+   */
+  runnerFeedEveryHours: { cctv: 24, dams: 6 } as Partial<Record<'flood' | 'rain' | 'waterlevel' | 'radar' | 'cctv' | 'dams', number>>,
   /** A relayed BMA feed newer than this is not rewritten (saves KV writes: free plan 1,000/day). */
   relayFreshMinutes: RELAY_FRESH_MINUTES,
   /** /ingest/runner keeps a relayed flood/rain copy this recent instead of marking the feed failing. */

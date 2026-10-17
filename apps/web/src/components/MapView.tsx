@@ -27,12 +27,14 @@ import {
 import { t, type Lang } from '@hw/core/i18n';
 import { WEB } from '@/config';
 import { radarImageUrl } from '@/lib/api';
+import type { DamReading } from '@/lib/derive';
 import type { Layers } from '@/lib/layers';
+import { damName, DamFigures, DamSourceLink, DamStorage } from './DamCard';
 import { openCamera, safeCameraUrl } from '@/lib/openCamera';
 import type { MapPalette } from '@/lib/prefs';
 import type { ZoneView } from '@/lib/useZones';
 import { RadarDrift } from './Wind';
-import { cctvIcon, eventIcon, floodIcon, LEGEND_GLYPH, pm25Icon, waterIcon, youIcon } from './mapIcons';
+import { cctvIcon, damIcon, eventIcon, floodIcon, LEGEND_GLYPH, pm25Icon, waterIcon, youIcon } from './mapIcons';
 import { gibsDataDate, NASA_RASTER_IDS, rampGradient, toLeaflet, useNasaLayers, type NasaLayerState } from '@/lib/nasaLayers';
 import { zoneLabel } from '@/lib/zoneText';
 import type { VectorBaseMap } from '@/lib/vectorBaseMap';
@@ -59,9 +61,11 @@ interface Props {
   fires?: SourceResult<FireHotspot> | null;
   /** runner.feeds.events from /v1/snapshot (open NASA EONET events). */
   events?: SourceResult<NasaEvent> | null;
+  /** ThaiWater dams (display only), already read into DamReading; `km` is unused here. */
+  dams?: DamReading[];
 }
 
-const Z = { event: 50, cctv: 100, pm25: 200, water: 250, flood: 300, you: 1000 } as const;
+const Z = { event: 50, dam: 80, cctv: 100, pm25: 200, water: 250, flood: 300, you: 1000 } as const;
 const FLOOD_RANK: Record<Severity, number> = { ok: 0, watch: 1, warn: 2, danger: 3 };
 const fade = (o: Observation) => (isStale(o.observedAt, DEFAULT_CONFIG) ? WEB.map.staleOpacity : 1);
 
@@ -71,7 +75,7 @@ const WORLD_BOUNDS: L.LatLngBoundsExpression = [
   [85.05, 100_000],
 ];
 
-export default function MapView({ lang, center, located, onLocate, layers, radarId, radarTime, radarFocus, weather, floodPoints, pmStations, cameras, waterStations, zones, palette, dark, fires, events }: Props) {
+export default function MapView({ lang, center, located, onLocate, layers, radarId, radarTime, radarFocus, weather, floodPoints, pmStations, cameras, waterStations, zones, palette, dark, fires, events, dams = [] }: Props) {
   const bounds = RADARS[radarId]?.bounds;
   // First view: GPS fix, else the picked area, else Bangkok. Never the country centre (regionFor(null)).
   const [start] = useState(() => startView(center, located, zones.selected ?? zones.path.at(-1) ?? null));
@@ -108,6 +112,9 @@ export default function MapView({ lang, center, located, onLocate, layers, radar
         {nasa.firms && <FireLayer lang={lang} items={fires?.items ?? []} zoom={zoom} />}
         {nasa.firms && <Credit text={NASA_ATTRIBUTION.firms} />}
         {nasa.events && <Credit text={NASA_ATTRIBUTION.eonet} />}
+
+        {layers.dam && <DamLayer lang={lang} dams={dams} palette={palette} />}
+        {layers.dam && <Credit text={t('dam.credit', lang)} />}
 
         {showCams &&
           cameras.map((c) => (
@@ -454,11 +461,11 @@ function TimeLine({ lang, iso }: { lang: Lang; iso: string }) {
 }
 
 /** Tiny legend symbols. Their 7–8px labels are part of the icon artwork, the only sizes outside the type scale. */
-function Glyph({ bg, paths, size = 18, children }: { bg: string; paths?: string; size?: number; children?: ReactNode }) {
+function Glyph({ bg, fg, paths, size = 18, children }: { bg: string; fg?: string; paths?: string; size?: number; children?: ReactNode }) {
   return (
     <span
       className="grid shrink-0 place-items-center rounded-full border-2 border-white shadow-sm"
-      style={{ width: size, height: size, background: bg }}
+      style={{ width: size, height: size, background: bg, color: fg }}
       aria-hidden="true"
     >
       {paths ? <svg width={size * 0.62} height={size * 0.62} viewBox="0 0 24 24" dangerouslySetInnerHTML={{ __html: paths }} /> : children}
@@ -533,6 +540,22 @@ function Legend({ lang, layers, palette, nasa }: { lang: Lang; layers: Layers; p
               <Glyph bg={WEB.map.cctvColor} paths={LEGEND_GLYPH.camera} />
               {t('layer.cctv', lang)}
             </span>
+          )}
+          {layers.dam && (
+            <>
+              <span className={row}>
+                <Glyph bg={c.ok} fg="#fff" paths={LEGEND_GLYPH.dam} />
+                {t('layer.dam', lang)}
+              </span>
+              <span className={row}>
+                <Glyph bg={c.watch} fg="#fff" paths={LEGEND_GLYPH.dam} size={14} />
+                {t('dam.status.high', lang)}
+              </span>
+              <span className={row}>
+                <Glyph bg={c.danger} fg="#fff" paths={LEGEND_GLYPH.dam} size={14} />
+                {t('dam.status.over', lang)}
+              </span>
+            </>
           )}
           {nasa.firms && (
             <span className={row}>
@@ -664,6 +687,46 @@ function FireLayer({ lang, items, zoom }: { lang: Lang; items: FireHotspot[]; zo
           </PopupBody>
         </Popup>
       )}
+    </>
+  );
+}
+
+/**
+ * ThaiWater dams: large dams get bigger pins than medium reservoirs, fill by damSeverity. Display only, so no alert
+ * badge; the marker title and popup say the status in words.
+ */
+function DamLayer({ lang, dams, palette }: { lang: Lang; dams: DamReading[]; palette: MapPalette }) {
+  return (
+    <>
+      {dams.map((d) => {
+        const name = damName(d, lang);
+        const label = `${t(`dam.size.${d.size}`, lang)} ${name}: ${t('dam.storagePct', lang, { pct: Math.round(d.storagePct) })}, ${t(`dam.status.${d.status}`, lang)}`;
+        return (
+          <Marker
+            key={d.id}
+            position={[d.location.lat, d.location.lng]}
+            icon={damIcon(d.size, d.severity, palette.severity)}
+            zIndexOffset={Z.dam + (d.size === 'large' ? 10 : 0)}
+            opacity={d.stale ? WEB.map.staleOpacity : 1}
+            title={label}
+            alt={label}
+          >
+            <Popup>
+              <PopupBody title={name}>
+                <div className="flex min-w-[220px] flex-col gap-1.5">
+                  <span className="text-caption text-ink-muted">
+                    {t(`dam.size.${d.size}`, lang)} · {d.province}
+                  </span>
+                  <DamStorage lang={lang} dam={d} name={name} />
+                  <DamFigures lang={lang} dam={d} />
+                  <span className="text-caption text-ink-muted">{t('dam.note', lang)}</span>
+                  <DamSourceLink lang={lang} />
+                </div>
+              </PopupBody>
+            </Popup>
+          </Marker>
+        );
+      })}
     </>
   );
 }

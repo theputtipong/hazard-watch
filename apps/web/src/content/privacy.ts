@@ -3,7 +3,7 @@ import type { Lang } from '@hw/core/i18n';
 /** PDPA notice. Draft: have it legally reviewed before a public launch. */
 export const privacy: Record<Lang, { updated: string; sections: { heading: string; body: string[] }[] }> = {
   th: {
-    updated: 'ปรับปรุงล่าสุด 16 ตุลาคม 2569',
+    updated: 'ปรับปรุงล่าสุด 17 ตุลาคม 2569',
     sections: [
       {
         heading: 'สรุปสั้น ๆ',
@@ -44,7 +44,8 @@ export const privacy: Record<Lang, { updated: string; sections: { heading: strin
           'ข้อมูลสภาพอากาศและลมมาจาก Open-Meteo ซึ่งได้รับพิกัดแบบปัดเศษ (ประมาณ 1 กม.) และหมายเลข IP ของเซิร์ฟเวอร์เรา ไม่ใช่ของคุณ',
           'แผนที่พื้นหลังโหลดจาก OpenFreeMap (บริการสาธารณะ) ซึ่งจะเห็นหมายเลข IP ของคุณและบริเวณแผนที่ที่คุณเปิดดู (ซึ่งอาจอยู่ใกล้ที่ที่คุณอยู่) แต่ไม่ได้รับพิกัด GPS ของคุณ และไม่ใช้คุกกี้',
           'ชั้นแผนที่ดาวเทียมของ NASA (เช่น ฝน น้ำท่วม ควันและฝุ่น ภาพถ่ายดาวเทียม) ปิดไว้จนกว่าคุณจะเปิดเอง เมื่อเปิด เครื่องของคุณจะโหลดภาพจากบริการ GIBS ของ NASA โดยตรง ซึ่ง NASA จะได้รับหมายเลข IP ของคุณและบริเวณแผนที่ที่คุณเปิดดู โดยไม่ผ่านเซิร์ฟเวอร์ของเรา',
-          'ข้อมูลจุดความร้อน (NASA FIRMS) และภัยธรรมชาติทั่วโลก (NASA EONET) เซิร์ฟเวอร์ของเราเป็นผู้ดึงมาจาก NASA โดยไม่ส่งข้อมูลใดเกี่ยวกับคุณไป ข้อมูล NASA ใช้แสดงผลเท่านั้น ไม่ใช่ประกาศเตือนภัยทางการ',
+          'ข้อมูลจุดความร้อน (NASA FIRMS) และภัยธรรมชาติทั่วโลก (NASA EONET) เซิร์ฟเวอร์ของเราเป็นผู้ดึงมาจาก NASA โดยไม่ส่งข้อมูลใดเกี่ยวกับคุณไป ข้อมูล NASA ใช้แสดงผลเท่านั้น ไม่ใช่ประกาศเตือนภัยของหน่วยงาน ตรวจคำเตือนจากเว็บไซต์ของหน่วยงานเอง',
+          'ข้อมูลน้ำในเขื่อนและอ่างเก็บน้ำ (ข้อมูลของกรมชลประทาน เผยแพร่ผ่าน ThaiWater ของ สสน.) เซิร์ฟเวอร์ของเราเป็นผู้ดึงมา โดยไม่ส่งข้อมูลใดเกี่ยวกับคุณไป ข้อมูลเขื่อนใช้แสดงผลเท่านั้น ไม่ใช้ส่งการแจ้งเตือน',
           'การแจ้งเตือนถูกส่งผ่านบริการของผู้ผลิตเบราว์เซอร์ เช่น Google, Apple, Mozilla, Microsoft',
           'เราไม่ขายหรือแบ่งปันข้อมูลเพื่อการโฆษณา และไม่มีตัวติดตาม (tracker)',
         ],
@@ -60,7 +61,7 @@ export const privacy: Record<Lang, { updated: string; sections: { heading: strin
         heading: 'ส่วนขยายเบราว์เซอร์ (Chrome/Edge)',
         body: [
           'การตั้งค่า เขต/อำเภอที่เลือก และตำแหน่งโดยประมาณ เก็บไว้ในพื้นที่จัดเก็บของส่วนขยายบนเครื่องของคุณเท่านั้น',
-          'ถ้าคุณใช้ตำแหน่ง GPS ส่วนขยายหาเขต/อำเภอบนเครื่องของคุณ ไม่ได้ส่งพิกัดไปเพื่อการนี้ จุดความร้อนและพายุของ NASA ในส่วนขยายมาจาก API ของเรา ส่วนขยายไม่ได้ติดต่อ NASA โดยตรง',
+          'ถ้าคุณใช้ตำแหน่ง GPS ส่วนขยายหาเขต/อำเภอบนเครื่องของคุณ ไม่ได้ส่งพิกัดไปเพื่อการนี้ จุดความร้อนและพายุของ NASA ในส่วนขยายมาจาก API ของเรา ส่วนขยายไม่ได้ติดต่อ NASA โดยตรง ข้อมูลเขื่อนในส่วนขยายก็มาจาก API ของเรา เมื่อคุณกดลิงก์ ThaiWater ในการ์ดเขื่อน ส่วนขยายเปิดเว็บไซต์ ThaiWater ในแท็บใหม่ โดยไม่ได้ส่งข้อมูลใดไปให้',
           'ส่วนขยายอ่านข้อมูลสาธารณะจาก API ของเราทุก 15 นาที และส่งพิกัดแบบปัดเศษ (ประมาณ 1 กม.) เฉพาะเพื่อดูสภาพอากาศ',
           'เมื่อข้อมูลน้ำท่วมและฝนของ กทม. บนเซิร์ฟเวอร์ของเราเก่ากว่า 10 นาที ส่วนขยายอาจโหลดข้อมูลสาธารณะชุดนี้จากเว็บไซต์ของ กทม. (ซึ่งจะเห็นหมายเลข IP ของคุณ) แล้วส่งต่อให้ API ของเราโดยไม่ดัดแปลงเพื่อให้ผู้ใช้ทุกคนเห็น โดยไม่แนบข้อมูลส่วนตัว ตำแหน่ง เขต/อำเภอ หรือการตั้งค่าของคุณ เซิร์ฟเวอร์รับข้อมูลนี้เฉพาะจากหมายเลข IP ในประเทศไทย และไม่บันทึกหมายเลข IP ไว้',
           'ไม่มีบัญชีผู้ใช้ และเราไม่เก็บข้อมูลใดของผู้ใช้ส่วนขยายไว้ที่เซิร์ฟเวอร์ การถอนการติดตั้งส่วนขยายจะลบข้อมูลทั้งหมด',
@@ -83,7 +84,7 @@ export const privacy: Record<Lang, { updated: string; sections: { heading: strin
     ],
   },
   en: {
-    updated: 'Last updated 16 October 2026',
+    updated: 'Last updated 17 October 2026',
     sections: [
       {
         heading: 'In short',
@@ -124,7 +125,8 @@ export const privacy: Record<Lang, { updated: string; sections: { heading: strin
           'Weather and wind come from Open-Meteo, which receives coordinates rounded to about 1 km and our server’s IP address, not yours.',
           'The background map is loaded from OpenFreeMap (a public service), which sees your IP address and the map area you view (which may be near where you are), but not your GPS coordinates, and sets no cookies.',
           'NASA satellite map layers (e.g. rain, flooding, smoke and haze, satellite photo) are off until you turn them on. When you do, your device loads the images straight from NASA’s GIBS service, so NASA receives your IP address and the map area you view; our server is not involved.',
-          'Fire hotspot (NASA FIRMS) and worldwide natural event (NASA EONET) data are fetched from NASA by our server; nothing about you is sent. NASA data is for display only and is not an official warning.',
+          'Fire hotspot (NASA FIRMS) and worldwide natural event (NASA EONET) data are fetched from NASA by our server; nothing about you is sent. NASA data is for display only and is not an agency warning; check warnings on each agency’s own website.',
+          'Dam and reservoir data (from the Royal Irrigation Department, published through HII’s ThaiWater) are fetched by our server; nothing about you is sent. Dam data is for display only and never triggers notifications.',
           'Notifications are delivered through browser vendors’ push services, e.g. Google, Apple, Mozilla, Microsoft.',
           'We do not sell or share data for advertising and use no trackers.',
         ],
@@ -140,7 +142,7 @@ export const privacy: Record<Lang, { updated: string; sections: { heading: strin
         heading: 'Browser extension (Chrome/Edge)',
         body: [
           'Your settings, chosen district and approximate location stay in the extension’s storage on your device.',
-          'If you use GPS, the extension finds your district on your device; it does not send coordinates for this. NASA fire and storm data in the extension come from our API; the extension does not contact NASA directly.',
+          'If you use GPS, the extension finds your district on your device; it does not send coordinates for this. NASA fire and storm data in the extension come from our API; the extension does not contact NASA directly. Dam data in the extension also comes from our API. If you click the ThaiWater link on the dam card, the extension opens the ThaiWater website in a new tab without sending it anything.',
           'The extension reads public data from our API every 15 minutes and sends coordinates rounded to about 1 km only to look up the weather.',
           'When our server’s copy of Bangkok (BMA) flood and rain data is more than 10 minutes old, the extension may load that public data from the BMA website (which sees your IP address) and pass it on unchanged to our API so every user sees it. Nothing about you, your location, your district or your settings is attached; our server accepts this data only from Thai IP addresses and does not keep your IP address.',
           'There is no account, and we store nothing about extension users on our server. Uninstalling the extension deletes everything.',

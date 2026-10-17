@@ -35,6 +35,28 @@ abstract final class CoreConfig {
   /// USGS and TMD often report the same event: reports this close in time and space are one.
   static const quakeDuplicateWithinSeconds = 90;
   static const quakeDuplicateWithinKm = 50.0;
+
+  /// DEFAULT_CONFIG.dam: ThaiWater's own storage bands (% of normal storage) and the usable-water floor.
+  static const damOverPct = 100.0;
+  static const damHighPct = 80.0;
+  static const damLowPct = 50.0;
+  static const damCriticalPct = 30.0;
+  static const damCriticalUsablePct = 30.0;
+
+  /// damStale in apps/ingest/src/area.ts: the dams feed's 36 h limit plus the report day (observedAt is its start).
+  static const damStaleHours = 36 + 24;
+}
+
+/// damStatus() in packages/core/src/severity.ts, for dam pins on the map (the snapshot carries no status).
+String damStatusOf(double storagePct, double? usablePct) {
+  if (storagePct > CoreConfig.damOverPct) return 'over';
+  if (storagePct > CoreConfig.damHighPct) return 'high';
+  if (usablePct != null && usablePct.isFinite) {
+    if (usablePct <= CoreConfig.damCriticalUsablePct) return 'critical';
+  } else if (storagePct <= CoreConfig.damCriticalPct) {
+    return 'critical';
+  }
+  return storagePct > CoreConfig.damLowPct ? 'normal' : 'low';
 }
 
 const severities = ['ok', 'watch', 'warn', 'danger'];

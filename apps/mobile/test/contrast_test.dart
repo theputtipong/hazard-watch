@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hazardwatch/api/models.dart';
 import 'package:hazardwatch/l10n/gen/app_localizations.dart';
 import 'package:hazardwatch/map/base_map.dart';
 import 'package:hazardwatch/map/map_markers.dart';
 import 'package:hazardwatch/map/nasa_map.dart';
+import 'package:hazardwatch/screens/map_screen.dart';
+import 'package:hazardwatch/screens/sources_screen.dart';
 import 'package:hazardwatch/theme/hw_app_theme.dart';
+import 'package:hazardwatch/widgets/dam_card.dart';
 import 'package:hazardwatch/widgets/river_gauge.dart';
 import 'package:hazardwatch/widgets/severity.dart';
+import 'package:hazardwatch/widgets/source_link.dart';
 
 /// WCAG 2.1 AA: 4.5:1 for text (1.4.3), 3:1 for meaningful graphics and control parts (1.4.11).
 const _text = 4.5;
@@ -40,7 +45,7 @@ Future<BuildContext> _pump(WidgetTester tester, Widget child, Brightness brightn
     ),
   );
   await tester.pumpAndSettle();
-  return tester.element(find.byType(Scaffold));
+  return tester.element(find.byType(Scaffold).first);
 }
 
 Color _textColour(WidgetTester tester, Finder within) =>
@@ -197,6 +202,71 @@ void main() {
         expect(_ratio(fireColor(ctx).withValues(alpha: 0.9), map), greaterThanOrEqualTo(_nonText), reason: 'fire dot');
       });
 
+      testWidgets('dam status words, bars and pins read in every status', (tester) async {
+        DamReading dam(DamStatus status) => DamReading(
+          id: status.name,
+          name: const LocalizedText('เขื่อน', 'Dam'),
+          size: DamSize.large,
+          km: 12,
+          storagePct: 90,
+          usablePct: 40,
+          storageMcm: 600,
+          capacityMcm: 960,
+          inflowMcm: 4,
+          releaseMcm: 1,
+          status: status,
+          province: 'ลพบุรี',
+          basin: null,
+          observedAt: DateTime.utc(2026, 10, 4, 17),
+          stale: false,
+        );
+        await _pump(
+          tester,
+          SingleChildScrollView(
+            child: Column(
+              children: [
+                for (final s in DamStatus.values) DamCard(dams: [dam(s)]),
+              ],
+            ),
+          ),
+          brightness,
+          cvd,
+        );
+        final ctx = tester.element(find.byType(DamCard).first);
+        final c = ctx.hw;
+        final map = brightness == Brightness.dark ? _darkMap : _lightMap;
+        for (final s in DamStatus.values) {
+          // The status words on the card (and the map sheet, also on surface).
+          final fg = tester.widget<Text>(find.byKey(ValueKey('dam-status:${s.name}'))).style!.color!;
+          expect(fg, damStatusColor(c, s));
+          expect(contrastRatio(fg, c.surface), greaterThanOrEqualTo(_text), reason: 'dam $s text on card');
+          expect(
+            contrastRatio(gaugeBarColor(c, s.level), c.surfaceSunken),
+            greaterThanOrEqualTo(_nonText),
+            reason: 'dam $s bar on its track',
+          );
+          // Pins: the ring carries the shape on either base map, the label reads on the fill.
+          final fill = c.solid(s.level);
+          expect(contrastRatio(damPinRing(c), map), greaterThanOrEqualTo(_nonText), reason: 'dam pin ring on map');
+          expect(contrastRatio(onFill(fill), fill), greaterThanOrEqualTo(_text), reason: 'dam $s pin label');
+        }
+        // Size, distance, day and the display-only note: muted text on the card.
+        final muted = tester.widget<Text>(find.text('ข้อมูลประกอบ ไม่ใช่การแจ้งเตือน').first).style!.color!;
+        expect(contrastRatio(muted, c.surface), greaterThanOrEqualTo(_text), reason: 'dam note');
+      });
+
+      testWidgets('dam legend text reads on its panel over any base map', (tester) async {
+        await _pump(tester, const DamLegend(), brightness, cvd);
+        final ctx = tester.element(find.byType(DamLegend));
+        final c = ctx.hw;
+        final panel = c.surface.withValues(alpha: MapConfig.creditPanelAlpha);
+        final fg = tester.widget<Text>(find.text('น้ำมาก')).style!.color!;
+        for (final under in [_lightMap, _darkMap, Colors.black, Colors.white]) {
+          final bg = Color.alphaBlend(panel, under);
+          expect(contrastRatio(fg, bg), greaterThanOrEqualTo(_text), reason: 'dam legend $fg over $under');
+        }
+      });
+
       testWidgets('map credit text reads on its panel over any base map', (tester) async {
         await _pump(tester, const SizedBox(width: 400, height: 80, child: BaseMapAttribution()), brightness, cvd);
         final panel = tester
@@ -209,6 +279,35 @@ void main() {
           final bg = Color.alphaBlend(panel, under);
           expect(contrastRatio(fg, bg), greaterThanOrEqualTo(_text), reason: 'credit $fg on panel over $under');
         }
+      });
+
+      testWidgets('map data credit strip: plain text and every link read on its solid panel', (tester) async {
+        await _pump(
+          tester,
+          const SizedBox(width: 400, child: MapDataCredit(sourceIds: ['bma-flood', 'thaiwater', 'tmd', 'usgs', 'rid'])),
+          brightness,
+          cvd,
+        );
+        final c = tester.element(find.byType(MapDataCredit)).hw;
+        // The panel under the map is opaque surface (map_screen.dart _MapCredits).
+        final muted = tester.widget<Text>(find.text('ข้อมูลบนแผนที่: ')).style!.color!;
+        expect(contrastRatio(muted, c.surface), greaterThanOrEqualTo(_text), reason: 'credit label');
+        final links = find.descendant(of: find.byType(SourceLink), matching: find.byType(Text));
+        expect(links, findsNWidgets(5));
+        for (final link in tester.widgetList<Text>(links)) {
+          final fg = link.style!.color!;
+          expect(_ratio(fg, c.surface), greaterThanOrEqualTo(_text), reason: '${link.data}: $fg on ${c.surface}');
+          expect(link.style!.decoration, TextDecoration.underline);
+        }
+      });
+
+      testWidgets('the not-government note at the top of the sources page reads on its box', (tester) async {
+        await _pump(tester, const SizedBox(width: 400, height: 800, child: SourcesScreen()), brightness, cvd);
+        final c = tester.element(find.byType(SourcesScreen)).hw;
+        final note = tester.widget<Text>(
+          find.descendant(of: find.byKey(const ValueKey('not-gov')), matching: find.byType(Text)),
+        );
+        expect(contrastRatio(note.style!.color!, c.surfaceSunken), greaterThanOrEqualTo(_text));
       });
 
       testWidgets('every ColorScheme container pair M3 widgets fall back on reads as text', (tester) async {

@@ -2,7 +2,8 @@
 export const SEVERITIES = ['ok', 'watch', 'warn', 'danger'] as const;
 export type Severity = (typeof SEVERITIES)[number];
 
-export type HazardKind = 'weather' | 'rain' | 'flood' | 'waterlevel' | 'pm25' | 'quake';
+/** 'dam' is display-only: never pushed, zoned or used in district alerts. */
+export type HazardKind = 'weather' | 'rain' | 'flood' | 'waterlevel' | 'pm25' | 'quake' | 'dam';
 
 export interface LatLng {
   lat: number;
@@ -28,6 +29,38 @@ export interface Observation {
   offline?: boolean;
   extra?: Record<string, string | number | boolean | null>;
 }
+
+/** Status label for a dam; see damStatus(). Bands come from ThaiWater's own `dam.setting` scale. */
+export const DAM_STATUSES = ['critical', 'low', 'normal', 'high', 'over'] as const;
+export type DamStatus = (typeof DAM_STATUSES)[number];
+
+/**
+ * `Observation.extra` for kind 'dam' (source 'thaiwater', RID rows of ThaiWater `analyst/dam`).
+ * The Observation itself carries: value = storage as % of normal capacity (`dam_storage_percent`, % รนก.),
+ * unit = '%', observedAt = `dam_date` (daily, date only, Asia/Bangkok), severity = damSeverity().
+ * Volumes are million m³ (MCM, ล้าน ลบ.ม.); flows are MCM per day. Medium reservoirs have a Thai name only
+ * (`name.en` repeats the Thai) and often lack inflow/release (null).
+ */
+export type DamExtra = {
+  /** Water stored now, MCM (`dam_storage`). */
+  storageMcm: number | null;
+  /** Normal storage capacity, MCM (`normal_storage`, รนก.). */
+  capacityMcm: number | null;
+  /** Usable water as % of normal storage (usable ÷ `normal_storage`, ThaiWater's `dam_uses_water_percent`); drives the 'critical' status. */
+  usablePct: number | null;
+  /** Inflow, MCM/day (`dam_inflow`). */
+  inflowMcm: number | null;
+  /** Release, MCM/day (`dam_released`). */
+  releaseMcm: number | null;
+  /** 'large' = `dam_daily` (35 RID dams), 'medium' = `dam_medium` (current RID rows). */
+  size: 'large' | 'medium';
+  /** Basin name in Thai, when given. */
+  basin?: string | null;
+  /** Province name in Thai. */
+  province: string;
+  /** Data owner as ThaiWater reports it, e.g. 'กรมชลประทาน'. */
+  agency: string;
+};
 
 export interface Earthquake {
   id: string;
@@ -154,5 +187,7 @@ export interface DashboardSnapshot {
     cctv?: SourceResult<CctvCamera>;
     fires?: SourceResult<FireHotspot>;
     events?: SourceResult<NasaEvent>;
+    /** Daily ThaiWater dam storage; display-only. `extra` is a DamExtra. */
+    dams?: SourceResult<Observation>;
   }> | null;
 }

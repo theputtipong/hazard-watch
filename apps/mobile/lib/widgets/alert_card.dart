@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../alerts/alert_sources.dart';
 import '../format.dart';
 import '../l10n/gen/app_localizations.dart';
 import '../screens/sources_screen.dart';
@@ -7,15 +8,7 @@ import '../theme/hw_app_theme.dart';
 import 'severity.dart';
 import 'source_link.dart';
 
-/// Source ids behind an alert of [kind]: each reading kind comes from one adapter in packages/sources.
-List<String> alertSourceIds(String kind) => switch (kind) {
-  'flood' => const ['bma-flood'],
-  'rain' => const ['bma-rain'],
-  'water' => const ['thaiwater'],
-  'pm25' => const ['air4thai'],
-  'quake' => const ['tmd', 'usgs'],
-  _ => const [],
-};
+export '../alerts/alert_sources.dart' show alertSourceIds;
 
 /// An [AlertCard] crediting where its data comes from, each source linked (Google Play requires it wherever
 /// government data is shown). A kind with no known source links the full sources list instead.

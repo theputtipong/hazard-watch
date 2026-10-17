@@ -17,6 +17,12 @@ add the extension. Every platform reads the same public API, so the data, alert 
   USGS, duplicates merged), current weather with surface wind and the ~3 km wind that steers rain.
 - NASA (display only, never an alert): fire hotspots within 25 km in the last 24 h and up to 5 open storms, volcanoes,
   floods or landslides within 500 km of the chosen district (`NASA_NEAR` in `packages/core/src/nasa.ts`).
+- Dams and reservoirs (display only, never an alert): ThaiWater storage for the 35 large RID dams and the current RID
+  medium reservoirs (~445). An area shows up to 3: the nearest large dam within 300 km, the nearest medium reservoir
+  within 50 km, then other large dams in the same province or basin, then further medium reservoirs within 50 km (`DAM_PICK` in `apps/ingest/src/area.ts`).
+  Status words follow ThaiWater's own bands (`DEFAULT_CONFIG.dam`): เกินความจุ >100 % · น้ำมาก >80 % · ปกติ >50 % ·
+  น้ำน้อย >30 % of normal storage · น้ำน้อยวิกฤต when usable water is ≤30 %. A report older than 60 h shows its date
+  instead of reading as today's.
 - Levels: ปกติ / ระวัง / ระวังมาก / อันตราย (Normal / Caution / Warning / Danger), always as a word plus a three-bar meter.
   Every reading has a plain-language note on what it means and what to do.
 - Data freshness: stale readings are never shown as current. "When the data last updated" lists every source.
@@ -26,8 +32,8 @@ add the extension. Every platform reads the same public API, so the data, alert 
 
 | Feature | Notes |
 |---|---|
-| Dashboard | Cards for weather, PM2.5, flooding, earthquakes and river levels for your location or a chosen area |
-| Map | Zones (province → district → subdistrict) coloured by the worst reading; flood, PM2.5, river and CCTV pins; legend. Zooms out to the whole world |
+| Dashboard | Cards for weather, PM2.5, flooding, earthquakes, river levels and nearby dams for your location or a chosen area |
+| Map | Zones (province → district → subdistrict) coloured by the worst reading; flood, PM2.5, river, CCTV and dam pins (dams start off; large dams get bigger pins); legend. Zooms out to the whole world |
 | NASA layers | FIRMS fire hotspots (on by default); EONET events and one GIBS image at a time (rain, flood, aerosol, fire, true colour) start off |
 | Rain radar | 24 radars nationwide on the map, plus a badge showing which way rain may be moving |
 | Location | Browser geolocation, or pick an area by hand (remembered on the device). Links `/<lang>?area=<id>` open an area |
@@ -43,7 +49,8 @@ add the extension. Every platform reads the same public API, so the data, alert 
 - Push alerts work in the browser or the installed app.
 - Read-aloud needs a Thai voice in Text-to-speech settings (the page explains how).
 - Native app (`apps/mobile`): Data sources screen with links to the original sources and a notice that the app is not
-  a government service; the same NASA layers and a province → district picker with search.
+  a government service; the same NASA layers, a dam card and dam map layer (off by default), and a province →
+  district picker with search.
 
 ### iOS / iPadOS (Safari / installed PWA)
 
@@ -52,7 +59,8 @@ add the extension. Every platform reads the same public API, so the data, alert 
   In a normal Safari tab the alert card explains this instead of offering the button.
 - A Thai voice is built in for read-aloud.
 - Native app (`apps/mobile`): Data sources screen with links to the original sources and a notice that the app is not
-  a government service; the same NASA layers and a province → district picker with search.
+  a government service; the same NASA layers, a dam card and dam map layer (off by default), and a province →
+  district picker with search.
 
 ### Desktop browser extension (Chrome, Edge)
 
@@ -60,7 +68,7 @@ add the extension. Every platform reads the same public API, so the data, alert 
 |---|---|
 | Notifications | Checks every 15 minutes while the browser is open; same alerts and 3-hour no-repeat rule as Web Push |
 | Toolbar badge | Number of current alerts for your district, coloured by the worst level |
-| Popup summary | Your district: alerts, nearest PM2.5 and river gauge, flooding, weather + wind, NASA fires/events nearby, data-source status |
+| Popup summary | Your district: alerts, nearest PM2.5 and river gauge, flooding, weather + wind, NASA fires/events nearby, up to 2 dams (nearest large within 300 km + nearest medium within 50 km, ThaiWater linked), data-source status |
 | Settings | Choose hazards and the PM2.5 level; GPS or pick a district (province → district, with search) |
 | Limits | Desktop Chrome/Edge only (no Firefox or mobile build yet); no server account; alerts stop when the browser is closed |
 
@@ -110,6 +118,7 @@ packages/
 | Street flooding, rain gauges | BMA Drainage Dept. (unofficial endpoints) | GitHub Actions, every 40 min, plus relays from the app/extension on Thai IPs (`POST /v1/relay/bma/:kind`, see below) | 403 bot challenge from Cloudflare (and GitHub) IPs |
 | Canal/river levels, radar images | ThaiWater (HII) | GitHub Actions, every 40 min | 429 rate limit from Cloudflare IPs; radar frames are cut to rain echoes only (`apps/ingest/scripts/radarImage.ts`) and placed with `packages/core/src/radars.ts` |
 | CCTV list | BMA Traffic | GitHub Actions, once a day (`INGEST.runnerFeedEveryHours`) | pins + link to source only |
+| Dams and reservoirs | ThaiWater (HII) `analyst/dam`: RID (กรมชลประทาน) rows only, 35 large dams + medium reservoirs reported in the last 2 days; EGAT rows skipped (duplicates) | GitHub Actions, every 6 h (`INGEST.runnerFeedEveryHours.dams`) | same 429 as other ThaiWater feeds; data is daily and ~1 MB; ids `thaiwater-dam:large\|medium:<id>`; display only, never in alerts or zone colours |
 | Fire hotspots | NASA FIRMS: keyless SouthEast_Asia 24 h CSVs of the three VIIRS satellites (NOAA-20, NOAA-21, Suomi NPP) | GitHub Actions, every run | each CSV is ~1.8 MB, too big for the Worker's 10 ms CPU; rows outside `FIRE_BOUNDS` dropped, capped at 3,000 (`FIRE_CAP`) |
 | Natural events | NASA EONET: open severe storms, volcanoes, floods, landslides (wildfires come from FIRMS) | GitHub Actions, every run | capped at 100 events (`EVENT_CAP`), 40 track points each |
 | Satellite imagery | NASA GIBS tiles (`NASA_LAYERS` in `packages/core/src/nasa.ts`) | browser / app, straight from NASA | nothing on our side; one raster at a time, all off by default because GIBS sends `no-store` |
@@ -259,8 +268,10 @@ store across failures; `failingSince` marks the first failure) is older than the
 - Thresholds and the ignore list are in `tools/monitor/config.json`: group defaults (`edge` 60 min for the Cloudflare
   cron, `runner` 6 h because GitHub schedules can run hours late), per-feed overrides under `feeds`, and `ignore`
   (default: BMA `flood` and `rain`, which answer 403 to both Cloudflare and GitHub IPs). The daily CCTV list has its own
-  30 h limit; keep `feeds.cctv` in step with `INGEST.runnerFeedEveryHours.cctv`, and the group limits in step with
-  `FEED_MAX_AGE_MINUTES` in `packages/core/src/feeds.ts` (what the web and extension show as "no new data").
+  30 h limit and dams 36 h (ThaiWater publishes once a day, fetched every 6 h); keep `feeds.cctv` in step with
+  `INGEST.runnerFeedEveryHours.cctv`, `feeds.dams` with `FEED_TOPIC_MAX_AGE_MINUTES.dams` (checked by
+  `apps/ingest/test/config.test.ts`), and the group limits in step with `FEED_MAX_AGE_MINUTES` in
+  `packages/core/src/feeds.ts` (what the web and extension show as "no new data").
 - Uses only the built-in `GITHUB_TOKEN` (`issues: write`). Try it locally without touching GitHub:
   `node tools/monitor/check.mjs --dry-run` (tests: `node --test tools/monitor/check.test.mjs`).
 
@@ -268,6 +279,9 @@ store across failures; `failingSince` marks the first failure) is older than the
 
 กรมอุตุนิยมวิทยา · สำนักการระบายน้ำ กรุงเทพมหานคร · สถาบันสารสนเทศทรัพยากรน้ำ (ThaiWater) · กรมควบคุมมลพิษ ·
 GISTDA · USGS · Open-Meteo · © OpenStreetMap contributors
+
+Dams: ข้อมูลเขื่อนจาก คลังข้อมูลน้ำแห่งชาติ (ThaiWater) สถาบันสารสนเทศทรัพยากรน้ำ (สสน.) และกรมชลประทาน, linked to
+https://www.thaiwater.net on the web dam card, map popup, the app's dam card, pin sheet and legend, and the extension's dam card.
 
 NASA (`NASA_ATTRIBUTION` in `packages/core/src/nasa.ts`), shown next to each layer and card:
 - Imagery: NASA EOSDIS GIBS / Worldview

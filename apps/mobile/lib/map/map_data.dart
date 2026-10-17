@@ -8,10 +8,21 @@ import '../theme/hw_theme.dart';
 /// Parsed from `/v1/snapshot`, the same public data the web map draws (DashboardSnapshot in packages/core/src/types.ts).
 /// test/fixtures/snapshot.json is written by apps/ingest/test/area.test.ts, so a change on either side fails a test.
 
-enum MapLayer { flood, rain, water, pm25, quake }
+enum MapLayer { flood, rain, water, pm25, quake, dam }
 
-/// What the map shows first, as the web's WEB.map.defaultLayers (PM2.5 is off there too).
+/// What the map shows first, as the web's WEB.map.defaultLayers (PM2.5 is off there too). Dams are context, not
+/// hazards, so they start off.
 const defaultMapLayers = {MapLayer.flood, MapLayer.rain, MapLayer.water, MapLayer.quake};
+
+/// The agencies whose data a layer draws (ids in lib/sources_meta.g.dart), for the map's credit strip.
+List<String> layerSourceIds(MapLayer layer) => switch (layer) {
+  MapLayer.flood => const ['bma-flood'],
+  MapLayer.rain => const ['bma-rain'],
+  MapLayer.water => const ['thaiwater'],
+  MapLayer.pm25 => const ['air4thai'],
+  MapLayer.quake => const ['tmd', 'usgs'],
+  MapLayer.dam => const ['thaiwater', 'rid'],
+};
 
 class SourceFeed {
   SourceFeed.fromJson(Map<String, dynamic> j)
@@ -36,11 +47,12 @@ class MapSnapshot {
             for (final e in feeds.entries) e.key: SourceFeed.fromJson(e.value as Map<String, dynamic>),
       };
 
-  /// By snapshot key: pm25, quakesTmd, quakesUsgs, flood, rain, waterlevel, radar, cctv, fires, events.
+  /// By snapshot key: pm25, quakesTmd, quakesUsgs, flood, rain, waterlevel, radar, cctv, fires, events, dams.
   final Map<String, SourceFeed> feeds;
 }
 
-/// One marker. [value] is flood depth (cm), rain (mm/h), % of bank-full, PM2.5 (µg/m³) or quake magnitude.
+/// One marker. [value] is flood depth (cm), rain (mm/h), % of bank-full, PM2.5 (µg/m³), quake magnitude or dam
+/// storage (% of normal capacity).
 class MapPoint {
   const MapPoint({
     required this.id,
@@ -58,6 +70,7 @@ class MapPoint {
     this.depthKm,
     this.km,
     this.url,
+    this.dam,
   });
 
   final String id;
@@ -81,6 +94,9 @@ class MapPoint {
 
   /// Quakes only: the source's page for this event, when it gives one.
   final String? url;
+
+  /// Dams only: the reading as the home card shows it; its km is from the map's reference point.
+  final DamReading? dam;
 }
 
 /// The server's BMA copy is missing, failing or older than [DeviceBma.maxAge], so the phone should fetch its own.
@@ -170,10 +186,63 @@ MapData buildMapData(
     ...server('waterlevel', MapLayer.water),
     ...server('pm25', MapLayer.pm25),
     ...quakePoints(s, refLat: refLat, refLng: refLng, now: now),
+    ...damPoints(s, refLat: refLat, refLng: refLng, now: now),
   ].where(_shown).toList();
   points.sort((a, b) => a.level.index - b.level.index);
 
   return MapData(points: points, floodOnDevice: floodOnDevice, rainOnDevice: rainOnDevice);
+}
+
+/// ThaiWater dams from `runner.feeds.dams` (DamExtra in packages/core/src/types.ts). Display only: the status is
+/// worked out here as on the server (the snapshot carries severity, not status), and colour follows damSeverity.
+List<MapPoint> damPoints(MapSnapshot s, {required double refLat, required double refLng, required DateTime now}) => [
+  for (final o in s.feeds['dams']?.items ?? const <Map<String, dynamic>>[])
+    if (o['value'] case final num value) ?_damPoint(o, value.toDouble(), refLat, refLng, now),
+];
+
+MapPoint? _damPoint(Map<String, dynamic> o, double pct, double refLat, double refLng, DateTime now) {
+  final loc = o['location'] as Map<String, dynamic>?;
+  final x = o['extra'] as Map<String, dynamic>?;
+  if (loc == null || x == null) return null;
+  final lat = (loc['lat'] as num).toDouble();
+  final lng = (loc['lng'] as num).toDouble();
+  final at = DateTime.parse(o['observedAt'] as String);
+  final usable = _numOrNull(x['usablePct']);
+  final status = DamStatus.values.byName(damStatusOf(pct, usable));
+  final stale = now.difference(at) > const Duration(hours: CoreConfig.damStaleHours);
+  final name = LocalizedText.fromJson(o['name'] as Map<String, dynamic>);
+  final dam = DamReading(
+    id: o['id'] as String,
+    name: name,
+    size: x['size'] == 'large' ? DamSize.large : DamSize.medium,
+    km: distanceKm(refLat, refLng, lat, lng),
+    storagePct: pct,
+    usablePct: usable,
+    storageMcm: _numOrNull(x['storageMcm']),
+    capacityMcm: _numOrNull(x['capacityMcm']),
+    inflowMcm: _numOrNull(x['inflowMcm']),
+    releaseMcm: _numOrNull(x['releaseMcm']),
+    status: status,
+    province: x['province'] as String? ?? '',
+    basin: x['basin'] as String?,
+    observedAt: at,
+    stale: stale,
+  );
+  return MapPoint(
+    id: dam.id,
+    layer: MapLayer.dam,
+    source: o['source'] as String? ?? 'thaiwater',
+    name: name,
+    lat: lat,
+    lng: lng,
+    value: pct,
+    unit: '%',
+    level: status.level,
+    at: at,
+    stale: stale,
+    km: dam.km,
+    dam: dam,
+  );
 }
 
 /// Recent quakes within reach of the reference point; TMD and USGS reports of one event count once (mergeQuakes in

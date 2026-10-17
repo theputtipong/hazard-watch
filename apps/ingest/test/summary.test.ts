@@ -81,6 +81,29 @@ describe('buildSummary', () => {
       { updatedAt: '2026-10-05T15:40:00Z', feeds: { flood: feed([], false) } },
       now,
     );
-    expect(s).toMatchObject({ updatedAt: '2026-10-05T15:50:00Z', pm25: null, water: null, quake: null, feeds: { ok: 1, total: 2 } });
+    expect(s).toMatchObject({ updatedAt: '2026-10-05T15:50:00Z', pm25: null, water: null, quake: null, dams: null, feeds: { ok: 1, total: 2 } });
+  });
+
+  it('counts dams over 100 % nationwide for display, with the daily stale rule', () => {
+    // Reports are dated 00:00 ICT; now is 23:00 ICT on 2026-10-05.
+    const dam = (id: string, value: number, observedAt = '2026-10-04T17:00:00.000Z') => ({ ...obs(id, value, 'ok'), kind: 'dam', source: 'thaiwater', unit: '%', observedAt });
+    const s = buildSummary(
+      null,
+      {
+        updatedAt: '2026-10-05T15:40:00Z',
+        feeds: {
+          dams: feed([
+            dam('over', 112.4),
+            dam('full', 100),
+            dam('yesterday', 101, '2026-10-03T17:00:00.000Z'),
+            dam('old', 130, '2026-10-01T17:00:00.000Z'),
+          ]),
+        },
+      },
+      now,
+    );
+    expect(s.dams).toEqual({ reporting: 3, over: 2 });
+    // Display only: dams never add to water alerts.
+    expect(s.water).toBeNull();
   });
 });

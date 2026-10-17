@@ -11,8 +11,10 @@ import '../format.dart';
 import '../l10n/gen/app_localizations.dart';
 import '../location.dart';
 import '../settings.dart';
+import '../sources_meta.g.dart';
 import '../theme/hw_app_theme.dart';
 import '../widgets/alert_card.dart';
+import '../widgets/dam_card.dart';
 import '../widgets/feed_status.dart';
 import '../widgets/hw_card.dart';
 import '../widgets/nasa_card.dart';
@@ -55,6 +57,21 @@ String homeFeedName(AppLocalizations l, String topic) => switch (topic) {
   'fires' => l.feedsNameFires,
   'events' => l.feedsNameEvents,
   _ => feedName(l, topic),
+};
+
+/// The sources behind each feed topic Home lists (ids in lib/sources_meta.g.dart), each linked from its row. A topic
+/// with none here ("radar": the app shows no radar) is left out of the list, so every feed named on Home links to the
+/// agency it comes from (Google Play: government data must name and link its source where it is shown).
+List<String> feedSourceIds(String topic) => switch (topic) {
+  'flood' => const ['bma-flood'],
+  'rain' => const ['bma-rain'],
+  'waterlevel' => const ['thaiwater'],
+  'pm25' => const ['air4thai'],
+  'quakes' => const ['tmd', 'usgs'],
+  'fires' => const ['nasa-firms'],
+  'events' => const ['nasa-eonet'],
+  'dams' => const ['thaiwater', 'rid'],
+  _ => const [],
 };
 
 class _HomeScreenState extends State<HomeScreen> {
@@ -159,6 +176,8 @@ class _HomeScreenState extends State<HomeScreen> {
           padding: const EdgeInsets.all(HwSize.space4),
           children: [
             Semantics(header: true, child: Text(l.appName, style: text.headlineSmall)),
+            const SizedBox(height: HwSize.space2),
+            const NotGovernmentBanner(),
             const SizedBox(height: HwSize.space3),
             Text(l.homePickFirst, style: text.bodyLarge),
             const SizedBox(height: HwSize.space6),
@@ -188,6 +207,7 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             // The report knows the province even when an older saved pick did not store it.
             _Header(district: district, province: report?.district.province ?? district.province, onChange: _pick),
+            const NotGovernmentBanner(),
             const SizedBox(height: HwSize.space3),
             if (_error != null) ...[
               CalmBox(text: _errorText(l, _error!, report, now)),
@@ -279,19 +299,31 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ],
+      // Display only: never part of calm or the alerts above.
+      if (r.dams.isNotEmpty) ...[const SizedBox(height: HwSize.space3), DamCard(dams: r.dams)],
       if (nasa != null) ...[const SizedBox(height: HwSize.space3), _nasaCard(l, r, nasa, now)],
       const SizedBox(height: HwSize.space6),
       Text(l.feedsTitle, style: text.labelLarge!.copyWith(color: c.inkMuted)),
       const SizedBox(height: HwSize.space2),
-      for (var i = 0; i < v.feeds.length; i++) ...[
+      for (final (i, feed) in v.feeds.where((f) => feedSourceIds(f.topic).isNotEmpty).indexed) ...[
         if (i > 0) Divider(height: 1, color: c.line),
-        FeedStatusRow(
-          name: homeFeedName(l, v.feeds[i].topic),
-          state: v.feeds[i].state,
-          age: feedAgeText(l, v.feeds[i], now),
-        ),
+        FeedStatusRow(name: homeFeedName(l, feed.topic), state: feed.state, age: feedAgeText(l, feed, now)),
+        _FeedSources(key: ValueKey('feed-sources:${feed.topic}'), ids: feedSourceIds(feed.topic)),
       ],
-      const SizedBox(height: HwSize.space6),
+      // Each feed links its own agencies; the sources page lists them all.
+      Align(
+        alignment: Alignment.centerLeft,
+        child: TextButton(
+          key: const ValueKey('feeds-sources'),
+          style: TextButton.styleFrom(
+            padding: EdgeInsets.zero,
+            minimumSize: const Size(HwSize.touchTarget, HwSize.touchTarget),
+          ),
+          onPressed: () => openSources(context),
+          child: Text(l.homeAllSources),
+        ),
+      ),
+      const SizedBox(height: HwSize.space4),
       const NotGovernmentNote(),
     ];
   }
@@ -457,6 +489,35 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
+/// At the top of Home, before any data: the app is independent, not a government app, with the way to the sources
+/// page (Google Play government-information policy: a reviewer must see it without scrolling). The longer note stays
+/// at the bottom.
+class NotGovernmentBanner extends StatelessWidget {
+  const NotGovernmentBanner({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final c = context.hw;
+    final text = Theme.of(context).textTheme;
+    return Column(
+      key: const ValueKey('home-not-gov'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(l.disclaimerNotGov, style: text.bodySmall!.copyWith(color: c.inkMuted)),
+        TextButton(
+          style: TextButton.styleFrom(
+            padding: EdgeInsets.zero,
+            minimumSize: const Size(HwSize.touchTarget, HwSize.touchTarget),
+          ),
+          onPressed: () => openSources(context),
+          child: Text(l.sourcesTitle),
+        ),
+      ],
+    );
+  }
+}
+
 class _Header extends StatelessWidget {
   const _Header({required this.district, required this.province, required this.onChange});
 
@@ -484,6 +545,42 @@ class _Header extends StatelessWidget {
         ),
         TextButton(onPressed: onChange, child: Text(l.locationPickChange)),
       ],
+    );
+  }
+}
+
+/// Under a feed's name: "ข้อมูลจาก {agency} · {domain}" for its first source, "{agency} · {domain}" for the rest, each a
+/// link to the source's page. Indented to line up with the feed's name, past its status mark.
+class _FeedSources extends StatelessWidget {
+  const _FeedSources({super.key, required this.ids});
+
+  final List<String> ids;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final c = context.hw;
+    final style = Theme.of(context).textTheme.bodySmall!.copyWith(color: c.inkMuted);
+    final links = [
+      for (final id in ids)
+        if ((sourceAgency(l, id), sourceDomain(id), sourceUrl(id)) case (final agency?, final domain?, final url?))
+          (agency: agency, domain: domain, url: url),
+    ];
+    return Padding(
+      padding: const EdgeInsets.only(left: 20 + HwSize.space2),
+      child: Wrap(
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          for (final (i, s) in links.indexed) ...[
+            if (i > 0) ExcludeSemantics(child: Text(', ', style: style)),
+            SourceLink(
+              label: i == 0 ? l.sourceDataFrom(s.agency, s.domain) : '${s.agency} · ${s.domain}',
+              url: s.url,
+              style: style,
+            ),
+          ],
+        ],
+      ),
     );
   }
 }

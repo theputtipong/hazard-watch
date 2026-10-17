@@ -1,6 +1,6 @@
 import type { AlertConfig } from './config';
 import { distanceKm } from './geo';
-import { SEVERITIES, type Earthquake, type LatLng, type Severity } from './types';
+import { SEVERITIES, type DamStatus, type Earthquake, type LatLng, type Severity } from './types';
 
 export function rank(s: Severity): number {
   return SEVERITIES.indexOf(s);
@@ -39,6 +39,29 @@ export function waterLevelSeverity(bankFullPct: number, cfg: AlertConfig): Sever
   if (bankFullPct >= w.warnPct) return 'warn';
   if (bankFullPct >= w.watchPct) return 'watch';
   return 'ok';
+}
+
+/**
+ * Label band for a dam, from storage % of normal capacity and usable-water %.
+ * Storage above highPct wins (over/high); otherwise usable ≤ criticalUsablePct is 'critical'.
+ * With no usable % known, storage ≤ criticalPct counts as 'critical'.
+ */
+export function damStatus(storagePct: number, usablePct: number | null | undefined, cfg: AlertConfig): DamStatus {
+  const d = cfg.dam;
+  if (storagePct > d.overPct) return 'over';
+  if (storagePct > d.highPct) return 'high';
+  if (usablePct !== null && usablePct !== undefined && Number.isFinite(usablePct)) {
+    if (usablePct <= d.criticalUsablePct) return 'critical';
+  } else if (storagePct <= d.criticalPct) {
+    return 'critical';
+  }
+  return storagePct > d.lowPct ? 'normal' : 'low';
+}
+
+/** Display colour only (dams are never pushed or zoned): over → 'danger', high → 'watch', else 'ok'. */
+export function damSeverity(storagePct: number, usablePct: number | null | undefined, cfg: AlertConfig): Severity {
+  const status = damStatus(storagePct, usablePct, cfg);
+  return status === 'over' ? 'danger' : status === 'high' ? 'watch' : 'ok';
 }
 
 export function bmaFloodSeverity(subStatus: number, depthCm: number | null, cfg: AlertConfig): Severity {

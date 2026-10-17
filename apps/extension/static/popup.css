@@ -135,4 +135,5 @@ input[type=checkbox] { width: 16px; height: 16px; margin: 0; accent-color: var(-
 .field select { width: 100%; height: 32px; }
 select[disabled] { opacity: .45; cursor: not-allowed; }
 
-.nasa__lines { display: grid; gap: var(--space-1); font-size: 13px; line-height: 20px; }
+.caption .link { font-size: inherit; }
+.nasa__lines, .dams__lines { display: grid; gap: var(--space-1); font-size: 13px; line-height: 20px; }

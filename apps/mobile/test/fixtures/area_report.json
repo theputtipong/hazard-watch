@@ -145,6 +145,48 @@
       }
     ]
   },
+  "dams": [
+    {
+      "id": "thaiwater-dam:medium:m1",
+      "name": {
+        "th": "เขื่อน m1",
+        "en": "เขื่อน m1"
+      },
+      "size": "medium",
+      "km": 34.7,
+      "storagePct": 35,
+      "usablePct": 20,
+      "storageMcm": 600.5,
+      "capacityMcm": 960.8,
+      "inflowMcm": null,
+      "releaseMcm": null,
+      "status": "critical",
+      "province": "ฉะเชิงเทรา",
+      "basin": "ลุ่มน้ำบางปะกง",
+      "observedAt": "2026-10-04T17:00:00.000Z",
+      "stale": false
+    },
+    {
+      "id": "thaiwater-dam:large:pasak",
+      "name": {
+        "th": "เขื่อน pasak",
+        "en": "Dam pasak"
+      },
+      "size": "large",
+      "km": 138.4,
+      "storagePct": 105.2,
+      "usablePct": 55.1,
+      "storageMcm": 600.5,
+      "capacityMcm": 960.8,
+      "inflowMcm": 4.2,
+      "releaseMcm": 1.5,
+      "status": "over",
+      "province": "ลพบุรี",
+      "basin": "ลุ่มน้ำป่าสัก",
+      "observedAt": "2026-10-04T17:00:00.000Z",
+      "stale": false
+    }
+  ],
   "feeds": [
     {
       "topic": "flood",
@@ -190,6 +232,12 @@
     },
     {
       "topic": "events",
+      "state": "live",
+      "lastOkAt": "2026-10-05T09:50:00Z",
+      "failingSince": null
+    },
+    {
+      "topic": "dams",
       "state": "live",
       "lastOkAt": "2026-10-05T09:50:00Z",
       "failingSince": null

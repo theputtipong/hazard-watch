@@ -15,12 +15,13 @@ import {
   parseFirmsCsv,
   parseOpenMeteo,
   parseRadars,
+  parseThaiwaterDams,
   parseTmdQuakeRss,
   parseUsgs,
   parseWaterLevel,
   rankFires,
 } from '../src';
-import { FIRE_BOUNDS, type FireHotspot } from '@hw/core';
+import { FIRE_BOUNDS, type DamExtra, type FireHotspot } from '@hw/core';
 
 const fixture = (name: string) => readFileSync(join(__dirname, 'fixtures', name), 'utf8');
 const json = (name: string) => JSON.parse(fixture(name));
@@ -262,5 +263,97 @@ describe('nasa eonet', () => {
     const res = await eonetEvents(defaultContext({ fetch: async () => new Response('<rss/>') }));
     expect(res).toMatchObject({ ok: false, items: [] });
     expect(res.error).toContain('non-JSON');
+  });
+});
+
+describe('thaiwater dams', () => {
+  const damCtx = defaultContext({ now: new Date('2026-10-17T07:30:00Z') });
+  const body = () => json('thaiwater-dams.json');
+  const obs = parseThaiwaterDams(body(), damCtx);
+  const extra = (id: string) => obs.find((o) => o.id === id)!.extra as DamExtra;
+
+  it('keeps 6 RID large dams first, then 10 current RID medium reservoirs', () => {
+    expect(obs).toHaveLength(16);
+    expect(obs.slice(0, 6).every((o) => (o.extra as DamExtra).size === 'large')).toBe(true);
+    expect(obs.slice(6).every((o) => (o.extra as DamExtra).size === 'medium')).toBe(true);
+    expect(obs.every((o) => o.kind === 'dam' && o.source === 'thaiwater' && o.unit === '%')).toBe(true);
+    // Largest capacity first within each group: Ubonrat (2431 MCM), then Lam Pao (1980 MCM).
+    expect(obs.slice(0, 2).map((o) => o.name.en)).toEqual(['Ubonrat', 'Lam Pao']);
+  });
+  it('skips EGAT rows (duplicates of RID dams, storage % 0)', () => {
+    const ids = obs.map((o) => o.id);
+    for (const id of [46, 49, 45]) expect(ids).not.toContain(`thaiwater-dam:large:${id}`);
+    expect(obs.every((o) => (o.extra as DamExtra).agency === 'กรมชลประทาน')).toBe(true);
+  });
+  it('drops stale medium rows (2026-04-30, 2024, 1970 with no agency) and rows without storage', () => {
+    const ids = obs.map((o) => o.id);
+    for (const id of [59689, 314, 782]) expect(ids).not.toContain(`thaiwater-dam:medium:${id}`);
+    const b = body();
+    const row = b.data.dam_medium[0];
+    b.data.dam_daily = [];
+    b.data.dam_medium = [
+      { ...row, dam_date: '2026-10-15' },
+      { ...row, dam: { ...row.dam, id: 1 }, dam_date: '2026-10-14' },
+      { ...row, dam: { ...row.dam, id: 2 }, agency: { ...row.agency, id: 8 } },
+    ];
+    expect(parseThaiwaterDams(b, damCtx).map((o) => o.id)).toEqual(['thaiwater-dam:medium:717']);
+  });
+  it('maps a large dam: value = % of normal storage, extra = DamExtra, ICT date', () => {
+    const o = obs.find((x) => x.id === 'thaiwater-dam:large:39')!;
+    expect(o).toMatchObject({ name: { th: 'ลำปาว', en: 'Lam Pao' }, value: 60.16, severity: 'ok', location: { lat: 16.60243, lng: 103.4385 } });
+    expect(o.observedAt).toBe('2026-10-16T17:00:00.000Z');
+    expect(extra('thaiwater-dam:large:39')).toEqual({
+      storageMcm: 1191.22,
+      capacityMcm: 1980,
+      usablePct: 55.11,
+      inflowMcm: 1.01,
+      releaseMcm: 4.43,
+      size: 'large',
+      basin: 'ลุ่มน้ำชี',
+      province: 'กาฬสินธุ์',
+      agency: 'กรมชลประทาน',
+    });
+  });
+  it('maps a medium reservoir: Thai name in both languages, usable % from usable / normal storage', () => {
+    const o = obs.find((x) => x.id === 'thaiwater-dam:medium:717')!;
+    expect(o.name).toEqual({ th: 'อ่างเก็บน้ำห้วยหินชะแนนใหญ่', en: 'อ่างเก็บน้ำห้วยหินชะแนนใหญ่' });
+    expect(extra('thaiwater-dam:medium:717')).toMatchObject({ storageMcm: 9.97, capacityMcm: 12.5, usablePct: 78.4, inflowMcm: null, releaseMcm: null, size: 'medium', province: 'สกลนคร' });
+    // normal_storage 0: capacity derived from storage and %, usable % unknown.
+    expect(extra('thaiwater-dam:medium:58823')).toMatchObject({ capacityMcm: 1.5, usablePct: null });
+  });
+  // Live: `dam_daily` and `dam_medium` number dams separately, e.g. 7 is both มูลบน (large) and ห้วยบ้านยาง (medium).
+  it('keeps a large and a medium dam that share a ThaiWater id, with distinct ids', () => {
+    const b = body();
+    const large = b.data.dam_daily[0];
+    const medium = b.data.dam_medium[0];
+    b.data.dam_daily = [{ ...large, dam: { ...large.dam, id: 7 } }];
+    b.data.dam_medium = [{ ...medium, dam: { ...medium.dam, id: 7 } }];
+    const out = parseThaiwaterDams(b, damCtx);
+    expect(out.map((o) => [o.id, (o.extra as DamExtra).size])).toEqual([
+      ['thaiwater-dam:large:7', 'large'],
+      ['thaiwater-dam:medium:7', 'medium'],
+    ]);
+    expect(new Set(obs.map((o) => o.id)).size).toBe(obs.length);
+  });
+  it('colours by ThaiWater bands: >100 danger, >80 watch, otherwise ok', () => {
+    const sev = (id: string) => obs.find((o) => o.id === `thaiwater-dam:${id}`)!.severity;
+    expect(sev('medium:336')).toBe('danger'); // 101.7 %
+    expect(sev('medium:429')).toBe('watch'); // 89.4 %
+    expect(sev('large:4')).toBe('watch'); // Chulaporn 82.74 %
+    expect(sev('medium:717')).toBe('ok'); // 79.76 %
+    expect(sev('medium:348')).toBe('ok'); // 8.5 %: low water is a label, not an alert colour
+  });
+  it('drops rows without coordinates or with non-numeric values, and rows outside Thailand', () => {
+    const b = body();
+    const row = b.data.dam_daily[0];
+    b.data.dam_medium = [];
+    b.data.dam_daily = [
+      row,
+      { ...row, dam: { ...row.dam, id: 1, dam_lat: null } },
+      { ...row, dam: { ...row.dam, id: 2, dam_lat: 0, dam_long: 0 } },
+      { ...row, dam: { ...row.dam, id: 3 }, dam_storage_percent: 'n/a' },
+      { ...row, dam: { ...row.dam, id: 4 }, geocode: { ...row.geocode, province_name: { th: 'เวียงจันทน์', en: 'Vientiane' } } },
+    ];
+    expect(parseThaiwaterDams(b, damCtx).map((o) => o.id)).toEqual(['thaiwater-dam:large:39']);
   });
 });

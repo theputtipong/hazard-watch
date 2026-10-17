@@ -1,4 +1,4 @@
-import { buildZoneIndex, type CctvCamera, type FireHotspot, type NasaEvent, type Observation, type RadarFrame, type ZoneFeature } from '@hw/core';
+import { buildZoneIndex, type CctvCamera, type DamExtra, type FireHotspot, type NasaEvent, type Observation, type RadarFrame, type ZoneFeature } from '@hw/core';
 import { ENDPOINTS } from '@hw/sources';
 import { describe, expect, it } from 'vitest';
 import type { FeedMap } from '../src/store';
@@ -251,6 +251,88 @@ describe('parseRunnerPayload: NASA feeds', () => {
   });
 });
 
+const damExtra: DamExtra = {
+  storageMcm: 1234.5,
+  capacityMcm: 2431,
+  usablePct: 48.2,
+  inflowMcm: 3.1,
+  releaseMcm: 0.8,
+  size: 'large',
+  basin: 'ลุ่มน้ำชี',
+  province: 'ขอนแก่น',
+  agency: 'กรมชลประทาน',
+};
+
+const dam = (id: string, over: Partial<Observation> = {}, extra: Partial<Record<keyof DamExtra, unknown>> = {}): Observation => ({
+  id: `thaiwater-dam:${id}`,
+  kind: 'dam',
+  source: 'thaiwater',
+  name: { th: 'อุบลรัตน์', en: 'Ubol Ratana' },
+  location: { lat: 16.775, lng: 102.618 },
+  observedAt: '2026-10-04T17:00:00.000Z',
+  value: 60.32,
+  unit: '%',
+  severity: 'ok',
+  extra: { ...damExtra, ...extra } as Observation['extra'],
+  ...over,
+});
+
+describe('parseRunnerPayload: dams', () => {
+  it('accepts large and medium dams unchanged', () => {
+    const medium = dam('m1', { name: { th: 'อ่างเก็บน้ำห้วยสะทด', en: 'อ่างเก็บน้ำห้วยสะทด' }, value: 101.7, severity: 'danger' }, {
+      size: 'medium',
+      inflowMcm: null,
+      releaseMcm: null,
+      usablePct: -0.5,
+      basin: null,
+      province: '',
+    });
+    const out = parseRunnerPayload(payload({ dams: result('thaiwater', [dam('1'), medium]) }), now);
+    expect(out.ok).toBe(true);
+    if (!out.ok) return;
+    expect(out.dropped).toEqual([]);
+    expect(out.feeds.dams!.items).toEqual([dam('1'), medium]);
+  });
+
+  it('fills missing optional numbers with null and strips unknown extra keys', () => {
+    const raw = dam('1', {}, { inflowMcm: undefined, html: '<img>' } as never);
+    const out = parseRunnerPayload(payload({ dams: result('thaiwater', [raw]) }), now);
+    const item = out.ok ? (out.feeds.dams!.items[0] as Observation) : null;
+    expect(item?.extra).toEqual({ ...damExtra, inflowMcm: null });
+  });
+
+  it.each([
+    ['wrong kind', { kind: 'waterlevel' }, {}],
+    ['wrong source', { source: 'rid' }, {}],
+    ['outside Thailand', { location: { lat: 30, lng: 100 } }, {}],
+    ['storage over 300 %', { value: 301 }, {}],
+    ['negative storage', { value: -1 }, {}],
+    ['null storage', { value: null }, {}],
+    ['unknown severity', { severity: 'extreme' }, {}],
+    ['unknown size', {}, { size: 'small' }],
+    ['absurd capacity', {}, { capacityMcm: 1e6 }],
+    ['absurd inflow', {}, { inflowMcm: 5000 }],
+    ['usable % as text', {}, { usablePct: '48' }],
+    ['missing province', {}, { province: undefined }],
+    ['no extra', { extra: undefined }, {}],
+  ])('refuses a dam with %s', (_label, over, extra) => {
+    const out = parseRunnerPayload(payload({ dams: result('thaiwater', [dam('1'), dam('2'), dam('bad', over as Partial<Observation>, extra)]) }), now);
+    expect(out.ok && out.feeds.dams!.items).toHaveLength(2);
+    expect(out.dropped).toMatchObject([{ feed: 'dams', id: 'thaiwater-dam:bad' }]);
+  });
+
+  it('caps dams at 700 items and checks the source', () => {
+    const many = Array.from({ length: 701 }, (_, i) => dam(`${i}`));
+    const ok = parseRunnerPayload(payload({ dams: result('thaiwater', many.slice(0, 700)) }), now);
+    expect(ok.ok && ok.feeds.dams!.items).toHaveLength(700);
+    const over = parseRunnerPayload(payload({ dams: result('thaiwater', many), cctv: result('bma-traffic', [camera]) }), now);
+    expect(over.ok && Object.keys(over.feeds)).toEqual(['cctv']);
+    expect(over.dropped).toMatchObject([{ feed: 'dams', reason: 'feed dropped: items: more than 700' }]);
+    const wrong = parseRunnerPayload(payload({ dams: result('rid', [dam('1')]) }), now);
+    expect(wrong.ok).toBe(false);
+  });
+});
+
 /** A row of square districts 0.01° wide, west to east from 100.40 E. */
 const districts: ZoneFeature[] = Array.from({ length: 20 }, (_, i) => {
   const [w, e, s, n] = [100.4 + i * 0.01, 100.41 + i * 0.01, 13.7, 13.71];
@@ -295,6 +377,12 @@ describe('suspiciousJump', () => {
     const events = { events: result('nasa-eonet', [{ ...storm, location: inDistrict(0) }]) } as FeedMap;
     const verdict = suspiciousJump({ ...rainFeed(0), ...fires }, { ...rainFeed(0), ...fires, ...events }, districts, now);
     expect(verdict).toMatchObject({ suspicious: false, newDanger: [], districtsWithData: 20 });
+  });
+
+  it('is not moved by dams (display only)', () => {
+    const dams = { dams: result('thaiwater', districts.map((_, i) => dam(`D${i}`, { location: inDistrict(i), value: 150, severity: 'danger' }))) } as FeedMap;
+    const verdict = suspiciousJump(rainFeed(0), { ...rainFeed(0), ...dams }, districts, now);
+    expect(verdict).toMatchObject({ suspicious: false, newDanger: [] });
   });
 
   it('ignores a failed feed, as the store keeps its previous items', () => {

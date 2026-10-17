@@ -117,7 +117,47 @@ Map<String, dynamic> _feed(String source, List<Map<String, dynamic>> items) => {
   'items': items,
 };
 
-Map<String, dynamic> _storm() => {
+/// A ThaiWater dam as runner.feeds.dams carries it (Observation with a DamExtra, packages/sources thaiwater.ts).
+Map<String, dynamic> _dam(
+  String id, {
+  String size = 'large',
+  double pct = 60,
+  double? usable = 45,
+  double dLat = 0.03,
+  double dLng = 0.05,
+  String observedAt = '2026-10-04T17:00:00.000Z',
+}) => {
+  'id': 'thaiwater-dam:$size:$id',
+  'kind': 'dam',
+  'source': 'thaiwater',
+  'name': {'th': 'เขื่อน $id', 'en': size == 'large' ? 'Dam $id' : 'เขื่อน $id'},
+  'location': {'lat': _ref.lat + dLat, 'lng': _ref.lng + dLng},
+  'observedAt': observedAt,
+  'value': pct,
+  'unit': '%',
+  'severity': pct > 100 ? 'danger' : (pct > 80 ? 'watch' : 'ok'),
+  'extra': {
+    'storageMcm': 600.5,
+    'capacityMcm': 960.8,
+    'usablePct': usable,
+    'inflowMcm': size == 'large' ? 4.2 : null,
+    'releaseMcm': size == 'large' ? 1.5 : null,
+    'size': size,
+    'basin': 'ลุ่มน้ำป่าสัก',
+    'province': 'ลพบุรี',
+    'agency': 'กรมชลประทาน',
+  },
+};
+
+Map<String, dynamic> _withDams(Map<String, dynamic> s) {
+  _feeds(s, 'runner')['dams'] = _feed('thaiwater', [
+    _dam('pasak', pct: 105.2, usable: 55.1),
+    _dam('m1', size: 'medium', pct: 35, usable: 20, dLat: -0.03),
+  ]);
+  return s;
+}
+
+Map<String, dynamic> _storm({String url = 'https://eonet.gsfc.nasa.gov/api/v3/events/EONET_1'}) => {
   'id': 'EONET_1',
   'category': 'severeStorms',
   'title': 'Typhoon Test',
@@ -135,7 +175,7 @@ Map<String, dynamic> _storm() => {
     },
   ],
   'updatedAt': '2026-10-05T00:00:00Z',
-  'url': 'https://eonet.gsfc.nasa.gov/api/v3/events/EONET_1',
+  'url': url,
 };
 
 void main() {
@@ -164,6 +204,29 @@ void main() {
     expect(CoreConfig.quakeLookbackHours, 24 * 7);
     expect(defaults, contains('duplicateWithinSeconds: ${CoreConfig.quakeDuplicateWithinSeconds},'));
     expect(defaults, contains('duplicateWithinKm: ${CoreConfig.quakeDuplicateWithinKm.round()},'));
+  });
+
+  // If this fails, packages/core/src/config.ts changed: update the dam values in CoreConfig to match.
+  test('dam bands match DEFAULT_CONFIG.dam and damStatus in packages/core', () {
+    final config = File('../../packages/core/src/config.ts').readAsStringSync();
+    final defaults = config.substring(config.indexOf('export const DEFAULT_CONFIG'));
+    final dam = defaults.substring(defaults.indexOf('dam: {'));
+    double value(String key) => double.parse(RegExp('\\b$key: ([\\d.]+)').firstMatch(dam)!.group(1)!);
+    expect(CoreConfig.damOverPct, value('overPct'));
+    expect(CoreConfig.damHighPct, value('highPct'));
+    expect(CoreConfig.damLowPct, value('lowPct'));
+    expect(CoreConfig.damCriticalPct, value('criticalPct'));
+    expect(CoreConfig.damCriticalUsablePct, value('criticalUsablePct'));
+
+    expect(damStatusOf(100.1, 90), 'over');
+    expect(damStatusOf(100, 90), 'high');
+    expect(damStatusOf(80.5, 10), 'high'); // storage above highPct wins over low usable water
+    expect(damStatusOf(80, 50), 'normal');
+    expect(damStatusOf(50, 40), 'low');
+    expect(damStatusOf(60, 30), 'critical');
+    expect(damStatusOf(30, null), 'critical');
+    expect(damStatusOf(31, null), 'low');
+    expect(damStatusOf(25, 35), 'low'); // usable known: storage alone is not critical
   });
 
   test('quake severity follows packages/core/src/severity.ts', () {
@@ -263,6 +326,27 @@ void main() {
       expect(big.url, isNull);
     });
 
+    test('dams: status worked out as on the server, coloured by damSeverity, faded after 60 h', () {
+      final d = _build(_withDams(snapshotJson()));
+      final pasak = _point(d, 'thaiwater-dam:large:pasak');
+      expect((pasak.layer, pasak.level, pasak.value, pasak.stale), (MapLayer.dam, HwLevel.danger, 105.2, false));
+      expect((pasak.dam!.status, pasak.dam!.size, pasak.dam!.inflowMcm), (DamStatus.over, DamSize.large, 4.2));
+      expect(pasak.dam!.km, closeTo(6.3, 0.5));
+      final m1 = _point(d, 'thaiwater-dam:medium:m1');
+      expect((m1.level, m1.dam!.status, m1.dam!.size), (HwLevel.normal, DamStatus.critical, DamSize.medium));
+
+      final s = snapshotJson();
+      _feeds(s, 'runner')['dams'] = _feed('thaiwater', [
+        _dam('old', observedAt: '2026-10-01T17:00:00.000Z'),
+        _dam('none')..['value'] = null,
+      ]);
+      final old = _build(s).points.where((p) => p.layer == MapLayer.dam).toList();
+      expect(old.map((p) => p.id), ['thaiwater-dam:large:old']);
+      expect((old.single.stale, old.single.dam!.stale), (true, true));
+      // No dams feed (older server): no dam points, nothing else changes.
+      expect(_build(snapshotJson()).points.where((p) => p.layer == MapLayer.dam), isEmpty);
+    });
+
     test("the phone's BMA copy replaces a failing server feed", () {
       final s = snapshotJson();
       final flood = _feeds(s, 'runner')['flood'] as Map<String, dynamic>;
@@ -320,6 +404,53 @@ void main() {
       expect(pinStyle(point(MapLayer.rain, HwLevel.watch, 12.5)).shape, PinShape.pill);
       expect(pinStyle(point(MapLayer.quake, HwLevel.danger, 7.24)).label, '7.2');
       expect(pinStyle(point(MapLayer.quake, HwLevel.danger, 7.2)).shape, PinShape.diamond);
+    });
+
+    test('dam pins are hexagons, large dams bigger and labelled, and never carry the alert "!"', () {
+      final dams = MapData(
+        points: buildMapData(
+          MapSnapshot.fromJson(_withDams(snapshotJson())),
+          refLat: _ref.lat,
+          refLng: _ref.lng,
+          now: fixtureNow,
+        ).points.where((p) => p.layer == MapLayer.dam).toList(),
+        floodOnDevice: false,
+        rainOnDevice: false,
+      );
+      final large = pinStyle(_point(dams, 'thaiwater-dam:large:pasak'));
+      final medium = pinStyle(_point(dams, 'thaiwater-dam:medium:m1'));
+      expect(
+        (large.shape, large.size.width, large.label, large.level),
+        (PinShape.hexagon, PinSize.damLarge, '105%', HwLevel.danger),
+      );
+      expect((medium.shape, medium.size.width, medium.label), (PinShape.hexagon, PinSize.damMedium, null));
+      expect(PinSize.damLarge, greaterThan(PinSize.damMedium));
+      expect(large.badge, isFalse); // display only
+    });
+
+    testWidgets('dam pins are filled with the status colour inside an ink ring', (tester) async {
+      await pumpThemed(
+        tester,
+        const HazardPin(
+          style: PinStyle(
+            shape: PinShape.hexagon,
+            size: Size.square(PinSize.damLarge),
+            level: HwLevel.watch,
+            label: '90%',
+          ),
+        ),
+      );
+      final ctx = tester.element(find.byType(HazardPin));
+      final deco =
+          tester
+                  .widget<Container>(
+                    find.descendant(of: find.byType(HazardPin), matching: find.byType(Container)).first,
+                  )
+                  .decoration!
+              as ShapeDecoration;
+      expect(deco.color, ctx.hw.sevWatch);
+      expect((deco.shape as StarBorder).side.color, ctx.hw.ink);
+      expect(find.text('!'), findsNothing);
     });
 
     Color fillOf(WidgetTester tester) {
@@ -400,7 +531,88 @@ void main() {
       final tile = tester.widget<ReadingTile>(find.byType(ReadingTile));
       expect((tile.value, tile.unit, tile.level, tile.note), ('25', 'ซม.', HwLevel.warning, 'น้ำท่วม'));
       expect(tile.meta, startsWith('ข้อมูลจาก กทม. · เวลาวัด '));
-      expect(tile.sources, [(name: 'กทม.', url: 'https://weather.bangkok.go.th')]);
+      expect(tile.sources, [(name: 'กทม.', url: 'https://weather.bangkok.go.th/flood')]);
+      // The link names the agency in full and its site.
+      expect(find.widgetWithText(SourceLink, 'ข้อมูลจาก กรุงเทพมหานคร · weather.bangkok.go.th'), findsOneWidget);
+    });
+
+    /// (shown text, url) of each link in the credit strip under the map.
+    List<(String, String)> creditLinks(WidgetTester tester) => [
+      for (final link in tester.widgetList<SourceLink>(
+        find.descendant(of: find.byKey(const ValueKey('map-data-credit')), matching: find.byType(SourceLink)),
+      ))
+        (link.label, link.url),
+    ];
+
+    testWidgets('the default map credits and links every agency it shows, under the map and clear of its controls', (
+      tester,
+    ) async {
+      await pumpMap(tester);
+      final strip = find.byKey(const ValueKey('map-data-credit'));
+      expect(strip, findsOneWidget);
+      expect(find.descendant(of: strip, matching: find.text('ข้อมูลบนแผนที่: ')), findsOneWidget);
+      expect(creditLinks(tester), [
+        ('กรุงเทพมหานคร · weather.bangkok.go.th', 'https://weather.bangkok.go.th/flood'),
+        ('สถาบันสารสนเทศทรัพยากรน้ำ (สสน.) · thaiwater.net', 'https://www.thaiwater.net'),
+        ('กรมอุตุนิยมวิทยา · earthquake.tmd.go.th', 'https://earthquake.tmd.go.th'),
+        ('สำนักสำรวจธรณีวิทยาสหรัฐฯ (USGS) · earthquake.usgs.gov', 'https://earthquake.usgs.gov'),
+        ('NASA FIRMS · firms.modaps.eosdis.nasa.gov', 'https://firms.modaps.eosdis.nasa.gov'),
+      ]);
+      // Below the map itself, so no map button or pin sits over it.
+      final map = tester.getRect(find.byType(FlutterMap));
+      expect(tester.getRect(strip).top, greaterThanOrEqualTo(map.bottom));
+      for (final button in tester.widgetList<IconButton>(find.byType(IconButton))) {
+        expect(tester.getRect(find.byWidget(button)).bottom, lessThanOrEqualTo(map.bottom));
+      }
+      for (final link in tester.widgetList<SourceLink>(find.descendant(of: strip, matching: find.byType(SourceLink)))) {
+        final size = tester.getSize(find.byWidget(link));
+        expect(size.height, greaterThanOrEqualTo(HwSize.touchTarget));
+        expect(tester.getSemantics(find.byWidget(link)).flagsCollection.isLink, isTrue);
+      }
+
+      final opened = <Uri>[];
+      final realLaunchLink = launchLink;
+      launchLink = (uri) async {
+        opened.add(uri);
+        return true;
+      };
+      addTearDown(() => launchLink = realLaunchLink);
+      await tester.tap(find.widgetWithText(SourceLink, 'กรมอุตุนิยมวิทยา · earthquake.tmd.go.th'));
+      await tester.pumpAndSettle();
+      expect(opened, [Uri.parse('https://earthquake.tmd.go.th')]);
+    });
+
+    testWidgets('the credit strip follows the layers: BMA rain links its own page once flood is off', (tester) async {
+      await pumpMap(tester);
+      await tester.tap(find.widgetWithText(FilterChip, 'ฝุ่น PM2.5'));
+      await tester.pumpAndSettle();
+      expect(creditLinks(tester), contains(('กรมควบคุมมลพิษ · air4thai.pcd.go.th', 'https://air4thai.pcd.go.th')));
+      final flood = find.widgetWithText(FilterChip, 'น้ำท่วมบนถนน');
+      await tester.ensureVisible(flood);
+      await tester.tap(flood);
+      await tester.pumpAndSettle();
+      expect(creditLinks(tester).first, (
+        'กรุงเทพมหานคร · weather.bangkok.go.th',
+        'https://weather.bangkok.go.th/rain',
+      ));
+    });
+
+    test('credit sources come from the active layers, each once', () {
+      expect(mapCreditSourceIds(defaultMapLayers, const NasaLayerState(firms: false, events: false)), [
+        'bma-flood',
+        'bma-rain',
+        'thaiwater',
+        'tmd',
+        'usgs',
+      ]);
+      expect(
+        mapCreditSourceIds({
+          MapLayer.water,
+          MapLayer.dam,
+        }, const NasaLayerState(firms: true, events: true, raster: 'flood')),
+        ['thaiwater', 'rid', 'nasa-gibs', 'nasa-firms', 'nasa-eonet'],
+      );
+      expect(mapCreditSourceIds({}, const NasaLayerState(firms: false, events: false)), isEmpty);
     });
 
     testWidgets('layer chips show and hide pins', (tester) async {
@@ -434,6 +646,109 @@ void main() {
         }
       });
     }
+
+    group('dams', () {
+      Future<void> pumpDamMap(WidgetTester tester) async {
+        await pumpThemed(
+          tester,
+          SizedBox.expand(
+            child: MapScreen(
+              settings: AppSettings()..district = fixtureDistrict(),
+              api: FakeApi()..snapshotData = _withDams(snapshotJson()),
+              location: FakeLocation(LocationUnavailable(denied: true)),
+              clock: () => fixtureNow,
+              baseMap: (_, _, _) => const SizedBox.shrink(),
+              nasaStore: MemoryNasaLayerStore(const NasaLayerState(firms: false, events: false)),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+      }
+
+      const pasak = ValueKey('thaiwater-dam:large:pasak');
+      const m1 = ValueKey('thaiwater-dam:medium:m1');
+      final legend = find.byKey(const ValueKey('dam-map-legend'));
+
+      Future<void> turnOn(WidgetTester tester) async {
+        final chip = find.widgetWithText(FilterChip, 'เขื่อนและอ่างเก็บน้ำ');
+        await tester.ensureVisible(chip);
+        await tester.tap(chip);
+        await tester.pumpAndSettle();
+      }
+
+      test('the dam layer starts off', () {
+        expect(MapLayer.values, contains(MapLayer.dam));
+        expect(defaultMapLayers, isNot(contains(MapLayer.dam)));
+      });
+
+      testWidgets('off by default; the chip shows size-distinct pins and a legend linking ThaiWater', (tester) async {
+        await pumpDamMap(tester);
+        expect(find.byKey(pasak), findsNothing);
+        expect(legend, findsNothing);
+        expect(tester.widget<FilterChip>(find.widgetWithText(FilterChip, 'เขื่อนและอ่างเก็บน้ำ')).selected, isFalse);
+
+        await turnOn(tester);
+        expect(find.byKey(pasak), findsOneWidget);
+        expect(find.byKey(m1), findsOneWidget);
+        double pinWidth(Key k) =>
+            tester.getSize(find.descendant(of: find.byKey(k), matching: find.byType(HazardPin))).width;
+        expect(pinWidth(pasak), greaterThan(pinWidth(m1)));
+        expect(tester.getSemantics(find.byKey(pasak)).label, 'เขื่อนและอ่างเก็บน้ำ เขื่อน pasak ระดับเกินความจุ');
+
+        expect(legend, findsOneWidget);
+        for (final t in [
+          'เกินความจุ',
+          'น้ำมาก',
+          'ปกติ · น้ำน้อย · น้ำน้อยวิกฤต',
+          'เขื่อนขนาดใหญ่',
+          'อ่างเก็บน้ำขนาดกลาง',
+        ]) {
+          expect(
+            find.descendant(of: legend, matching: find.text(t)),
+            findsOneWidget,
+            reason: t,
+          );
+        }
+        // The credit strip under the map links both dam sources; the legend itself carries no second copy.
+        expect(find.descendant(of: legend, matching: find.byType(SourceLink)), findsNothing);
+        expect(creditLinks(tester).sublist(creditLinks(tester).length - 1), [
+          ('กรมชลประทาน · app.rid.go.th', 'https://app.rid.go.th/reservoir'),
+        ]);
+        expect(
+          creditLinks(tester),
+          contains(('สถาบันสารสนเทศทรัพยากรน้ำ (สสน.) · thaiwater.net', 'https://www.thaiwater.net')),
+        );
+        // NASA credits stay off: only the dam legend.
+        expect(find.byKey(const ValueKey('nasa-credits')), findsNothing);
+
+        await turnOn(tester); // off again
+        expect(find.byKey(pasak), findsNothing);
+        expect(legend, findsNothing);
+      });
+
+      testWidgets('tapping a dam shows its reading, display-only note and ThaiWater link', (tester) async {
+        await pumpDamMap(tester);
+        await turnOn(tester);
+        await tester.tap(find.byKey(pasak));
+        await tester.pumpAndSettle();
+        final sheet = find.byKey(const ValueKey('dam-sheet'));
+        expect(sheet, findsOneWidget);
+        Finder inSheet(String t) => find.descendant(of: sheet, matching: find.text(t));
+        expect(inSheet('เขื่อน pasak'), findsOneWidget);
+        expect(inSheet('เกินความจุ · 105.2%'), findsOneWidget);
+        expect(inSheet('เขื่อนขนาดใหญ่ · ลุ่มน้ำป่าสัก'), findsOneWidget);
+        expect(inSheet('น้ำใช้การได้ 55.1% · 600.5 / 960.8 ล้าน ลบ.ม.'), findsOneWidget);
+        expect(inSheet('ไหลเข้า 4.2 · ระบาย 1.5 ล้าน ลบ.ม./วัน'), findsOneWidget);
+        expect(inSheet('ข้อมูลวันที่ 5 ต.ค.'), findsOneWidget);
+        expect(inSheet('ลพบุรี · ข้อมูลประกอบ ไม่ใช่การแจ้งเตือน'), findsOneWidget);
+        expect(find.byType(ReadingTile), findsNothing);
+        final link = tester
+            .widgetList<SourceLink>(find.descendant(of: sheet, matching: find.byType(SourceLink)))
+            .firstWhere((l) => l.url == sourceUrl('thaiwater'));
+        expect(link.label, contains('thaiwater.net'));
+        expect(tester.getSemantics(find.byWidget(link)).flagsCollection.isLink, isTrue);
+      });
+    });
 
     testWidgets('my location adds a "you" pin; refused permission explains how to allow it', (tester) async {
       final location = FakeLocation(LocationUnavailable(denied: true));
@@ -648,7 +963,11 @@ void main() {
       expect(nasaCredits(const NasaLayerState(firms: false, events: false)), isEmpty);
     });
 
-    Future<(MemoryNasaLayerStore, _FakeTiles)> pumpNasaMap(WidgetTester tester, {NasaLayerState? saved}) async {
+    Future<(MemoryNasaLayerStore, _FakeTiles)> pumpNasaMap(
+      WidgetTester tester, {
+      NasaLayerState? saved,
+      String? stormUrl,
+    }) async {
       final settings = AppSettings()..district = fixtureDistrict();
       final s = snapshotJson();
       // West of the district centre, clear of the sensor pins; the other one is far outside the view.
@@ -656,7 +975,7 @@ void main() {
         _fire('fire-near', _ref.lat, _ref.lng - 0.04),
         _fire('fire-far', 18.8, 98.9, frp: null),
       ]);
-      _feeds(s, 'runner')['events'] = _feed('nasa-eonet', [_storm()]);
+      _feeds(s, 'runner')['events'] = _feed('nasa-eonet', [if (stormUrl == null) _storm() else _storm(url: stormUrl)]);
       final store = MemoryNasaLayerStore(saved);
       final tiles = _FakeTiles();
       await pumpThemed(
@@ -677,10 +996,10 @@ void main() {
       return (store, tiles);
     }
 
-    /// The source links inside [of], as (label, url).
+    /// The source links inside [of], as (shown text, url).
     List<(String, String)> links(WidgetTester tester, Finder of) => [
       for (final link in tester.widgetList<SourceLink>(find.descendant(of: of, matching: find.byType(SourceLink))))
-        (link.label, link.url),
+        (tester.widget<Text>(find.descendant(of: find.byWidget(link), matching: find.byType(Text))).data!, link.url),
     ];
 
     final credits = find.byKey(const ValueKey('nasa-credits'));
@@ -720,10 +1039,11 @@ void main() {
       expect(find.descendant(of: sheet, matching: find.text(NasaAttribution.firms)), findsOneWidget);
       // NASA is US-government data: the sheet links FIRMS itself (Google Play's source-link rule).
       expect(sourceUrl('nasa-firms'), 'https://firms.modaps.eosdis.nasa.gov');
-      expect(links(tester, sheet), [('NASA FIRMS ↗', sourceUrl('nasa-firms'))]);
+      // The link says whose data it is and where it goes.
+      expect(links(tester, sheet), [('ข้อมูลจาก NASA FIRMS · firms.modaps.eosdis.nasa.gov', sourceUrl('nasa-firms'))]);
       final semantics = tester.getSemantics(find.descendant(of: sheet, matching: find.byType(SourceLink)));
       expect(semantics.flagsCollection.isLink, isTrue);
-      expect(semantics.label, startsWith('NASA FIRMS ↗, '));
+      expect(semantics.label, startsWith('ข้อมูลจาก NASA FIRMS · firms.modaps.eosdis.nasa.gov, '));
     });
 
     testWidgets('a storm sheet links its EONET page', (tester) async {
@@ -734,8 +1054,38 @@ void main() {
       await tester.tap(find.byType(EventPin));
       await tester.pumpAndSettle();
       expect(links(tester, find.byType(BottomSheet)), [
-        ('NASA EONET ↗', 'https://eonet.gsfc.nasa.gov/api/v3/events/EONET_1'),
+        ('ข้อมูลจาก NASA EONET · eonet.gsfc.nasa.gov', 'https://eonet.gsfc.nasa.gov/api/v3/events/EONET_1'),
       ]);
+    });
+
+    testWidgets('a storm from another site links EONET as its source and the event page by its site', (tester) async {
+      await pumpNasaMap(
+        tester,
+        saved: const NasaLayerState(firms: false, events: true),
+        stormUrl: 'https://www.gdacs.org/report.aspx?eventid=1001',
+      );
+      MapController.of(tester.element(find.byType(MarkerLayer).first)).move(const LatLng(16, 112), 6);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(EventPin));
+      await tester.pumpAndSettle();
+      expect(links(tester, find.byType(BottomSheet)), [
+        ('ข้อมูลจาก NASA EONET · eonet.gsfc.nasa.gov', 'https://eonet.gsfc.nasa.gov'),
+        ('หน้าเหตุการณ์ · gdacs.org', 'https://www.gdacs.org/report.aspx?eventid=1001'),
+      ]);
+      // No bare address anywhere in the sheet.
+      expect(find.textContaining('https://'), findsNothing);
+    });
+
+    test('event sheet links: EONET pages as they are, other sites as the event page, no https no page', () {
+      final l = lookupAppLocalizations(const Locale('en'));
+      final own = eventSheetLinks(l, 'https://eonet.gsfc.nasa.gov/api/v3/events/E1');
+      expect(own.source?.url, 'https://eonet.gsfc.nasa.gov/api/v3/events/E1');
+      expect(own.page, isNull);
+      final other = eventSheetLinks(l, 'https://www.metoc.navy.mil/jtwc/jtwc.html');
+      expect(other.source?.url, 'https://eonet.gsfc.nasa.gov');
+      expect(other.page, (name: 'Event page · metoc.navy.mil', url: 'https://www.metoc.navy.mil/jtwc/jtwc.html'));
+      expect(eventSheetLinks(l, 'http://example.com/x'), (source: other.source, page: null));
+      expect(eventSheetLinks(l, null).page, isNull);
     });
 
     testWidgets('the layer sheet turns on one raster at a time with its day and credit, and remembers it', (
