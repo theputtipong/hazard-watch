@@ -33,6 +33,10 @@ abstract final class MapConfig {
   static const regionZoom = 11.0;
   static const areaZoom = 12.0;
   static const locateZoom = 14.0;
+
+  /// Credit/legend panels over the map: at 0.9 their muted text stays 4.5:1 over any base map or satellite image
+  /// (0.8 let a dark image pull it to 3.5:1).
+  static const creditPanelAlpha = 0.9;
 }
 
 /// OpenMapTiles `name:xx` in the app language, falling back to the local `name` (applyLabels in
@@ -164,7 +168,7 @@ class BaseMapAttribution extends StatelessWidget {
       alignment: Alignment.bottomRight,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: HwSize.space1, vertical: 2),
-        color: c.surface.withValues(alpha: 0.8),
+        color: c.surface.withValues(alpha: MapConfig.creditPanelAlpha),
         child: SourceText(
           MapConfig.attribution,
           sources: MapConfig.attributionLinks,

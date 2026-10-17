@@ -78,7 +78,10 @@ class _AreaPickerScreenState extends State<AreaPickerScreen> {
   ProvinceGroup? _province;
   bool _provinceFromCurrent = false;
   bool _locating = false;
-  String? _locationMessage;
+  _LocationNote? _note;
+
+  /// Bumped by each try and by cancel, so a late answer from a cancelled try is ignored.
+  int _attempt = 0;
 
   Future<DistrictIndex> _loadIndex() async => DistrictIndex(await widget.api.districts());
 
@@ -88,34 +91,53 @@ class _AreaPickerScreenState extends State<AreaPickerScreen> {
     super.dispose();
   }
 
+  void _cancelLocation() => setState(() {
+    _attempt++;
+    _locating = false;
+    _note = null;
+  });
+
   Future<void> _useLocation() async {
     final l = AppLocalizations.of(context);
+    final attempt = ++_attempt;
     setState(() {
       _locating = true;
-      _locationMessage = null;
+      _note = null;
     });
-    String? message;
+    _LocationNote? note;
     District? found;
     final fix = await widget.location.current();
-    if (fix is LocationFound) {
-      try {
-        found = (await widget.api.area(lat: fix.lat, lng: fix.lng)).district;
-      } on OutsideCoverageException {
-        message = l.extOutside;
-      } on ApiException {
-        message = l.extLoadFailed;
-      }
-    } else if (fix is LocationUnavailable) {
-      message = fix.denied ? l.permissionLocationDenied : l.extGpsFailed;
+    if (!mounted || attempt != _attempt) return;
+    switch (fix) {
+      case LocationFound():
+        try {
+          found = (await widget.api.area(lat: fix.lat, lng: fix.lng)).district;
+        } on OutsideCoverageException {
+          note = _LocationNote(l.extOutside);
+        } on ApiException {
+          note = _LocationNote(l.extLoadFailed, l.commonRetry, _useLocation);
+        }
+      case LocationUnavailable(:final reason):
+        note = switch (reason) {
+          LocationFailure.serviceOff => _LocationNote(l.locationServiceOff, l.locationTurnOn, () {
+            widget.location.openLocationSettings();
+          }),
+          LocationFailure.denied => _LocationNote(l.permissionLocationDenied),
+          LocationFailure.deniedForever => _LocationNote(l.locationBlocked, l.locationOpenSettings, () {
+            widget.location.openAppSettings();
+          }),
+          LocationFailure.timeout => _LocationNote(l.locationTimeout, l.commonRetry, _useLocation),
+          LocationFailure.error => _LocationNote(l.extGpsFailed, l.commonRetry, _useLocation),
+        };
     }
-    if (!mounted) return;
+    if (!mounted || attempt != _attempt) return;
     if (found != null) {
       Navigator.of(context).pop(found);
       return;
     }
     setState(() {
       _locating = false;
-      _locationMessage = message;
+      _note = note;
     });
   }
 
@@ -167,9 +189,34 @@ class _AreaPickerScreenState extends State<AreaPickerScreen> {
           icon: const Icon(Icons.my_location_rounded, size: 20),
           label: Text(_locating ? l.extLocating : l.locationUseMine),
         ),
-        if (_locationMessage != null) ...[
+        if (_locating) ...[
           const SizedBox(height: HwSize.space2),
-          Text(_locationMessage!, style: text.bodyLarge),
+          Row(
+            children: [
+              const SizedBox.square(dimension: 20, child: CircularProgressIndicator(strokeWidth: 2.5)),
+              const SizedBox(width: HwSize.space3),
+              Expanded(
+                child: Semantics(
+                  liveRegion: true,
+                  child: Text(l.locationWaitHint, style: text.bodyMedium!.copyWith(color: c.inkMuted)),
+                ),
+              ),
+              TextButton(onPressed: _cancelLocation, child: Text(l.commonCancel)),
+            ],
+          ),
+        ],
+        if (_note case final note?) ...[
+          const SizedBox(height: HwSize.space2),
+          Semantics(liveRegion: true, child: Text(note.message, style: text.bodyLarge)),
+          if (note.actionLabel case final label?)
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: OutlinedButton(
+                style: OutlinedButton.styleFrom(minimumSize: const Size(0, HwSize.touchTarget)),
+                onPressed: note.action,
+                child: Text(label),
+              ),
+            ),
         ],
         const SizedBox(height: HwSize.space6),
         Text(l.extPickDistrict, style: text.labelLarge!.copyWith(color: c.inkMuted)),
@@ -287,6 +334,15 @@ class _AreaPickerScreenState extends State<AreaPickerScreen> {
       },
     );
   }
+}
+
+/// What the location try said, and the one thing that can fix it (if any). The district list below always stays.
+class _LocationNote {
+  _LocationNote(this.message, [this.actionLabel, this.action]);
+
+  final String message;
+  final String? actionLabel;
+  final VoidCallback? action;
 }
 
 class _DistrictRow extends StatelessWidget {

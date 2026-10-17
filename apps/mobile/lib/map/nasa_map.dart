@@ -257,11 +257,15 @@ DateTime? nasaFeedTime(MapSnapshot? s, String key) {
   return best ?? f.fetchedAt;
 }
 
-/// Orange like the warning tone, but small dots so it is not read as a severity (WEB.map.fireColor: light palette).
-Color get fireColor => HwColors.light.sevWarning;
+/// Orange like the warning tone, but small dots so it is not read as a severity (WEB.map.fireColor). Taken from the
+/// base palettes, not the colour-blind swap, since it is not a severity: the light theme's warning ink (the warning fill
+/// is 2.8:1 on the light base map), the dark theme's warning fill (5.9:1 on the dark base map).
+Color fireColor(BuildContext context) =>
+    Theme.of(context).brightness == Brightness.dark ? HwColors.dark.sevWarning : HwColors.light.sevWarningInk;
 
-/// WEB.map.eventColor.
-Color get eventColor => HwColors.light.brand;
+/// WEB.map.eventColor: brand navy in light. In dark the navy disappears into the dark base map (1.1:1), so events use
+/// the theme's ink (light on dark) with its onInk glyph instead.
+Color eventColor(BuildContext context) => context.hw.ink;
 
 IconData eventIcon(String category) => switch (category) {
   'severeStorms' => Icons.cyclone,
@@ -315,6 +319,7 @@ class _FireLayerState extends State<FireLayer> {
   Widget build(BuildContext context) {
     final full = MapCamera.of(context).zoom >= NasaMapConfig.firmsMinZoom;
     final radius = full ? NasaMapConfig.firmsRadiusFull : NasaMapConfig.firmsRadiusSmall;
+    final fire = fireColor(context).withValues(alpha: 0.9);
     return GestureDetector(
       onTap: () {
         final hit = _hit.value?.hitValues.firstOrNull;
@@ -327,7 +332,7 @@ class _FireLayerState extends State<FireLayer> {
             CircleMarker(
               point: LatLng(f.lat, f.lng),
               radius: radius,
-              color: fireColor.withValues(alpha: 0.9),
+              color: fire,
               borderColor: Colors.white,
               borderStrokeWidth: full ? 1 : 0.5,
               hitValue: f,
@@ -339,13 +344,13 @@ class _FireLayerState extends State<FireLayer> {
 }
 
 /// Storms' recent tracks as dashed lines, under the event markers.
-PolylineLayer eventTrackLayer(List<EventPoint> events) => PolylineLayer(
+PolylineLayer eventTrackLayer(BuildContext context, List<EventPoint> events) => PolylineLayer(
   polylines: [
     for (final e in events)
       if (e.track.length > 1)
         Polyline(
           points: [for (final p in e.track) LatLng(p.lat, p.lng)],
-          color: eventColor.withValues(alpha: 0.7),
+          color: eventColor(context).withValues(alpha: 0.7),
           strokeWidth: 2,
           pattern: StrokePattern.dashed(segments: const [6, 6]),
         ),
@@ -360,16 +365,17 @@ class EventPin extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.hw;
     return Container(
       width: NasaMapConfig.eventIconSize,
       height: NasaMapConfig.eventIconSize,
       decoration: BoxDecoration(
-        color: eventColor,
+        color: eventColor(context),
         shape: BoxShape.circle,
-        border: Border.all(color: Colors.white, width: 2),
+        border: Border.all(color: c.surface, width: 2),
         boxShadow: const [BoxShadow(color: Color(0x33000000), blurRadius: 3, offset: Offset(0, 1))],
       ),
-      child: Icon(eventIcon(category), size: NasaMapConfig.eventIconSize * 0.62, color: Colors.white),
+      child: Icon(eventIcon(category), size: NasaMapConfig.eventIconSize * 0.62, color: c.onInk),
     );
   }
 }
@@ -389,3 +395,117 @@ List<SourceRef> get nasaSourceRefs => [
   ?sourceRef('NASA FIRMS', 'nasa-firms'),
   ?sourceRef('NASA EONET', 'nasa-eonet'),
 ];
+
+/// Legend text for a message key from packages/core (NasaLegend.stops[].labelKey / noteKey).
+String nasaLegendText(AppLocalizations l, String key) => switch (key) {
+  'nasa.legend.flood.surface' => l.nasaLegendFloodSurface,
+  'nasa.legend.flood.recurring' => l.nasaLegendFloodRecurring,
+  'nasa.legend.flood.flood' => l.nasaLegendFloodFlood,
+  'nasa.legend.flood.noData' => l.nasaLegendFloodNoData,
+  'nasa.legend.flood.note' => l.nasaLegendFloodNote,
+  'nasa.legend.rain.r01' => l.nasaLegendRainR01,
+  'nasa.legend.rain.r1' => l.nasaLegendRainR1,
+  'nasa.legend.rain.r5' => l.nasaLegendRainR5,
+  'nasa.legend.rain.r20' => l.nasaLegendRainR20,
+  'nasa.legend.rain.r50' => l.nasaLegendRainR50,
+  'nasa.legend.rain.note' => l.nasaLegendRainNote,
+  'nasa.legend.aod.low' => l.nasaLegendAodLow,
+  'nasa.legend.aod.a02' => l.nasaLegendAodA02,
+  'nasa.legend.aod.a04' => l.nasaLegendAodA04,
+  'nasa.legend.aod.a06' => l.nasaLegendAodA06,
+  'nasa.legend.aod.high' => l.nasaLegendAodHigh,
+  'nasa.legend.aod.note' => l.nasaLegendAodNote,
+  _ => key,
+};
+
+/// The legend of the raster that is on, if it has one (photos and the fire layer do not).
+NasaLegend? nasaLegend(NasaLayerState s) => s.raster == null ? null : nasaLayers[s.raster]?.legend;
+
+/// What a raster's colours mean: swatches for classes, a gradient bar for a ramp, always with text labels so the
+/// colour is never the only cue. Screen readers hear the layer name and the labels in order. [note] adds the
+/// layer's caveat (resolution, cloud) below, for the layer sheet; the map shows the compact form.
+class NasaLegendView extends StatelessWidget {
+  const NasaLegendView({super.key, required this.layerId, required this.legend, this.note = false});
+
+  final String layerId;
+  final NasaLegend legend;
+  final bool note;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final c = context.hw;
+    final style = Theme.of(context).textTheme.labelSmall!.copyWith(color: c.ink);
+    final labels = [for (final s in legend.stops) nasaLegendText(l, s.labelKey)];
+    final scale = switch (legend.kind) {
+      NasaLegendKind.classes => Wrap(
+        spacing: HwSize.space2,
+        runSpacing: 2,
+        children: [
+          for (final (i, s) in legend.stops.indexed)
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  key: ValueKey('nasa-legend-swatch:${s.labelKey}'),
+                  width: 10,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    color: s.color,
+                    border: Border.all(color: c.line),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(width: HwSize.space1),
+                Text(labels[i], style: style),
+              ],
+            ),
+        ],
+      ),
+      NasaLegendKind.ramp => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            key: const ValueKey('nasa-legend-ramp'),
+            height: 8,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(colors: [for (final s in legend.stops) s.color]),
+              border: Border.all(color: c.line),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: 2),
+          // Low end left, high end right; wraps instead of overflowing at large text sizes.
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            spacing: HwSize.space1,
+            children: [for (final t in labels) Text(t, style: style)],
+          ),
+        ],
+      ),
+    };
+    final labelled = Semantics(
+      container: true,
+      label: '${nasaLayerName(l, layerId)}: ${labels.join(', ')}',
+      excludeSemantics: true,
+      child: scale,
+    );
+    return Column(
+      key: ValueKey('nasa-legend:$layerId'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        labelled,
+        if (note) ...[
+          const SizedBox(height: HwSize.space1),
+          Text(
+            nasaLegendText(l, legend.noteKey),
+            key: ValueKey('nasa-legend-note:$layerId'),
+            style: Theme.of(context).textTheme.bodySmall!.copyWith(color: c.inkMuted),
+          ),
+        ],
+      ],
+    );
+  }
+}

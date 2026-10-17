@@ -3,12 +3,15 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { districtAt } from '../src/area';
 import { INGEST } from '../src/config';
 import { app, type Env } from '../src/index';
+import { readRunnerEffective, type RelayRecord } from '../src/relayStore';
 import { KEYS, writeGroup, type GroupSnapshot } from '../src/store';
 
-// Fakes copied from routes-security.test.ts, plus a put counter (every KV write costs part of the 1,000/day).
+// Fakes copied from routes-security.test.ts, plus a put counter (every KV write costs part of the 1,000/day)
+// and an optional per-put delay to make one upload land after another.
 function fakeKv() {
   const data = new Map<string, string | ArrayBuffer>();
   let puts = 0;
+  let putDelay: (key: string, value: string | ArrayBuffer) => number = () => 0;
   const kv = {
     async get(key: string, type?: string) {
       const v = data.get(key);
@@ -17,10 +20,17 @@ function fakeKv() {
     },
     async put(key: string, value: string | ArrayBuffer) {
       puts++;
+      const ms = putDelay(key, value);
+      if (ms) await new Promise((r) => setTimeout(r, ms));
       data.set(key, value);
     },
   };
-  return { kv: kv as unknown as KVNamespace, data, puts: () => puts };
+  return {
+    kv: kv as unknown as KVNamespace,
+    data,
+    puts: () => puts,
+    delayPuts: (f: typeof putDelay) => void (putDelay = f),
+  };
 }
 
 function fakeDb() {
@@ -89,7 +99,9 @@ const relay = (env: Env, ctx: ExecutionContext, kind: string, body: string, coun
 const runner = (env: Env, ctx: ExecutionContext, payload: unknown) =>
   app.request('/ingest/runner', { method: 'POST', headers: { ...json, authorization: `Bearer ${TOKEN}` }, body: JSON.stringify(payload) }, env, ctx);
 
-const stored = (kv: ReturnType<typeof fakeKv>) => JSON.parse(kv.data.get(KEYS.runner) as string) as GroupSnapshot;
+/** The runner group as readers see it (relay keys overlaid). */
+const stored = (kv: ReturnType<typeof fakeKv>) => readRunnerEffective(kv.kv) as Promise<GroupSnapshot>;
+const raw = <T = GroupSnapshot>(kv: ReturnType<typeof fakeKv>, key: string) => JSON.parse(kv.data.get(key) as string) as T;
 const minutesAgo = (m: number) => new Date(Date.now() - m * 60_000);
 
 const WATERLEVEL = {
@@ -167,11 +179,12 @@ describe('POST /v1/relay/bma/:kind', () => {
     expect(kv.puts()).toBe(0);
   });
 
-  it('writes a stale feed into the runner group, keeps other feeds, pushes, then skips until 10 min pass', async () => {
+  it('writes a stale feed to its own relay key, keeps other feeds, pushes, then skips until 10 min pass', async () => {
     const { env, kv } = makeEnv();
     const { ctx, pending } = fakeCtx();
     await seed(kv, 'flood', 11);
     const before = kv.puts();
+    const runnerBefore = kv.data.get(KEYS.runner);
 
     const res = await relay(env, ctx, 'flood', FLOOD);
     expect(res.status).toBe(200);
@@ -180,8 +193,11 @@ describe('POST /v1/relay/bma/:kind', () => {
     expect(body.items).toBeGreaterThan(0);
     expect(kv.puts()).toBe(before + 1);
     expect(pending).toHaveLength(1);
+    // The runner group itself is untouched; the relay lives under its own key.
+    expect(kv.data.get(KEYS.runner)).toBe(runnerBefore);
+    expect(raw<RelayRecord>(kv, KEYS.relayFlood).feed).toMatchObject({ source: 'bma-flood', ok: true });
 
-    const snap = stored(kv);
+    const snap = (await stored(kv));
     expect(snap.feeds.flood).toMatchObject({ source: 'bma-flood', ok: true });
     expect(snap.feeds.flood!.items).toHaveLength(body.items);
     expect(snap.feeds.flood!.lastOkAt).toBe(snap.feeds.flood!.fetchedAt);
@@ -193,12 +209,12 @@ describe('POST /v1/relay/bma/:kind', () => {
 
     // Rain is a separate feed, so it is still stale and gets written.
     expect(await (await relay(env, ctx, 'rain', RAIN)).json()).toMatchObject({ ok: true, written: true });
-    expect(stored(kv).feeds.flood!.items).toHaveLength(body.items);
+    expect((await stored(kv)).feeds.flood!.items).toHaveLength(body.items);
 
     // Once the flood copy is 10 min old it is written again.
-    const aged = stored(kv);
-    aged.feeds.flood = { ...aged.feeds.flood!, fetchedAt: minutesAgo(10).toISOString(), lastOkAt: minutesAgo(10).toISOString() };
-    kv.data.set(KEYS.runner, JSON.stringify(aged));
+    const aged = raw<RelayRecord>(kv, KEYS.relayFlood);
+    aged.feed = { ...aged.feed, fetchedAt: minutesAgo(10).toISOString(), lastOkAt: minutesAgo(10).toISOString() };
+    kv.data.set(KEYS.relayFlood, JSON.stringify(aged));
     expect(await (await relay(env, ctx, 'flood', FLOOD)).json()).toMatchObject({ written: true });
   });
 
@@ -251,7 +267,72 @@ describe('POST /v1/relay/bma/:kind', () => {
     const res = await relay(env, ctx, 'rain', JSON.stringify(rawRain(15)));
     expect(await res.json()).toMatchObject({ ok: true, written: true, items: 20, held: true });
     expect(pending).toHaveLength(0);
-    expect(Date.parse(stored(kv).pushHeldUntil!)).toBeGreaterThan(Date.now() + (INGEST.pushHoldMinutes - 1) * 60_000);
+    expect(Date.parse((await stored(kv)).pushHeldUntil!)).toBeGreaterThan(Date.now() + (INGEST.pushHoldMinutes - 1) * 60_000);
+    expect(raw<RelayRecord>(kv, KEYS.relayRain).pushHeldUntil).toBe((await stored(kv)).pushHeldUntil);
+    expect(raw(kv, KEYS.runner).pushHeldUntil).toBeUndefined();
+
+    // The hold reaches /ingest/runner too: a calm runner upload of another feed is stored but not pushed.
+    const at = new Date().toISOString();
+    expect(await (await runner(env, ctx, { feeds: { cctv: { source: 'bma-traffic', fetchedAt: at, ok: true, items: [] } } })).json()).toMatchObject({ held: true });
+    expect(pending).toHaveLength(0);
+    // And a later relay of the same feed keeps it.
+    const rec = raw<RelayRecord>(kv, KEYS.relayRain);
+    rec.feed = { ...rec.feed, fetchedAt: minutesAgo(11).toISOString(), lastOkAt: minutesAgo(11).toISOString() };
+    kv.data.set(KEYS.relayRain, JSON.stringify(rec));
+    expect(await (await relay(env, ctx, 'rain', JSON.stringify(rawRain(15)))).json()).toMatchObject({ written: true, held: true });
+  });
+
+  it('stores flood and rain relayed at the same moment even when the flood write lands last', async () => {
+    const { env, kv } = makeEnv();
+    const { ctx } = fakeCtx();
+    await seed(kv, 'flood', 11);
+    // The flood upload is bigger and slower: its KV write finishes after the rain one.
+    // Only the flood write is delayed; a whole-group write carrying rain would also contain "bma-flood".
+    kv.delayPuts((_key, value) =>
+      typeof value === 'string' && value.includes('"bma-flood"') && !value.includes('"bma-rain"') ? 30 : 0,
+    );
+    const before = kv.puts();
+    const [f, r] = await Promise.all([relay(env, ctx, 'flood', FLOOD), relay(env, ctx, 'rain', JSON.stringify(rawRain(0)))]);
+    expect(await f.json()).toMatchObject({ ok: true, written: true });
+    expect(await r.json()).toMatchObject({ ok: true, written: true });
+    expect(kv.puts()).toBe(before + 2);
+
+    const snap = await stored(kv);
+    expect(snap.feeds.flood).toMatchObject({ source: 'bma-flood', ok: true });
+    expect(snap.feeds.rain).toMatchObject({ source: 'bma-rain', ok: true });
+    expect(snap.feeds.rain!.items).toHaveLength(20);
+    expect(snap.feeds.rain!.lastOkAt).toBeDefined();
+    expect(snap.feeds.waterlevel!.items).toEqual([WATERLEVEL]);
+
+    // What clients read shows the relayed rain.
+    const api = (path: string) => app.request(`https://api.hazard.pdouvch.com${path}`, {}, env, ctx);
+    const body = (await (await api('/v1/snapshot')).json()) as { runner: GroupSnapshot };
+    expect(body.runner.feeds.rain).toMatchObject({ ok: true });
+    expect(body.runner.feeds.rain!.items).toHaveLength(20);
+    expect(body.runner.feeds.flood).toMatchObject({ ok: true });
+    const district = districtAt(points[0]!)!.properties.id;
+    const area = (await (await api(`/v1/area?district=${district}`)).json()) as { readings: { rain: { source: string } | null } };
+    expect(area.readings.rain).toMatchObject({ source: 'bma-rain' });
+    const summary = await api('/v1/summary');
+    expect(summary.status).toBe(200);
+
+    // Both copies are fresh now: neither is written again.
+    expect(await (await relay(env, ctx, 'rain', JSON.stringify(rawRain(0)))).json()).toEqual({ ok: true, written: false });
+    expect(await (await relay(env, ctx, 'flood', FLOOD)).json()).toEqual({ ok: true, written: false });
+    expect(kv.puts()).toBe(before + 2);
+  });
+
+  it('serves a relay over a runner feed that has been failing for days', async () => {
+    const { env, kv } = makeEnv();
+    const { ctx } = fakeCtx();
+    // Production state: the runner group's rain failing since long ago, never ok.
+    const since = minutesAgo(12 * 24 * 60).toISOString();
+    kv.data.set(KEYS.runner, JSON.stringify({ updatedAt: since, feeds: { rain: { source: 'bma-rain', fetchedAt: since, ok: false, items: [], error: 'HTTP 403', failingSince: since } } }));
+    expect(await (await relay(env, ctx, 'rain', JSON.stringify(rawRain(0)))).json()).toMatchObject({ written: true });
+    const rain = (await stored(kv)).feeds.rain!;
+    expect(rain).toMatchObject({ ok: true });
+    expect(rain.failingSince).toBeUndefined();
+    expect(rain.items).toHaveLength(20);
   });
 });
 
@@ -267,7 +348,7 @@ describe('/ingest/runner with a relayed copy', () => {
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ ok: true, feeds: [], dropped: 0, held: false });
     expect(kv.puts()).toBe(before);
-    const flood = stored(kv).feeds.flood!;
+    const flood = (await stored(kv)).feeds.flood!;
     expect(flood.ok).toBe(true);
     expect(flood.failingSince).toBeUndefined();
   });
@@ -283,7 +364,7 @@ describe('/ingest/runner with a relayed copy', () => {
     const res = await runner(env, ctx, payload);
     expect(await res.json()).toMatchObject({ ok: true, feeds: expect.arrayContaining(['flood', 'waterlevel', 'cctv']) });
     expect(kv.puts()).toBe(before + 1);
-    const snap = stored(kv);
+    const snap = (await stored(kv));
     expect(snap.feeds.cctv).toMatchObject({ ok: true, fetchedAt: at });
     expect(snap.feeds.flood!.ok).toBe(true);
     expect(snap.feeds.waterlevel!.items).toEqual([WATERLEVEL]);
@@ -295,8 +376,60 @@ describe('/ingest/runner with a relayed copy', () => {
     await seed(kv, 'flood', INGEST.relayKeepMinutes + 1);
     const res = await runner(env, ctx, failedFlood());
     expect(res.status).toBe(200);
-    const flood = stored(kv).feeds.flood!;
+    const flood = (await stored(kv)).feeds.flood!;
     expect(flood.ok).toBe(false);
     expect(flood.failingSince).toBeDefined();
+  });
+
+  /** Relays the flood fixture now and returns the stored relay record. */
+  async function relayedFlood(env: Env, kv: ReturnType<typeof fakeKv>, ctx: ExecutionContext) {
+    expect(await (await relay(env, ctx, 'flood', FLOOD)).json()).toMatchObject({ written: true });
+    return raw<RelayRecord>(kv, KEYS.relayFlood);
+  }
+  const ageRelay = (kv: ReturnType<typeof fakeKv>, key: string, age: number) => {
+    const rec = raw<RelayRecord>(kv, key);
+    const at = minutesAgo(age).toISOString();
+    rec.feed = { ...rec.feed, fetchedAt: at, lastOkAt: at };
+    kv.data.set(key, JSON.stringify(rec));
+  };
+
+  it('does not let a runner failure override a fresh relay copy', async () => {
+    const { env, kv } = makeEnv();
+    const { ctx } = fakeCtx();
+    const rec = await relayedFlood(env, kv, ctx);
+    const before = kv.puts();
+    expect(await (await runner(env, ctx, failedFlood())).json()).toEqual({ ok: true, feeds: [], dropped: 0, held: false });
+    expect(kv.puts()).toBe(before);
+    const flood = (await stored(kv)).feeds.flood!;
+    expect(flood).toMatchObject({ ok: true, fetchedAt: rec.feed.fetchedAt });
+    expect(flood.failingSince).toBeUndefined();
+  });
+
+  it('marks flood failing from now, dated by the relay, once the relay is older than the keep window', async () => {
+    const { env, kv } = makeEnv();
+    const { ctx } = fakeCtx();
+    // An old runner failure streak that predates the relay must not be resumed.
+    const old = minutesAgo(3 * 24 * 60).toISOString();
+    kv.data.set(KEYS.runner, JSON.stringify({ updatedAt: old, feeds: { flood: { source: 'bma-flood', fetchedAt: old, ok: false, items: [], failingSince: old } } }));
+    await relayedFlood(env, kv, ctx);
+    ageRelay(kv, KEYS.relayFlood, INGEST.relayKeepMinutes + 1);
+    const relayAt = raw<RelayRecord>(kv, KEYS.relayFlood).feed.fetchedAt;
+    const start = Date.now();
+    expect((await runner(env, ctx, failedFlood())).status).toBe(200);
+    const flood = (await stored(kv)).feeds.flood!;
+    expect(flood.ok).toBe(false);
+    expect(Date.parse(flood.failingSince!)).toBeGreaterThanOrEqual(start - 1000);
+    expect(flood.lastOkAt).toBe(relayAt);
+    expect(flood.items.length).toBeGreaterThan(0);
+  });
+
+  it('a newer good runner copy wins over an older relay', async () => {
+    const { env, kv } = makeEnv();
+    const { ctx } = fakeCtx();
+    await relayedFlood(env, kv, ctx);
+    ageRelay(kv, KEYS.relayFlood, 5);
+    const at = new Date().toISOString();
+    await runner(env, ctx, { feeds: { flood: { source: 'bma-flood', fetchedAt: at, ok: true, items: [] } } });
+    expect((await stored(kv)).feeds.flood).toMatchObject({ ok: true, fetchedAt: at, items: [] });
   });
 });

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -74,14 +75,27 @@ class FakeApi implements HazardApi {
 
 class FakeLocation implements LocationService {
   FakeLocation(this.result);
+
+  /// Any outcome: `LocationFound(lat, lng, stale: true)` or `LocationUnavailable(reason: LocationFailure.timeout)`.
   LocationResult result;
   int calls = 0;
+  int locationSettingsOpened = 0;
+  int appSettingsOpened = 0;
+
+  /// Set to hold the answer until the test completes it (to see progress and cancel).
+  Completer<LocationResult>? pending;
 
   @override
   Future<LocationResult> current() async {
     calls++;
-    return result;
+    return pending?.future ?? result;
   }
+
+  @override
+  Future<void> openLocationSettings() async => locationSettingsOpened++;
+
+  @override
+  Future<void> openAppSettings() async => appSettingsOpened++;
 }
 
 District fixtureDistrict() => District.fromJson(fixtureJson()['district'] as Map<String, dynamic>);

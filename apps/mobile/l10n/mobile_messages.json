@@ -77,11 +77,21 @@
     "en": "Your location is only used to move the map to you. It is not stored."
   },
   "map.noFix": { "th": "หาตำแหน่งไม่เจอ ลองอีกครั้ง", "en": "Couldn’t find your location. Try again" },
+  "map.serviceOff": { "th": "ตำแหน่งในเครื่องปิดอยู่ เปิดแล้วกดอีกครั้ง", "en": "Location is off on this phone. Turn it on, then tap again" },
+  "map.blocked": { "th": "แอปถูกปิดสิทธิ์ใช้ตำแหน่ง เปิดได้ในการตั้งค่าแอป", "en": "Location is blocked for this app. Allow it in app settings" },
+  "map.timeout": { "th": "หาตำแหน่งไม่ทัน ลองอีกครั้ง", "en": "Couldn’t find your location in time. Try again" },
   "map.area": { "th": "ไปที่เขตที่ติดตาม", "en": "Go to the district you follow" },
   "map.bangkok": { "th": "กรุงเทพฯ", "en": "Bangkok" },
   "map.pin": { "th": "{what} {place} ระดับ{level}", "en": "{what}: {place}, {level}" },
   "map.quakeDepth": { "th": "ลึก {km} กม.", "en": "{km} km deep" },
   "map.quakeFrom": { "th": "ห่างจาก{place} {km} กม.", "en": "{km} km from {place}" },
   "map.rainUnit": { "th": "มม./ชม.", "en": "mm/h" },
-  "unit.cm": { "th": "ซม.", "en": "cm" }
+  "unit.cm": { "th": "ซม.", "en": "cm" },
+  "common.cancel": { "th": "ยกเลิก", "en": "Cancel" },
+  "location.waitHint": { "th": "อาจใช้เวลาถึงครึ่งนาที ระหว่างนี้เลือกเขต/อำเภอเองได้", "en": "This can take up to half a minute. You can pick a district meanwhile" },
+  "location.serviceOff": { "th": "ตำแหน่งในเครื่องปิดอยู่ เปิดแล้วลองใหม่ หรือเลือกเขต/อำเภอเอง", "en": "Location is off on this phone. Turn it on and try again, or pick a district" },
+  "location.turnOn": { "th": "เปิดตำแหน่ง", "en": "Turn on location" },
+  "location.blocked": { "th": "แอปถูกปิดสิทธิ์ใช้ตำแหน่ง เปิดได้ในการตั้งค่าแอป หรือเลือกเขต/อำเภอเอง", "en": "Location is blocked for this app. Allow it in app settings, or pick a district" },
+  "location.openSettings": { "th": "เปิดการตั้งค่าแอป", "en": "Open app settings" },
+  "location.timeout": { "th": "หาตำแหน่งไม่ทัน ลองใหม่ หรือเลือกเขต/อำเภอเองด้านล่าง", "en": "Couldn't find your location in time. Try again, or pick a district below" }
 }

@@ -44,6 +44,7 @@ export function relayIsFresh(prev: GroupSnapshot | null, kind: RelayKind, now: D
 /**
  * The runner can't reach BMA from cloud IPs, so its flood/rain usually fail; drop those failures while a relayed
  * copy is recent, so the store keeps it as ok instead of marking the feed failing. A runner `ok: true` always wins.
+ * `prev` is the effective group (relay keys overlaid), so the relayed copy's last good time counts.
  */
 export function keepRecentRelay(prev: GroupSnapshot | null, feeds: FeedMap, now: Date, minutes: number): { feeds: FeedMap; kept: RelayKind[] } {
   const out: FeedMap = { ...feeds };

@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:hazardwatch/api/models.dart';
 import 'package:hazardwatch/location.dart';
 import 'package:hazardwatch/screens/area_picker_screen.dart';
@@ -158,4 +161,207 @@ void main() {
     await openPicker(tester, NationwideApi(), current: gone);
     expect(find.text('กรุงเทพมหานคร'), findsOneWidget);
   });
+
+  group('use my location', () {
+    Future<District?> Function() openWith(WidgetTester tester, FakeApi api, FakeLocation location) {
+      District? picked;
+      var done = false;
+      return () async {
+        if (!done) {
+          done = true;
+          await pumpThemed(
+            tester,
+            Builder(
+              builder: (context) => TextButton(
+                onPressed: () async => picked = await pickDistrict(context, api, location),
+                child: const Text('open'),
+              ),
+            ),
+          );
+          await tester.tap(find.text('open'));
+          await tester.pumpAndSettle();
+          await tester.tap(find.text('ใช้ตำแหน่งของฉัน'));
+          await tester.pumpAndSettle();
+        }
+        return picked;
+      };
+    }
+
+    for (final stale in [false, true]) {
+      testWidgets('a ${stale ? 'last-known' : 'fresh'} position becomes the district from the API', (tester) async {
+        final api = NationwideApi();
+        final location = FakeLocation(LocationFound(13.755, 100.5, stale: stale));
+        final picked = await openWith(tester, api, location)();
+        expect(api.lastQuery, (districtId: null, lat: 13.755, lng: 100.5));
+        expect(picked?.id, fixtureDistrict().id);
+        expect(find.byType(AreaPickerScreen), findsNothing);
+      });
+    }
+
+    final cases = <LocationFailure, (String, String?)>{
+      LocationFailure.serviceOff: ('ตำแหน่งในเครื่องปิดอยู่ เปิดแล้วลองใหม่ หรือเลือกเขต/อำเภอเอง', 'เปิดตำแหน่ง'),
+      LocationFailure.denied: ('ไม่ได้รับสิทธิ์ใช้ตำแหน่ง เลือกเขต/อำเภอเองได้', null),
+      LocationFailure.deniedForever: (
+        'แอปถูกปิดสิทธิ์ใช้ตำแหน่ง เปิดได้ในการตั้งค่าแอป หรือเลือกเขต/อำเภอเอง',
+        'เปิดการตั้งค่าแอป',
+      ),
+      LocationFailure.timeout: ('หาตำแหน่งไม่ทัน ลองใหม่ หรือเลือกเขต/อำเภอเองด้านล่าง', 'ลองใหม่'),
+      LocationFailure.error: ('หาตำแหน่งไม่ได้ เลือกเขต/อำเภอแทนได้', 'ลองใหม่'),
+    };
+    for (final MapEntry(key: reason, value: (message, action)) in cases.entries) {
+      testWidgets('${reason.name}: says so, offers its fix, and keeps the list', (tester) async {
+        final api = NationwideApi();
+        final location = FakeLocation(LocationUnavailable(reason: reason));
+        await openWith(tester, api, location)();
+        expect(find.text(message), findsOneWidget);
+        expect(find.text('กรุงเทพมหานคร'), findsOneWidget); // manual pick still there
+        expect(api.areaCalls, 0);
+        expect(find.byType(OutlinedButton), action == null ? findsNothing : findsOneWidget);
+        if (action == null) return;
+        await tester.tap(find.widgetWithText(OutlinedButton, action));
+        await tester.pumpAndSettle();
+        switch (reason) {
+          case LocationFailure.serviceOff:
+            expect(location.locationSettingsOpened, 1);
+          case LocationFailure.deniedForever:
+            expect(location.appSettingsOpened, 1);
+          default:
+            expect(location.calls, 2); // tried again
+        }
+      });
+    }
+
+    testWidgets('shows progress while locating, and cancel ignores a late answer', (tester) async {
+      final api = NationwideApi();
+      final location = FakeLocation(LocationFound(13.755, 100.5))..pending = Completer();
+      await pumpThemed(
+        tester,
+        Builder(
+          builder: (context) =>
+              TextButton(onPressed: () => pickDistrict(context, api, location), child: const Text('open')),
+        ),
+      );
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('ใช้ตำแหน่งของฉัน'));
+      await tester.pump();
+      expect(find.text('กำลังหาตำแหน่ง…'), findsOneWidget);
+      expect(find.text('อาจใช้เวลาถึงครึ่งนาที ระหว่างนี้เลือกเขต/อำเภอเองได้'), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      await tester.tap(find.text('ยกเลิก'));
+      await tester.pump();
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(find.text('ใช้ตำแหน่งของฉัน'), findsOneWidget);
+      location.pending!.complete(LocationFound(13.755, 100.5));
+      await tester.pumpAndSettle();
+      expect(api.areaCalls, 0);
+      expect(find.byType(AreaPickerScreen), findsOneWidget);
+    });
+  });
+
+  group('DeviceLocation', () {
+    final now = DateTime.utc(2026, 10, 17, 10);
+    DeviceLocation device(FakeGeo geo) =>
+        DeviceLocation(platform: geo, clock: () => now, target: TargetPlatform.android);
+
+    test('location off', () async {
+      final r = await device(FakeGeo()..serviceOn = false).current();
+      expect((r as LocationUnavailable).reason, LocationFailure.serviceOff);
+    });
+
+    test('asks once when not yet decided; no means denied, blocked means deniedForever', () async {
+      final geo = FakeGeo()..permission = LocationPermission.denied;
+      expect(((await device(geo).current()) as LocationUnavailable).reason, LocationFailure.denied);
+      expect(geo.requests, 1);
+      geo.permission = LocationPermission.deniedForever;
+      expect(((await device(geo).current()) as LocationUnavailable).reason, LocationFailure.deniedForever);
+      expect(geo.requests, 1);
+    });
+
+    test('a last-known position under 10 minutes old is used without waiting for a fix', () async {
+      final geo = FakeGeo()..last = pos(13.7, 100.5, now.subtract(const Duration(minutes: 9)));
+      final r = await device(geo).current() as LocationFound;
+      expect((r.lat, r.lng, r.stale), (13.7, 100.5, true));
+      expect(geo.fixes, 0);
+    });
+
+    test('otherwise a balanced-power fix, the platform way, within 25 s', () async {
+      final geo = FakeGeo()
+        ..last = pos(1, 1, now.subtract(const Duration(minutes: 30)))
+        ..fix = pos(13.8, 100.6, now);
+      final r = await device(geo).current() as LocationFound;
+      expect((r.lat, r.lng, r.stale), (13.8, 100.6, false));
+      final settings = geo.settings! as AndroidSettings;
+      expect(settings.accuracy, LocationAccuracy.medium);
+      expect(settings.forceLocationManager, isFalse);
+      expect(settings.timeLimit, const Duration(seconds: 25));
+    });
+
+    test('on timeout a last-known position up to an hour old still counts', () async {
+      final geo = FakeGeo()..last = pos(13.7, 100.5, now.subtract(const Duration(minutes: 50)));
+      final r = await device(geo).current() as LocationFound;
+      expect(r.stale, isTrue);
+      expect(geo.fixes, 1);
+    });
+
+    test('on timeout with nothing recent: timeout; any other failure: error', () async {
+      final geo = FakeGeo()..last = pos(13.7, 100.5, now.subtract(const Duration(hours: 2)));
+      expect(((await device(geo).current()) as LocationUnavailable).reason, LocationFailure.timeout);
+      geo
+        ..last = null
+        ..error = Exception('plugin failed');
+      expect(((await device(geo).current()) as LocationUnavailable).reason, LocationFailure.error);
+      geo.error = const LocationServiceDisabledException();
+      expect(((await device(geo).current()) as LocationUnavailable).reason, LocationFailure.serviceOff);
+    });
+  });
+}
+
+Position pos(double lat, double lng, DateTime at) => Position(
+  latitude: lat,
+  longitude: lng,
+  timestamp: at,
+  accuracy: 1000,
+  altitude: 0,
+  altitudeAccuracy: 0,
+  heading: 0,
+  headingAccuracy: 0,
+  speed: 0,
+  speedAccuracy: 0,
+);
+
+class FakeGeo extends GeolocatorPlatform {
+  bool serviceOn = true;
+  LocationPermission permission = LocationPermission.whileInUse;
+  Position? last;
+
+  /// Null means no fix in time.
+  Position? fix;
+  Exception? error;
+  LocationSettings? settings;
+  int requests = 0;
+  int fixes = 0;
+
+  @override
+  Future<bool> isLocationServiceEnabled() async => serviceOn;
+
+  @override
+  Future<LocationPermission> checkPermission() async => permission;
+
+  @override
+  Future<LocationPermission> requestPermission() async {
+    requests++;
+    return permission;
+  }
+
+  @override
+  Future<Position?> getLastKnownPosition({bool forceLocationManager = false}) async => last;
+
+  @override
+  Future<Position> getCurrentPosition({LocationSettings? locationSettings}) async {
+    fixes++;
+    settings = locationSettings;
+    if (error != null) throw error!;
+    return fix ?? (throw TimeoutException('no fix', locationSettings?.timeLimit));
+  }
 }

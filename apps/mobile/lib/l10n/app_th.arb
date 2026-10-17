@@ -536,6 +536,74 @@
   "@nasaDisclaimer": {
     "description": "nasa.disclaimer"
   },
+  "nasaLegendFloodSurface": "แหล่งน้ำปกติ",
+  "@nasaLegendFloodSurface": {
+    "description": "nasa.legend.flood.surface"
+  },
+  "nasaLegendFloodRecurring": "ท่วมเป็นประจำ",
+  "@nasaLegendFloodRecurring": {
+    "description": "nasa.legend.flood.recurring"
+  },
+  "nasaLegendFloodFlood": "น้ำท่วม",
+  "@nasaLegendFloodFlood": {
+    "description": "nasa.legend.flood.flood"
+  },
+  "nasaLegendFloodNoData": "เมฆบัง ไม่มีข้อมูล",
+  "@nasaLegendFloodNoData": {
+    "description": "nasa.legend.flood.noData"
+  },
+  "nasaLegendFloodNote": "ภาพดาวเทียมรวม 2 วัน ละเอียดประมาณ 300 ม. สีเทา = เมฆบัง ไม่รู้ว่าท่วมหรือไม่ ใช้ดูภาพรวม ไม่ใช่ระดับถนน",
+  "@nasaLegendFloodNote": {
+    "description": "nasa.legend.flood.note"
+  },
+  "nasaLegendRainR01": "0.1",
+  "@nasaLegendRainR01": {
+    "description": "nasa.legend.rain.r01"
+  },
+  "nasaLegendRainR1": "1",
+  "@nasaLegendRainR1": {
+    "description": "nasa.legend.rain.r1"
+  },
+  "nasaLegendRainR5": "5",
+  "@nasaLegendRainR5": {
+    "description": "nasa.legend.rain.r5"
+  },
+  "nasaLegendRainR20": "20",
+  "@nasaLegendRainR20": {
+    "description": "nasa.legend.rain.r20"
+  },
+  "nasaLegendRainR50": "≥50 มม./ชม.",
+  "@nasaLegendRainR50": {
+    "description": "nasa.legend.rain.r50"
+  },
+  "nasaLegendRainNote": "ค่าประมาณจากดาวเทียม ละเอียดประมาณ 10 กม. ช้ากว่าจริงไม่กี่ชั่วโมง ถ้าจะดูฝนในชั่วโมงข้างหน้า ใช้เรดาร์จะแม่นกว่า",
+  "@nasaLegendRainNote": {
+    "description": "nasa.legend.rain.note"
+  },
+  "nasaLegendAodLow": "0 อากาศใส",
+  "@nasaLegendAodLow": {
+    "description": "nasa.legend.aod.low"
+  },
+  "nasaLegendAodA02": "0.2",
+  "@nasaLegendAodA02": {
+    "description": "nasa.legend.aod.a02"
+  },
+  "nasaLegendAodA04": "0.4",
+  "@nasaLegendAodA04": {
+    "description": "nasa.legend.aod.a04"
+  },
+  "nasaLegendAodA06": "0.6",
+  "@nasaLegendAodA06": {
+    "description": "nasa.legend.aod.a06"
+  },
+  "nasaLegendAodHigh": "≥1 ควันหรือฝุ่นหนา",
+  "@nasaLegendAodHigh": {
+    "description": "nasa.legend.aod.high"
+  },
+  "nasaLegendAodNote": "ความหนาของควันและฝุ่นในอากาศทั้งชั้น ไม่ใช่ค่า PM2.5 ที่ระดับพื้นดิน",
+  "@nasaLegendAodNote": {
+    "description": "nasa.legend.aod.note"
+  },
   "freshStale": "ยังไม่มีค่าใหม่ ค่าล่าสุดเมื่อ {time}",
   "@freshStale": {
     "description": "fresh.stale",
@@ -1937,6 +2005,18 @@
   "@mapNoFix": {
     "description": "map.noFix"
   },
+  "mapServiceOff": "ตำแหน่งในเครื่องปิดอยู่ เปิดแล้วกดอีกครั้ง",
+  "@mapServiceOff": {
+    "description": "map.serviceOff"
+  },
+  "mapBlocked": "แอปถูกปิดสิทธิ์ใช้ตำแหน่ง เปิดได้ในการตั้งค่าแอป",
+  "@mapBlocked": {
+    "description": "map.blocked"
+  },
+  "mapTimeout": "หาตำแหน่งไม่ทัน ลองอีกครั้ง",
+  "@mapTimeout": {
+    "description": "map.timeout"
+  },
   "mapArea": "ไปที่เขตที่ติดตาม",
   "@mapArea": {
     "description": "map.area"
@@ -1988,5 +2068,33 @@
   "unitCm": "ซม.",
   "@unitCm": {
     "description": "unit.cm"
+  },
+  "commonCancel": "ยกเลิก",
+  "@commonCancel": {
+    "description": "common.cancel"
+  },
+  "locationWaitHint": "อาจใช้เวลาถึงครึ่งนาที ระหว่างนี้เลือกเขต/อำเภอเองได้",
+  "@locationWaitHint": {
+    "description": "location.waitHint"
+  },
+  "locationServiceOff": "ตำแหน่งในเครื่องปิดอยู่ เปิดแล้วลองใหม่ หรือเลือกเขต/อำเภอเอง",
+  "@locationServiceOff": {
+    "description": "location.serviceOff"
+  },
+  "locationTurnOn": "เปิดตำแหน่ง",
+  "@locationTurnOn": {
+    "description": "location.turnOn"
+  },
+  "locationBlocked": "แอปถูกปิดสิทธิ์ใช้ตำแหน่ง เปิดได้ในการตั้งค่าแอป หรือเลือกเขต/อำเภอเอง",
+  "@locationBlocked": {
+    "description": "location.blocked"
+  },
+  "locationOpenSettings": "เปิดการตั้งค่าแอป",
+  "@locationOpenSettings": {
+    "description": "location.openSettings"
+  },
+  "locationTimeout": "หาตำแหน่งไม่ทัน ลองใหม่ หรือเลือกเขต/อำเภอเองด้านล่าง",
+  "@locationTimeout": {
+    "description": "location.timeout"
   }
 }

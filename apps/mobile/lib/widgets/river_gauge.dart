@@ -98,7 +98,7 @@ class RiverGauge extends StatelessWidget {
                           width: x(pct),
                           child: DecoratedBox(
                             decoration: BoxDecoration(
-                              color: c.solid(level),
+                              color: gaugeBarColor(c, level),
                               borderRadius: BorderRadius.circular(HwSize.radiusPill),
                             ),
                           ),
@@ -144,3 +144,7 @@ class RiverGauge extends StatelessWidget {
     );
   }
 }
+
+/// The level's fill, unless it is under 3:1 on the sunken track (light colour-blind watch: 1.4:1), then its text tone.
+Color gaugeBarColor(HwColors c, HwLevel level) =>
+    contrastRatio(c.solid(level), c.surfaceSunken) >= 3 ? c.solid(level) : c.text(level);

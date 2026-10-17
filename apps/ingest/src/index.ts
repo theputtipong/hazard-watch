@@ -10,6 +10,7 @@ import { messageFor, notifierFor, sendAlerts, type PushEnv } from './push/run';
 import { deleteSubscription, getSubscription, markSent, recordDelivery, sentSince, subscriptionId, upsertSubscription } from './push/store';
 import { keepRecentRelay, relayFeed, relayIsFresh } from './relay';
 import { isPushHeld, KEYS, readGroup, readRadarBundle, unpackRadar, writeGroup, type FeedMap, type GroupSnapshot } from './store';
+import { overlayRelays, readRunnerEffective, readRunnerParts, runnerWriteBase, writeRelay } from './relayStore';
 import { parseRunnerPayload, suspiciousJump } from './validate';
 import { buildAreaReport, districtAt, districtList, findDistrict } from './area';
 import { buildSummary } from './summary';
@@ -54,8 +55,12 @@ async function dispatchRunner(env: Env, now = new Date()) {
   console.log('dispatch runner', res.status);
 }
 
-async function pushAfterUpdate(env: Env, now = new Date()) {
-  const [edge, runner] = await Promise.all([readGroup(env.SNAPSHOTS, KEYS.edge), readGroup(env.SNAPSHOTS, KEYS.runner)]);
+/** `runner` skips re-reading the group the caller just wrote (KV reads are edge-cached for up to a minute). */
+async function pushAfterUpdate(env: Env, now = new Date(), written?: GroupSnapshot | null) {
+  const [edge, runner] = await Promise.all([
+    readGroup(env.SNAPSHOTS, KEYS.edge),
+    written !== undefined ? written : readRunnerEffective(env.SNAPSHOTS),
+  ]);
   // While a suspicious runner upload is held, edge alerts (PM2.5, quakes) still go out; held ones are sent once the hold ends.
   const held = isPushHeld(runner, now);
   const stats = await sendAlerts(env, { edge, runner: held ? null : runner } as DashboardSnapshot, now);
@@ -161,14 +166,14 @@ const cacheKey = (c: Context, path: string) => `${new URL(c.req.url).origin}${pa
 
 app.get('/v1/snapshot', (c) =>
   edgeCached(c, cacheKey(c, '/v1/snapshot'), INGEST.cacheSeconds.snapshot, async () => {
-    const [edge, runner] = await Promise.all([readGroup(c.env.SNAPSHOTS, KEYS.edge), readGroup(c.env.SNAPSHOTS, KEYS.runner)]);
+    const [edge, runner] = await Promise.all([readGroup(c.env.SNAPSHOTS, KEYS.edge), readRunnerEffective(c.env.SNAPSHOTS)]);
     return Response.json({ edge, runner });
   }),
 );
 
 app.get('/v1/summary', async (c) => {
   return edgeCached(c, cacheKey(c, '/v1/summary'), INGEST.cacheSeconds.snapshot, async () => {
-    const [edge, runner] = await Promise.all([readGroup(c.env.SNAPSHOTS, KEYS.edge), readGroup(c.env.SNAPSHOTS, KEYS.runner)]);
+    const [edge, runner] = await Promise.all([readGroup(c.env.SNAPSHOTS, KEYS.edge), readRunnerEffective(c.env.SNAPSHOTS)]);
     return Response.json(buildSummary(edge, runner));
   });
 });
@@ -189,7 +194,7 @@ app.get('/v1/area', async (c) => {
   if (!district) return c.json({ error: id ? 'unknown district' : 'outside coverage' }, 404);
   // Cached per district, so every point inside it shares one entry.
   return edgeCached(c, cacheKey(c, `/v1/area?district=${district.properties.id}`), INGEST.cacheSeconds.snapshot, async () => {
-    const [edge, runner] = await Promise.all([readGroup(c.env.SNAPSHOTS, KEYS.edge), readGroup(c.env.SNAPSHOTS, KEYS.runner)]);
+    const [edge, runner] = await Promise.all([readGroup(c.env.SNAPSHOTS, KEYS.edge), readRunnerEffective(c.env.SNAPSHOTS)]);
     return Response.json(buildAreaReport({ edge, runner } as DashboardSnapshot, district));
   });
 });
@@ -316,22 +321,23 @@ app.post('/v1/push/test', async (c) => {
   return c.json({ result });
 });
 
-/** Shared by /ingest/runner and /v1/relay: hold check, write to KEYS.runner, push unless held. */
+/**
+ * Shared by /ingest/runner and /v1/relay: the jump check runs against the effective group (runner + relays), then
+ * `write` stores only its own key (one KV put) and returns the new effective group; push unless held.
+ */
 async function writeRunnerFeeds(
   c: Context<{ Bindings: Env }>,
-  prev: GroupSnapshot | null,
+  effective: GroupSnapshot | null,
   feeds: FeedMap,
   now: Date,
   label: 'runner' | 'relay',
-): Promise<{ snapshot: GroupSnapshot; held: boolean }> {
-  const jump = suspiciousJump(prev?.feeds, feeds, DISTRICT_INDEX, now);
+  write: (holdPushUntil: Date | undefined) => Promise<GroupSnapshot | null>,
+): Promise<{ snapshot: GroupSnapshot | null; held: boolean }> {
+  const jump = suspiciousJump(effective?.feeds, feeds, DISTRICT_INDEX, now);
   if (jump.suspicious) console.log(`${label} push held`, JSON.stringify({ newDanger: jump.newDanger.length, districtsWithData: jump.districtsWithData }));
-  const snapshot = await writeGroup(c.env.SNAPSHOTS, KEYS.runner, feeds, now, {
-    prev,
-    holdPushUntil: jump.suspicious ? new Date(now.getTime() + INGEST.pushHoldMinutes * 60_000) : undefined,
-  });
+  const snapshot = await write(jump.suspicious ? new Date(now.getTime() + INGEST.pushHoldMinutes * 60_000) : undefined);
   const held = isPushHeld(snapshot, now);
-  if (!held) c.executionCtx.waitUntil(pushAfterUpdate(c.env, now));
+  if (!held) c.executionCtx.waitUntil(pushAfterUpdate(c.env, now, snapshot));
   return { snapshot, held };
 }
 
@@ -345,14 +351,19 @@ app.post('/v1/relay/bma/:kind', async (c) => {
   if (!isRelayKind(kind)) return c.json({ error: 'unknown feed' }, 404);
   if (c.req.raw.cf?.country !== 'TH') return c.json({ error: 'outside Thailand' }, 403);
   const now = new Date();
-  const prev = await readGroup(c.env.SNAPSHOTS, KEYS.runner);
-  // Checked before reading the body: most relays arrive while the copy is fresh, so they cost one KV read and no write.
+  const parts = await readRunnerParts(c.env.SNAPSHOTS);
+  const prev = overlayRelays(parts.runner, parts.relays);
+  // Checked before reading the body: most relays arrive while the copy is fresh, so they cost KV reads and no write.
   if (relayIsFresh(prev, kind, now, INGEST.relayFreshMinutes)) return c.json({ ok: true, written: false });
   const body = await readJsonBody(c.req.raw, INGEST.maxUploadBytes);
   if (!body.ok) return c.json({ error: body.error }, body.status);
   const r = await relayFeed(kind, body.value, now);
   if (!r.ok) return c.json({ error: r.error }, 400);
-  const { held } = await writeRunnerFeeds(c, prev, { [kind]: r.feed }, now, 'relay');
+  // Only this feed's own key is written, so a concurrent relay of the other feed can't be overwritten.
+  const { held } = await writeRunnerFeeds(c, prev, { [kind]: r.feed }, now, 'relay', async (holdPushUntil) => {
+    const record = await writeRelay(c.env.SNAPSHOTS, kind, r.feed, now, { prev: parts.relays[kind], holdPushUntil });
+    return overlayRelays(parts.runner, { ...parts.relays, [kind]: record });
+  });
   // Never log the IP or headers: the privacy page promises not to keep them.
   console.log('relay write', kind, r.feed.items.length, 'dropped', r.dropped);
   return c.json({ ok: true, written: true, items: r.feed.items.length, held });
@@ -378,14 +389,18 @@ app.post('/ingest/runner', async (c) => {
   // Reasons can quote item values, so only the first few are logged.
   if (parsed.dropped.length) console.log('runner dropped', parsed.dropped.length, JSON.stringify(parsed.dropped.slice(0, 10)));
   if (!parsed.ok) return c.json({ error: parsed.error, dropped: parsed.dropped.length }, 400);
-  const prev = await readGroup(c.env.SNAPSHOTS, KEYS.runner);
+  const parts = await readRunnerParts(c.env.SNAPSHOTS);
+  const prev = overlayRelays(parts.runner, parts.relays);
   // GitHub Actions can't reach BMA; a recent copy relayed from a Thai device beats marking the feed failing.
   const { feeds, kept } = keepRecentRelay(prev, parsed.feeds, now, INGEST.relayKeepMinutes);
   if (kept.length) console.log('runner kept relay', kept.join(','));
   // Nothing left to store: skip the KV write (free plan: 1,000/day).
   if (!Object.keys(feeds).length) return c.json({ ok: true, feeds: [], dropped: parsed.dropped.length, held: isPushHeld(prev, now) });
-  const { snapshot, held } = await writeRunnerFeeds(c, prev, feeds, now, 'runner');
-  return c.json({ ok: true, feeds: Object.keys(snapshot.feeds), dropped: parsed.dropped.length, held });
+  // The runner group itself stays runner-only (relays keep their own keys); readers overlay the two.
+  const { snapshot, held } = await writeRunnerFeeds(c, prev, feeds, now, 'runner', async (holdPushUntil) =>
+    overlayRelays(await writeGroup(c.env.SNAPSHOTS, KEYS.runner, feeds, now, { prev: runnerWriteBase(parts, feeds), holdPushUntil }), parts.relays),
+  );
+  return c.json({ ok: true, feeds: Object.keys(snapshot?.feeds ?? {}), dropped: parsed.dropped.length, held });
 });
 
 app.put('/ingest/radar-bundle', async (c) => {

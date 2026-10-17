@@ -26,6 +26,21 @@ const check = process.argv.includes('--check');
 const str = (s) => `'${s.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\$/g, '\\$')}'`;
 const num = (n) => (Number.isInteger(n) ? `${n}.0` : `${n}`);
 
+// '#32d2f5' -> 'Color(0xff32d2f5)'.
+const color = (hex) => {
+  const m = /^#([0-9a-f]{6})$/i.exec(hex);
+  if (!m) throw new Error(`legend colour must be #rrggbb, got ${hex}`);
+  return `Color(0xff${m[1].toLowerCase()})`;
+};
+const legend = (g) => `
+    legend: NasaLegend(
+      kind: NasaLegendKind.${g.kind},
+      stops: [
+${g.stops.map((s) => `        NasaLegendStop(color: ${color(s.color)}, labelKey: ${str(s.labelKey)}),`).join('\n')}
+      ],
+      noteKey: ${str(g.noteKey)},
+    ),`;
+
 const layers = Object.values(NASA_LAYERS).map(
   (l) => `  ${str(l.id)}: NasaLayer(
     id: ${str(l.id)},
@@ -36,7 +51,7 @@ const layers = Object.values(NASA_LAYERS).map(
     time: GibsTime.${l.time === 'default' ? 'defaultDay' : l.time},
     opacity: ${num(l.opacity)},
     defaultOn: ${l.defaultOn},
-    attribution: ${str(l.attribution)},
+    attribution: ${str(l.attribution)},${l.legend ? legend(l.legend) : ''}
   ),`,
 );
 const points = Object.values(NASA_POINT_LAYERS).map(
@@ -44,6 +59,8 @@ const points = Object.values(NASA_POINT_LAYERS).map(
 );
 
 const content = `// GENERATED from packages/core/src/nasa.ts by tool/gen_nasa.mjs. Do not edit.
+
+import 'dart:ui' show Color;
 
 enum GibsService { wmts, wms }
 
@@ -62,6 +79,7 @@ class NasaLayer {
     required this.opacity,
     required this.defaultOn,
     required this.attribution,
+    this.legend,
   });
 
   final String id;
@@ -75,6 +93,30 @@ class NasaLayer {
   final double opacity;
   final bool defaultOn;
   final String attribution;
+
+  /// What the colours mean, from GIBS' own colormap; null for photos and layers whose colour is self-explanatory.
+  final NasaLegend? legend;
+}
+
+/// \`classes\`: one swatch per category; \`ramp\`: a continuous scale labelled at a few points.
+enum NasaLegendKind { classes, ramp }
+
+class NasaLegendStop {
+  const NasaLegendStop({required this.color, required this.labelKey});
+
+  final Color color;
+
+  /// A message key from packages/core/src/i18n/messages.ts (see nasaLegendText).
+  final String labelKey;
+}
+
+/// NasaLegend in packages/core/src/nasa.ts.
+class NasaLegend {
+  const NasaLegend({required this.kind, required this.stops, required this.noteKey});
+
+  final NasaLegendKind kind;
+  final List<NasaLegendStop> stops;
+  final String noteKey;
 }
 
 /// Drawn from our own snapshot, not GIBS.

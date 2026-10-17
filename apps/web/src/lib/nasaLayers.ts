@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useState } from 'react';
-import { gibsTileUrl, gibsWmsParams, NASA_LAYERS, NASA_POINT_LAYERS, type NasaLayer, type NasaLayerId } from '@hw/core';
+import { gibsTileUrl, gibsWmsParams, NASA_LAYERS, NASA_POINT_LAYERS, type NasaLayer, type NasaLayerId, type NasaLegend } from '@hw/core';
 import { WEB } from '@/config';
 
 /** Menu order: the hazard layers first, the plain photo last. */
@@ -52,6 +52,11 @@ export function toLeaflet(l: NasaLayer, now = new Date()): LeafletGibs {
 export function gibsDataDate(l: NasaLayer, now = new Date()): { date: string; approx: boolean } {
   const day = new Date(now.getTime() - 86_400_000).toISOString().slice(0, 10);
   return { date: l.service === 'wms' ? (gibsWmsParams(l, now).TIME ?? day) : day, approx: l.time === 'default' && l.service !== 'wms' };
+}
+
+/** CSS for a ramp legend's bar: the stops spread evenly, left to right, as on the GIBS legend images. */
+export function rampGradient(legend: NasaLegend): string {
+  return `linear-gradient(to right, ${legend.stops.map((s) => s.color).join(', ')})`;
 }
 
 const STORAGE_KEY = 'hw-nasa-layers';

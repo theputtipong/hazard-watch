@@ -1,4 +1,5 @@
 import { distanceKm } from './geo';
+import type { MessageKey } from './i18n';
 import type { FireHotspot, LatLng, NasaEvent, NasaEventCategory } from './types';
 
 /**
@@ -64,6 +65,18 @@ function newestTrackPoint(e: NasaEvent): NasaEvent['track'][number] | undefined 
 /** GIBS raster layers. Tiles go straight from the client to NASA, so they cost nothing on our side. */
 export type NasaLayerId = 'imergRain' | 'flood' | 'aod' | 'trueColor' | 'fireWms';
 
+/** One colour on a raster's key. Colours are copied from the layer's official GIBS colormap (colormaps/v1.3). */
+export interface NasaLegendStop {
+  color: string /* '#rrggbb' from the colormap */;
+  labelKey: MessageKey;
+}
+/** 'classes' = separate categories; 'ramp' = a continuous scale, stops in ascending order. */
+export interface NasaLegend {
+  kind: 'classes' | 'ramp';
+  stops: NasaLegendStop[];
+  noteKey: MessageKey;
+}
+
 export interface NasaLayer {
   id: NasaLayerId;
   gibsLayer: string;
@@ -77,6 +90,8 @@ export interface NasaLayer {
   /** Shown on the map; on by default only for FIRMS points (see NASA_POINT_LAYERS). */
   defaultOn: boolean;
   attribution: string;
+  /** What the colours mean. Photo-like layers (true colour, fire dots) have none. */
+  legend?: NasaLegend;
 }
 
 export const GIBS = {
@@ -103,6 +118,18 @@ export const NASA_LAYERS: Record<NasaLayerId, NasaLayer> = {
     opacity: 0.7,
     defaultOn: false,
     attribution: `${NASA_ATTRIBUTION.gibs} · IMERG: NASA GPM`,
+    // GPM_Precipitation_Rate.xml, "Rain Rate" map (mm/hr), the colour of the bin holding each value.
+    legend: {
+      kind: 'ramp',
+      stops: [
+        { color: '#00764e', labelKey: 'nasa.legend.rain.r01' },
+        { color: '#c3e400', labelKey: 'nasa.legend.rain.r1' },
+        { color: '#ff4730', labelKey: 'nasa.legend.rain.r5' },
+        { color: '#9c0000', labelKey: 'nasa.legend.rain.r20' },
+        { color: '#3f0000', labelKey: 'nasa.legend.rain.r50' },
+      ],
+      noteKey: 'nasa.legend.rain.note',
+    },
   },
   flood: {
     id: 'flood',
@@ -114,6 +141,17 @@ export const NASA_LAYERS: Record<NasaLayerId, NasaLayer> = {
     opacity: 0.8,
     defaultOn: false,
     attribution: `${NASA_ATTRIBUTION.gibs} · Flood: NASA LANCE MODIS/VIIRS NRT Global Flood Product`,
+    // MODIS_Flood.xml LegendEntry colours. "No Water" is transparent, so it has no swatch.
+    legend: {
+      kind: 'classes',
+      stops: [
+        { color: '#32d2f5', labelKey: 'nasa.legend.flood.surface' },
+        { color: '#ffff00', labelKey: 'nasa.legend.flood.recurring' },
+        { color: '#fa1e24', labelKey: 'nasa.legend.flood.flood' },
+        { color: '#afafaf', labelKey: 'nasa.legend.flood.noData' },
+      ],
+      noteKey: 'nasa.legend.flood.note',
+    },
   },
   aod: {
     id: 'aod',
@@ -125,6 +163,18 @@ export const NASA_LAYERS: Record<NasaLayerId, NasaLayer> = {
     opacity: 0.6,
     defaultOn: false,
     attribution: NASA_ATTRIBUTION.gibs,
+    // MODIS_VIIRS_AOD.xml "Aerosol Optical Depth" map; one bin covers 0.7–1.13, so the top stop stands for ≥1.
+    legend: {
+      kind: 'ramp',
+      stops: [
+        { color: '#fffcc7', labelKey: 'nasa.legend.aod.low' },
+        { color: '#ffc648', labelKey: 'nasa.legend.aod.a02' },
+        { color: '#ff621b', labelKey: 'nasa.legend.aod.a04' },
+        { color: '#d3070c', labelKey: 'nasa.legend.aod.a06' },
+        { color: '#9b000e', labelKey: 'nasa.legend.aod.high' },
+      ],
+      noteKey: 'nasa.legend.aod.note',
+    },
   },
   trueColor: {
     id: 'trueColor',

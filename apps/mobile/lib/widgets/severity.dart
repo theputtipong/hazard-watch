@@ -8,6 +8,11 @@ const _barHeightsSm = [7.0, 10.0, 14.0];
 const _barHeightsLg = [11.0, 16.0, 22.0];
 const _inactiveOpacity = 0.28;
 
+/// The 28% tint alone is 1.5-2.1:1 against the badge, under the 3:1 a meter needs, and a tint dark enough would look
+/// filled. So empty bars keep the design system's tint and add a full-colour outline: the outline carries the contrast,
+/// the hollow look still reads as empty.
+const _inactiveOutline = 1.0;
+
 /// Level = number of filled bars, so severity reads without colour. Colour follows the surrounding text.
 class SeverityMeter extends StatelessWidget {
   const SeverityMeter({super.key, required this.level, this.large = false, this.color});
@@ -34,6 +39,7 @@ class SeverityMeter extends StatelessWidget {
                 height: heights[i],
                 decoration: BoxDecoration(
                   color: i < level.index ? c : c.withValues(alpha: _inactiveOpacity),
+                  border: i < level.index ? null : Border.all(color: c, width: _inactiveOutline),
                   borderRadius: BorderRadius.circular(HwSize.radiusTiny),
                 ),
               ),

@@ -71,6 +71,9 @@ class _MapScreenState extends State<MapScreen> {
   LatLng? _you;
   bool _locating = false;
   String? _hint;
+
+  /// The way out shown with [_hint] (turn location on, open app settings, try again).
+  ({String label, VoidCallback onPressed})? _hintAction;
   String? _districtId;
   late final NasaLayerStore _nasaStore = widget.nasaStore ?? DeviceNasaLayerStore();
   NasaLayerState _nasa = NasaLayerState.initial;
@@ -180,7 +183,10 @@ class _MapScreenState extends State<MapScreen> {
   double get _areaZoom => widget.settings.district == null ? MapConfig.regionZoom : MapConfig.areaZoom;
 
   void _goToArea() {
-    setState(() => _hint = null);
+    setState(() {
+      _hint = null;
+      _hintAction = null;
+    });
     _map.move(_areaCenter, _areaZoom);
   }
 
@@ -195,16 +201,32 @@ class _MapScreenState extends State<MapScreen> {
     setState(() {
       _locating = true;
       _hint = l.mapLocationWhy;
+      _hintAction = null;
     });
     final fix = await widget.location.current();
     if (!mounted) return;
+    final location = widget.location;
+    final (hint, action) = switch (fix) {
+      LocationFound() => (null, null),
+      LocationUnavailable(reason: LocationFailure.serviceOff) => (
+        l.mapServiceOff,
+        (label: l.locationTurnOn, onPressed: location.openLocationSettings),
+      ),
+      LocationUnavailable(reason: LocationFailure.deniedForever) => (
+        l.mapBlocked,
+        (label: l.locationOpenSettings, onPressed: location.openAppSettings),
+      ),
+      LocationUnavailable(reason: LocationFailure.denied) => (l.mapLocationOff, null),
+      LocationUnavailable(reason: LocationFailure.timeout) => (
+        l.mapTimeout,
+        (label: l.commonRetry, onPressed: _goToMe),
+      ),
+      LocationUnavailable(reason: LocationFailure.error) => (l.mapNoFix, null),
+    };
     setState(() {
       _locating = false;
-      _hint = switch (fix) {
-        LocationFound() => null,
-        LocationUnavailable(denied: true) => l.mapLocationOff,
-        LocationUnavailable() => l.mapNoFix,
-      };
+      _hint = hint;
+      _hintAction = action;
       if (fix is LocationFound) _you = LatLng(fix.lat, fix.lng);
     });
     if (_you != null) _map.move(_you!, MapConfig.locateZoom);
@@ -257,7 +279,7 @@ class _MapScreenState extends State<MapScreen> {
             children: [
               widget.baseMap?.call(context, dark, lang) ?? BaseMap(dark: dark, lang: lang),
               if (nasa.raster case final id?) gibsTileLayer(nasaLayers[id]!, now, tileProvider: widget.tileProvider),
-              if (events.isNotEmpty) eventTrackLayer(events),
+              if (events.isNotEmpty) eventTrackLayer(context, events),
               if (fires.isNotEmpty) FireLayer(fires: fires, onTap: (f) => _showFire(f, now)),
               if (events.isNotEmpty) MarkerLayer(markers: [for (final e in events) _eventMarker(context, e, now)]),
               MarkerLayer(
@@ -307,7 +329,12 @@ class _MapScreenState extends State<MapScreen> {
               if (_hint != null)
                 ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 240),
-                  child: _StatusPill(text: _hint!),
+                  child: _StatusPill(
+                    key: const ValueKey('map-hint'),
+                    text: _hint!,
+                    actionLabel: _hintAction?.label,
+                    onRetry: _locating ? null : _hintAction?.onPressed,
+                  ),
                 ),
               // NASA layers get their own sheet (seven of them) rather than more chips; outlined while any is on.
               _MapButton(
@@ -517,15 +544,26 @@ class _LayerChips extends StatelessWidget {
 }
 
 class _StatusPill extends StatelessWidget {
-  const _StatusPill({required this.text, this.onRetry});
+  const _StatusPill({super.key, required this.text, this.onRetry, this.actionLabel});
 
   final String text;
   final VoidCallback? onRetry;
+
+  /// The button's text; "Try again" when null.
+  final String? actionLabel;
 
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final c = context.hw;
+    final label = Text(text, style: Theme.of(context).textTheme.bodySmall!.copyWith(color: c.onInk));
+    final button = onRetry == null
+        ? null
+        : TextButton(
+            onPressed: onRetry,
+            style: TextButton.styleFrom(foregroundColor: c.onInk),
+            child: Text(actionLabel ?? l.commonRetry),
+          );
     return Align(
       alignment: Alignment.center,
       child: Container(
@@ -534,21 +572,21 @@ class _StatusPill extends StatelessWidget {
           color: c.ink.withValues(alpha: 0.9),
           borderRadius: BorderRadius.circular(HwSize.radiusControl),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          spacing: HwSize.space2,
-          children: [
-            Flexible(
-              child: Text(text, style: Theme.of(context).textTheme.bodySmall!.copyWith(color: c.onInk)),
-            ),
-            if (onRetry != null)
-              TextButton(
-                onPressed: onRetry,
-                style: TextButton.styleFrom(foregroundColor: c.onInk),
-                child: Text(l.commonRetry),
+        // A longer action ("Open app settings") goes under the text so neither gets squeezed.
+        child: actionLabel != null && button != null
+            ? Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [label, button],
+              )
+            : Row(
+                mainAxisSize: MainAxisSize.min,
+                spacing: HwSize.space2,
+                children: [
+                  Flexible(child: label),
+                  ?button,
+                ],
               ),
-          ],
-        ),
       ),
     );
   }
@@ -722,16 +760,33 @@ class _NasaCredits extends StatelessWidget {
       alignment: Alignment.bottomLeft,
       child: Padding(
         padding: const EdgeInsets.only(bottom: HwSize.touchTarget + HwSize.space2, right: HwSize.touchTarget * 2),
-        child: Container(
-          key: const ValueKey('nasa-credits'),
-          padding: const EdgeInsets.symmetric(horizontal: HwSize.space1, vertical: 2),
-          color: c.surface.withValues(alpha: 0.8),
-          // Each NASA name links to its site; the credit text itself is unchanged.
-          child: SourceText(
-            text,
-            sources: nasaSourceRefs,
-            style: Theme.of(context).textTheme.labelSmall!.copyWith(color: c.inkMuted),
-          ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              key: const ValueKey('nasa-credits'),
+              padding: const EdgeInsets.symmetric(horizontal: HwSize.space1, vertical: 2),
+              color: c.surface.withValues(alpha: MapConfig.creditPanelAlpha),
+              // Each NASA name links to its site; the credit text itself is unchanged.
+              child: SourceText(
+                text,
+                sources: nasaSourceRefs,
+                style: Theme.of(context).textTheme.labelSmall!.copyWith(color: c.inkMuted),
+              ),
+            ),
+            // What the raster's colours mean, compact; the layer sheet adds the caveat note.
+            if (nasaLegend(state) case final legend?)
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 260),
+                child: Container(
+                  key: const ValueKey('nasa-map-legend'),
+                  padding: const EdgeInsets.symmetric(horizontal: HwSize.space1, vertical: 2),
+                  color: c.surface.withValues(alpha: MapConfig.creditPanelAlpha),
+                  child: NasaLegendView(layerId: state.raster!, legend: legend),
+                ),
+              ),
+          ],
         ),
       ),
     );
@@ -803,8 +858,14 @@ class NasaLayerSheet extends StatelessWidget {
                 // One raster at a time; turning the active one off leaves none.
                 onChanged: (v) => onChanged(state.copyWith(raster: () => v ? id : null)),
               ),
-              if (state.raster == id)
+              if (state.raster == id) ...[
                 credit('${nasaRasterDate(l, nasaLayers[id]!, now)} · ${nasaLayers[id]!.attribution}'),
+                if (nasaLayers[id]!.legend case final legend?)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: HwSize.space2),
+                    child: NasaLegendView(layerId: id, legend: legend, note: true),
+                  ),
+              ],
             ],
             if (state.anyOn)
               Padding(

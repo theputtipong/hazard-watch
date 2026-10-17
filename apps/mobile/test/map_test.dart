@@ -11,6 +11,7 @@ import 'package:hazardwatch/api/models.dart';
 import 'package:hazardwatch/bma/bma_parse.dart';
 import 'package:hazardwatch/bma/device_bma.dart';
 import 'package:hazardwatch/bma/rules.dart';
+import 'package:hazardwatch/l10n/gen/app_localizations.dart';
 import 'package:hazardwatch/location.dart';
 import 'package:hazardwatch/map/base_map.dart';
 import 'package:hazardwatch/map/map_data.dart';
@@ -413,6 +414,27 @@ void main() {
       expect(find.byKey(const ValueKey('f1')), findsNothing);
     });
 
+    for (final brightness in Brightness.values) {
+      testWidgets('layer chip labels read on the chip, on or off (${brightness.name})', (tester) async {
+        await pumpMap(tester, brightness: brightness);
+        final chips = tester.widgetList<FilterChip>(find.byType(FilterChip)).toList();
+        expect(chips.map((c) => c.selected), containsAll([true, false]));
+        for (final chip in chips) {
+          final label = tester
+              .widget<RichText>(find.descendant(of: find.byWidget(chip), matching: find.byType(RichText)).first)
+              .text
+              .style!
+              .color!;
+          final bg = chip.selected ? chip.selectedColor! : chip.backgroundColor!;
+          expect(
+            contrastRatio(label, bg),
+            greaterThanOrEqualTo(4.5),
+            reason: '${chip.label} selected=${chip.selected}',
+          );
+        }
+      });
+    }
+
     testWidgets('my location adds a "you" pin; refused permission explains how to allow it', (tester) async {
       final location = FakeLocation(LocationUnavailable(denied: true));
       await pumpMap(tester, location: location);
@@ -426,6 +448,70 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(YouPin), findsOneWidget);
       expect(find.byTooltip('ไปที่เขตที่ติดตาม'), findsOneWidget);
+    });
+
+    group('my location says why it failed and offers the way out', () {
+      const locate = 'กลับไปที่ตำแหน่งของฉัน';
+      Finder hint(String text) =>
+          find.descendant(of: find.byKey(const ValueKey('map-hint')), matching: find.text(text));
+      Finder action(String label) =>
+          find.descendant(of: find.byKey(const ValueKey('map-hint')), matching: find.widgetWithText(TextButton, label));
+
+      Future<FakeLocation> tapLocate(WidgetTester tester, LocationFailure reason) async {
+        final location = FakeLocation(LocationUnavailable(reason: reason));
+        await pumpMap(tester, location: location);
+        await tester.tap(find.byTooltip(locate));
+        await tester.pumpAndSettle();
+        expect(find.byType(YouPin), findsNothing);
+        return location;
+      }
+
+      testWidgets('location off: turn it on', (tester) async {
+        final location = await tapLocate(tester, LocationFailure.serviceOff);
+        expect(hint('ตำแหน่งในเครื่องปิดอยู่ เปิดแล้วกดอีกครั้ง'), findsOneWidget);
+        await tester.tap(action('เปิดตำแหน่ง'));
+        await tester.pumpAndSettle();
+        expect((location.locationSettingsOpened, location.appSettingsOpened), (1, 0));
+      });
+
+      testWidgets('blocked for good: open app settings', (tester) async {
+        final location = await tapLocate(tester, LocationFailure.deniedForever);
+        expect(hint('แอปถูกปิดสิทธิ์ใช้ตำแหน่ง เปิดได้ในการตั้งค่าแอป'), findsOneWidget);
+        await tester.tap(action('เปิดการตั้งค่าแอป'));
+        await tester.pumpAndSettle();
+        expect((location.locationSettingsOpened, location.appSettingsOpened), (0, 1));
+      });
+
+      testWidgets('refused this time: tap again to be asked', (tester) async {
+        final location = await tapLocate(tester, LocationFailure.denied);
+        expect(hint('เปิดสิทธิ์ตำแหน่งในการตั้งค่าเครื่องก่อน แล้วกดอีกครั้ง'), findsOneWidget);
+        expect(
+          find.descendant(of: find.byKey(const ValueKey('map-hint')), matching: find.byType(TextButton)),
+          findsNothing,
+        );
+        expect((location.locationSettingsOpened, location.appSettingsOpened), (0, 0));
+      });
+
+      testWidgets('no fix in time: try again finds it', (tester) async {
+        final location = await tapLocate(tester, LocationFailure.timeout);
+        expect(hint('หาตำแหน่งไม่ทัน ลองอีกครั้ง'), findsOneWidget);
+        location.result = LocationFound(13.756, 100.5);
+        await tester.tap(action('ลองใหม่'));
+        await tester.pumpAndSettle();
+        expect(location.calls, 2);
+        expect(find.byType(YouPin), findsOneWidget);
+        expect(find.byKey(const ValueKey('map-hint')), findsNothing);
+      });
+
+      testWidgets('anything else: the plain no-fix hint', (tester) async {
+        final location = await tapLocate(tester, LocationFailure.error);
+        expect(hint('หาตำแหน่งไม่เจอ ลองอีกครั้ง'), findsOneWidget);
+        expect(
+          find.descendant(of: find.byKey(const ValueKey('map-hint')), matching: find.byType(TextButton)),
+          findsNothing,
+        );
+        expect((location.locationSettingsOpened, location.appSettingsOpened), (0, 0));
+      });
     });
 
     testWidgets('a failed load says so and offers a retry', (tester) async {
@@ -673,6 +759,9 @@ void main() {
         ('NASA EOSDIS GIBS / Worldview', sourceUrl('nasa-gibs')),
       ]);
 
+      // The flood legend and note push the rest of the list down; the sheet scrolls.
+      await tester.ensureVisible(find.byKey(const ValueKey('nasa-raster:fireWms')));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('nasa-raster:fireWms')));
       await tester.pumpAndSettle();
       expect(store.saved!.raster, 'fireWms');
@@ -721,5 +810,104 @@ void main() {
       expect(find.byKey(const ValueKey('nasa-credits')), findsNothing);
       expect(find.byType(PolylineLayer), findsNothing);
     });
+
+    test('legends come from packages/core with the official GIBS colours; every key has text', () {
+      Iterable<(int, String)> stops(String id) => [
+        for (final s in nasaLayers[id]!.legend!.stops) (s.color.toARGB32(), s.labelKey),
+      ];
+      // MODIS_Flood.xml LegendEntry colours ("No Water" is transparent, so it has no swatch).
+      expect(nasaLayers['flood']!.legend!.kind, NasaLegendKind.classes);
+      expect(stops('flood'), [
+        (0xff32d2f5, 'nasa.legend.flood.surface'),
+        (0xffffff00, 'nasa.legend.flood.recurring'),
+        (0xfffa1e24, 'nasa.legend.flood.flood'),
+        (0xffafafaf, 'nasa.legend.flood.noData'),
+      ]);
+      expect(nasaLayers['imergRain']!.legend!.kind, NasaLegendKind.ramp);
+      expect(nasaLayers['aod']!.legend!.kind, NasaLegendKind.ramp);
+      expect(nasaLayers['trueColor']!.legend, isNull);
+      expect(nasaLayers['fireWms']!.legend, isNull);
+      for (final lang in ['th', 'en']) {
+        final l = lookupAppLocalizations(Locale(lang));
+        for (final legend in nasaLayers.values.map((x) => x.legend).nonNulls) {
+          for (final key in [...legend.stops.map((s) => s.labelKey), legend.noteKey]) {
+            expect(nasaLegendText(l, key), isNot(key), reason: '$key has no $lang text');
+            expect(nasaLegendText(l, key), isNotEmpty);
+          }
+        }
+      }
+    });
+
+    final mapLegend = find.byKey(const ValueKey('nasa-map-legend'));
+
+    testWidgets('the flood layer shows its four classes, labelled, under the credit and in the sheet with the note', (
+      tester,
+    ) async {
+      await pumpNasaMap(tester, saved: const NasaLayerState(firms: false, events: false, raster: 'flood'));
+      final l = lookupAppLocalizations(const Locale('th'));
+      const labels = ['แหล่งน้ำปกติ', 'ท่วมเป็นประจำ', 'น้ำท่วม', 'เมฆบัง ไม่มีข้อมูล'];
+      for (final t in labels) {
+        expect(find.descendant(of: mapLegend, matching: find.text(t)), findsOneWidget);
+      }
+      Color swatch(String key) =>
+          (tester
+                      .widget<Container>(
+                        find.descendant(of: mapLegend, matching: find.byKey(ValueKey('nasa-legend-swatch:$key'))),
+                      )
+                      .decoration!
+                  as BoxDecoration)
+              .color!;
+      expect(
+        [
+          for (final k in ['surface', 'recurring', 'flood', 'noData']) swatch('nasa.legend.flood.$k').toARGB32(),
+        ],
+        [0xff32d2f5, 0xffffff00, 0xfffa1e24, 0xffafafaf],
+      );
+      // Under the credit, and compact: no note on the map.
+      expect(tester.getRect(mapLegend).top, greaterThanOrEqualTo(tester.getRect(credits).bottom));
+      expect(find.descendant(of: mapLegend, matching: find.text(l.nasaLegendFloodNote)), findsNothing);
+      // Screen readers hear the layer and every class in words, not colours.
+      expect(find.bySemanticsLabel('${l.layerNasaFlood}: ${labels.join(', ')}'), findsOneWidget);
+
+      await openSheet(tester);
+      final sheet = find.byType(NasaLayerSheet);
+      for (final t in labels) {
+        expect(find.descendant(of: sheet, matching: find.text(t)), findsOneWidget);
+      }
+      expect(find.descendant(of: sheet, matching: find.text(l.nasaLegendFloodNote)), findsOneWidget);
+      expect(l.nasaLegendFloodNote, contains('300 ม.'));
+    });
+
+    for (final (id, low, high) in [('imergRain', '0.1', '≥50 มม./ชม.'), ('aod', '0 อากาศใส', '≥1 ควันหรือฝุ่นหนา')]) {
+      testWidgets('$id shows a labelled colour ramp, with its note in the sheet', (tester) async {
+        await pumpNasaMap(tester, saved: NasaLayerState(firms: false, events: false, raster: id));
+        final legend = nasaLayers[id]!.legend!;
+        final ramp = tester.widget<Container>(
+          find.descendant(of: mapLegend, matching: find.byKey(const ValueKey('nasa-legend-ramp'))),
+        );
+        expect(((ramp.decoration! as BoxDecoration).gradient! as LinearGradient).colors, [
+          for (final s in legend.stops) s.color,
+        ]);
+        expect(legend.stops.length, 5);
+        expect(find.descendant(of: mapLegend, matching: find.text(low)), findsOneWidget);
+        expect(find.descendant(of: mapLegend, matching: find.text(high)), findsOneWidget);
+        final l = lookupAppLocalizations(const Locale('th'));
+        final note = nasaLegendText(l, legend.noteKey);
+        expect(find.text(note), findsNothing);
+        await openSheet(tester);
+        expect(find.descendant(of: find.byType(NasaLayerSheet), matching: find.text(note)), findsOneWidget);
+      });
+    }
+
+    for (final raster in ['trueColor', 'fireWms', null]) {
+      testWidgets('no legend for ${raster ?? 'no raster'}', (tester) async {
+        await pumpNasaMap(tester, saved: NasaLayerState(firms: true, events: false, raster: raster));
+        expect(credits, findsOneWidget);
+        expect(mapLegend, findsNothing);
+        expect(find.byType(NasaLegendView), findsNothing);
+        await openSheet(tester);
+        expect(find.byType(NasaLegendView), findsNothing);
+      });
+    }
   });
 }

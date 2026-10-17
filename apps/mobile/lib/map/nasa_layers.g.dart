@@ -1,5 +1,7 @@
 // GENERATED from packages/core/src/nasa.ts by tool/gen_nasa.mjs. Do not edit.
 
+import 'dart:ui' show Color;
+
 enum GibsService { wmts, wms }
 
 /// `defaultDay` lets GIBS pick its newest day; `yesterday` is the UTC day before (WMS has no TIME=default).
@@ -17,6 +19,7 @@ class NasaLayer {
     required this.opacity,
     required this.defaultOn,
     required this.attribution,
+    this.legend,
   });
 
   final String id;
@@ -30,6 +33,30 @@ class NasaLayer {
   final double opacity;
   final bool defaultOn;
   final String attribution;
+
+  /// What the colours mean, from GIBS' own colormap; null for photos and layers whose colour is self-explanatory.
+  final NasaLegend? legend;
+}
+
+/// `classes`: one swatch per category; `ramp`: a continuous scale labelled at a few points.
+enum NasaLegendKind { classes, ramp }
+
+class NasaLegendStop {
+  const NasaLegendStop({required this.color, required this.labelKey});
+
+  final Color color;
+
+  /// A message key from packages/core/src/i18n/messages.ts (see nasaLegendText).
+  final String labelKey;
+}
+
+/// NasaLegend in packages/core/src/nasa.ts.
+class NasaLegend {
+  const NasaLegend({required this.kind, required this.stops, required this.noteKey});
+
+  final NasaLegendKind kind;
+  final List<NasaLegendStop> stops;
+  final String noteKey;
 }
 
 /// Drawn from our own snapshot, not GIBS.
@@ -63,6 +90,17 @@ const Map<String, NasaLayer> nasaLayers = {
     opacity: 0.7,
     defaultOn: false,
     attribution: 'Imagery: NASA EOSDIS GIBS / Worldview · IMERG: NASA GPM',
+    legend: NasaLegend(
+      kind: NasaLegendKind.ramp,
+      stops: [
+        NasaLegendStop(color: Color(0xff00764e), labelKey: 'nasa.legend.rain.r01'),
+        NasaLegendStop(color: Color(0xffc3e400), labelKey: 'nasa.legend.rain.r1'),
+        NasaLegendStop(color: Color(0xffff4730), labelKey: 'nasa.legend.rain.r5'),
+        NasaLegendStop(color: Color(0xff9c0000), labelKey: 'nasa.legend.rain.r20'),
+        NasaLegendStop(color: Color(0xff3f0000), labelKey: 'nasa.legend.rain.r50'),
+      ],
+      noteKey: 'nasa.legend.rain.note',
+    ),
   ),
   'flood': NasaLayer(
     id: 'flood',
@@ -74,6 +112,16 @@ const Map<String, NasaLayer> nasaLayers = {
     opacity: 0.8,
     defaultOn: false,
     attribution: 'Imagery: NASA EOSDIS GIBS / Worldview · Flood: NASA LANCE MODIS/VIIRS NRT Global Flood Product',
+    legend: NasaLegend(
+      kind: NasaLegendKind.classes,
+      stops: [
+        NasaLegendStop(color: Color(0xff32d2f5), labelKey: 'nasa.legend.flood.surface'),
+        NasaLegendStop(color: Color(0xffffff00), labelKey: 'nasa.legend.flood.recurring'),
+        NasaLegendStop(color: Color(0xfffa1e24), labelKey: 'nasa.legend.flood.flood'),
+        NasaLegendStop(color: Color(0xffafafaf), labelKey: 'nasa.legend.flood.noData'),
+      ],
+      noteKey: 'nasa.legend.flood.note',
+    ),
   ),
   'aod': NasaLayer(
     id: 'aod',
@@ -85,6 +133,17 @@ const Map<String, NasaLayer> nasaLayers = {
     opacity: 0.6,
     defaultOn: false,
     attribution: 'Imagery: NASA EOSDIS GIBS / Worldview',
+    legend: NasaLegend(
+      kind: NasaLegendKind.ramp,
+      stops: [
+        NasaLegendStop(color: Color(0xfffffcc7), labelKey: 'nasa.legend.aod.low'),
+        NasaLegendStop(color: Color(0xffffc648), labelKey: 'nasa.legend.aod.a02'),
+        NasaLegendStop(color: Color(0xffff621b), labelKey: 'nasa.legend.aod.a04'),
+        NasaLegendStop(color: Color(0xffd3070c), labelKey: 'nasa.legend.aod.a06'),
+        NasaLegendStop(color: Color(0xff9b000e), labelKey: 'nasa.legend.aod.high'),
+      ],
+      noteKey: 'nasa.legend.aod.note',
+    ),
   ),
   'trueColor': NasaLayer(
     id: 'trueColor',

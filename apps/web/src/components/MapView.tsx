@@ -33,7 +33,7 @@ import type { MapPalette } from '@/lib/prefs';
 import type { ZoneView } from '@/lib/useZones';
 import { RadarDrift } from './Wind';
 import { cctvIcon, eventIcon, floodIcon, LEGEND_GLYPH, pm25Icon, waterIcon, youIcon } from './mapIcons';
-import { gibsDataDate, NASA_RASTER_IDS, toLeaflet, useNasaLayers, type NasaLayerState } from '@/lib/nasaLayers';
+import { gibsDataDate, NASA_RASTER_IDS, rampGradient, toLeaflet, useNasaLayers, type NasaLayerState } from '@/lib/nasaLayers';
 import { zoneLabel } from '@/lib/zoneText';
 import type { VectorBaseMap } from '@/lib/vectorBaseMap';
 
@@ -546,8 +546,47 @@ function Legend({ lang, layers, palette, nasa }: { lang: Lang; layers: Layers; p
               {t('layer.nasa.events', lang)}
             </span>
           )}
+          {nasa.raster && <NasaRasterLegend lang={lang} id={nasa.raster} />}
         </>
       )}
+    </div>
+  );
+}
+
+/**
+ * What the active GIBS raster's colours mean, from the official colormap. Every colour has a text label next to or
+ * under it, and a ramp is also read out as one sentence, so nothing depends on seeing the colour.
+ */
+function NasaRasterLegend({ lang, id }: { lang: Lang; id: NasaLayerId }) {
+  const legend = NASA_LAYERS[id].legend;
+  if (!legend) return null;
+  const title = t(`layer.nasa.${id}`, lang);
+  const labels = legend.stops.map((s) => t(s.labelKey, lang));
+  const mid = Math.floor((labels.length - 1) / 2);
+  return (
+    <div role="group" aria-label={title} className="mt-1 flex flex-col gap-1.5 border-t border-line pt-1.5">
+      <span className="font-semibold">{title}</span>
+      {legend.kind === 'classes' ? (
+        <ul className="flex flex-col gap-1">
+          {legend.stops.map((s, i) => (
+            <li key={s.labelKey} className="flex items-center gap-2">
+              <span className="size-3.5 shrink-0 rounded-tiny border border-line" style={{ background: s.color }} aria-hidden="true" />
+              {labels[i]}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <>
+          <span className="h-3 w-full rounded-tiny border border-line" style={{ background: rampGradient(legend) }} aria-hidden="true" />
+          <span className="flex justify-between gap-1 text-ink-muted" aria-hidden="true">
+            <span>{labels[0]}</span>
+            <span>{labels[mid]}</span>
+            <span className="text-right">{labels[labels.length - 1]}</span>
+          </span>
+          <span className="sr-only">{labels.join(', ')}</span>
+        </>
+      )}
+      <span className="text-ink-muted">{t(legend.noteKey, lang)}</span>
     </div>
   );
 }

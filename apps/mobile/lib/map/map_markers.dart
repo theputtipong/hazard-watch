@@ -150,7 +150,11 @@ class HazardPin extends StatelessWidget {
       clipBehavior: Clip.none,
       children: [
         pin,
-        Positioned(top: -4, right: -4, child: _AlertBadge(color: c.sevDanger)),
+        Positioned(
+          top: -4,
+          right: -4,
+          child: _AlertBadge(ring: c.sevDanger, fill: c.surface, ink: c.sevDangerInk),
+        ),
       ],
     );
   }
@@ -170,11 +174,14 @@ class HazardPin extends StatelessWidget {
   );
 }
 
-/// "!" on danger pins, so the worst level reads without colour.
+/// "!" on danger pins, so the worst level reads without colour. The "!" is sevDangerInk on surface, which is at least
+/// 6.8:1 in every theme and colour-blind mode (sevDanger on white was 2.2:1 in dark colour-blind mode).
 class _AlertBadge extends StatelessWidget {
-  const _AlertBadge({required this.color});
+  const _AlertBadge({required this.ring, required this.fill, required this.ink});
 
-  final Color color;
+  final Color ring;
+  final Color fill;
+  final Color ink;
 
   @override
   Widget build(BuildContext context) => Container(
@@ -182,13 +189,13 @@ class _AlertBadge extends StatelessWidget {
     height: 14,
     alignment: Alignment.center,
     decoration: BoxDecoration(
-      color: Colors.white,
+      color: fill,
       shape: BoxShape.circle,
-      border: Border.all(color: color, width: 1.5),
+      border: Border.all(color: ring, width: 1.5),
     ),
     child: Text(
       '!',
-      style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w700, height: 1),
+      style: TextStyle(color: ink, fontSize: 10, fontWeight: FontWeight.w700, height: 1),
     ),
   );
 }

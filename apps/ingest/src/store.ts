@@ -5,6 +5,9 @@ import type { FeedName } from '@hw/sources';
 export const KEYS = {
   edge: 'snapshot:edge',
   runner: 'snapshot:runner',
+  /** One key per relayed BMA feed, so a flood and a rain relay landing together can't overwrite each other. */
+  relayFlood: 'snapshot:relay:flood',
+  relayRain: 'snapshot:relay:rain',
   radarBundle: 'radar:bundle',
 } as const;
 
@@ -17,7 +20,7 @@ export interface GroupSnapshot {
   pushHeldUntil?: string;
 }
 
-export const isPushHeld = (snapshot: GroupSnapshot | null | undefined, now: Date) =>
+export const isPushHeld = (snapshot: { pushHeldUntil?: string } | null | undefined, now: Date) =>
   !!snapshot?.pushHeldUntil && Date.parse(snapshot.pushHeldUntil) > now.getTime();
 
 export async function readGroup(kv: KVNamespace, key: string): Promise<GroupSnapshot | null> {

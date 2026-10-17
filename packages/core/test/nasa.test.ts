@@ -131,6 +131,38 @@ describe('NASA_LAYERS', () => {
   });
 });
 
+describe('NASA raster legends', () => {
+  const text = messages as Record<string, { th: string; en: string }>;
+
+  it('shows the four official flood classes (MODIS_Flood colormap, No Water left out)', () => {
+    expect(NASA_LAYERS.flood.legend?.kind).toBe('classes');
+    expect(NASA_LAYERS.flood.legend?.stops.map((s) => s.color)).toEqual(['#32d2f5', '#ffff00', '#fa1e24', '#afafaf']);
+  });
+
+  it('gives rain and AOD an ascending ramp, and none to the photo-like layers', () => {
+    for (const id of ['imergRain', 'aod'] as const) {
+      const l = NASA_LAYERS[id].legend;
+      expect(l?.kind, id).toBe('ramp');
+      // The leading number on each English label, e.g. '≥50 mm/h' -> 50.
+      const values = (l?.stops ?? []).map((s) => Number.parseFloat(text[s.labelKey]!.en.replace('≥', '')));
+      expect(values.length, id).toBeGreaterThanOrEqual(5);
+      expect(values.every((v, i) => Number.isFinite(v) && (i === 0 || v > values[i - 1]!)), `${id}: ${values.join(',')}`).toBe(true);
+    }
+    expect(NASA_LAYERS.trueColor.legend).toBeUndefined();
+    expect(NASA_LAYERS.fireWms.legend).toBeUndefined();
+  });
+
+  it('has colours as #rrggbb and every label and note in Thai and English', () => {
+    for (const l of Object.values(NASA_LAYERS)) {
+      if (!l.legend) continue;
+      for (const key of [...l.legend.stops.map((s) => s.labelKey), l.legend.noteKey]) {
+        expect(text[key]?.th && text[key]?.en, key).toBeTruthy();
+      }
+      for (const s of l.legend.stops) expect(s.color, l.id).toMatch(/^#[0-9a-f]{6}$/);
+    }
+  });
+});
+
 describe('NASA feeds', () => {
   it('lists fires and events as topics with names and government source links', () => {
     expect(FEED_TOPICS).toContain('fires');

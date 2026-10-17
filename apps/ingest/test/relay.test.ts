@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import type { SourceResult } from '@hw/core';
 import { describe, expect, it } from 'vitest';
 import { keepRecentRelay, relayFeed, relayIsFresh } from '../src/relay';
+import { overlayFeed, overlayRelays } from '../src/relayStore';
 import type { FeedMap, GroupSnapshot } from '../src/store';
 
 const fixture = (name: string): Record<string, unknown>[] =>
@@ -133,5 +134,44 @@ describe('keepRecentRelay', () => {
     const r = keepRecentRelay(snap({ flood: result({ lastOkAt: ago(1) }) }), { flood: good }, now, 30);
     expect(r).toEqual({ feeds: { flood: good }, kept: [] });
     expect(keepRecentRelay(null, { flood: failed('bma-flood') }, now, 30).kept).toEqual([]);
+  });
+});
+
+describe('overlayFeed / overlayRelays', () => {
+  const relayed = result({ fetchedAt: ago(5), items: [{ id: 'relay' }] });
+
+  it('takes whichever side is present', () => {
+    expect(overlayFeed(undefined, relayed)).toEqual({ ...relayed, lastOkAt: relayed.fetchedAt });
+    const r = result();
+    expect(overlayFeed(r, undefined)).toBe(r);
+  });
+
+  it('prefers the newer good copy', () => {
+    const newer = result({ fetchedAt: ago(1) });
+    expect(overlayFeed(newer, relayed)).toBe(newer);
+    expect(overlayFeed(result({ fetchedAt: ago(9) }), relayed)?.items).toEqual([{ id: 'relay' }]);
+  });
+
+  it('a relay after a failure streak began wins', () => {
+    const failing = result({ ok: false, fetchedAt: ago(600), failingSince: ago(600), items: [] });
+    expect(overlayFeed(failing, relayed)).toMatchObject({ ok: true, items: [{ id: 'relay' }], lastOkAt: ago(5) });
+  });
+
+  it('a failure after the relay stays failing, dated and filled by the relay', () => {
+    const failing = result({ ok: false, fetchedAt: ago(90), failingSince: ago(2), lastOkAt: ago(90), items: [] });
+    expect(overlayFeed(failing, relayed)).toMatchObject({ ok: false, failingSince: ago(2), lastOkAt: ago(5), items: [{ id: 'relay' }] });
+    const newerOk = result({ ok: false, fetchedAt: ago(3), failingSince: ago(2), lastOkAt: ago(3) });
+    expect(overlayFeed(newerOk, relayed)).toBe(newerOk);
+  });
+
+  it('keeps other feeds and the latest push hold', () => {
+    const runner: GroupSnapshot = { updatedAt: ago(20), feeds: { waterlevel: result({ source: 'thaiwater' }) }, pushHeldUntil: ago(-5) };
+    const out = overlayRelays(runner, { rain: { updatedAt: ago(5), feed: relayed, pushHeldUntil: ago(-30) } })!;
+    expect(Object.keys(out.feeds).sort()).toEqual(['rain', 'waterlevel']);
+    expect(out.pushHeldUntil).toBe(ago(-30));
+    expect(out.updatedAt).toBe(ago(5));
+    expect(runner.feeds.rain).toBeUndefined();
+    expect(overlayRelays(null, {})).toBeNull();
+    expect(overlayRelays(null, { flood: { updatedAt: ago(5), feed: relayed } })?.feeds.flood?.ok).toBe(true);
   });
 });
