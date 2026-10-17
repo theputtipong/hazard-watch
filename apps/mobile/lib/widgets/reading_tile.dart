@@ -103,18 +103,22 @@ class ReadingTile extends StatelessWidget {
                             spacing: 2,
                             children: [
                               Text(label, style: text.labelLarge!.copyWith(color: c.inkMuted)),
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.baseline,
-                                textBaseline: TextBaseline.alphabetic,
-                                spacing: HwSize.space2,
-                                children: [
-                                  Text(
-                                    stale ? '—' : value,
-                                    style: text.headlineMedium!.copyWith(color: stale ? c.inkMuted : null),
-                                  ),
-                                  if (unit != null && !stale)
-                                    Text(unit!, style: text.labelLarge!.copyWith(color: c.inkMuted)),
-                                ],
+                              // One paragraph, not a Row: on a narrow phone the unit wraps under the value instead of
+                              // running off the edge, and both still sit on one baseline.
+                              Text.rich(
+                                TextSpan(
+                                  text: stale ? '—' : value,
+                                  style: text.headlineMedium!.copyWith(color: stale ? c.inkMuted : null),
+                                  children: [
+                                    if (unit != null && !stale) ...[
+                                      const WidgetSpan(child: SizedBox(width: HwSize.space2)),
+                                      TextSpan(
+                                        text: unit,
+                                        style: text.labelLarge!.copyWith(color: c.inkMuted),
+                                      ),
+                                    ],
+                                  ],
+                                ),
                               ),
                             ],
                           ),

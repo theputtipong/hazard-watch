@@ -49,7 +49,8 @@ void main() {
 
       await tester.scrollUntilVisible(find.text('น้ำในคลองและแม่น้ำ'), 300, scrollable: _homeList);
       expect(find.byType(ReadingTile), findsNWidgets(4)); // PM2.5, rain, street flooding, quake
-      expect(find.text('48.2'), findsOneWidget);
+      // Value and unit are one paragraph (the unit wraps under it on a narrow phone).
+      expect(find.textContaining(RegExp('^48\\.2\uFFFC')), findsOneWidget);
       expect(find.text('ฝุ่นเยอะ ถ้าออกนอกบ้านควรใส่หน้ากาก'), findsOneWidget);
       // Clock text is in the device's time zone; CI runs in UTC.
       expect(
@@ -479,6 +480,16 @@ void main() {
       expect(names, isNot(contains('dams')));
     });
   });
+
+  for (final width in [360.0, 400.0]) {
+    testWidgets('nothing on Home overflows a ${width.round()}dp phone, top to bottom', (tester) async {
+      tester.view.physicalSize = Size(width, 800) * tester.view.devicePixelRatio;
+      addTearDown(tester.view.resetPhysicalSize);
+      await pumpApp(tester);
+      await tester.scrollUntilVisible(find.byType(NotGovernmentNote), 200, scrollable: _homeList);
+      expect(tester.takeException(), isNull);
+    });
+  }
 
   testWidgets('outside Bangkok: far BMA rain and river gauges are left out, province shown', (tester) async {
     final j = fixtureJson();

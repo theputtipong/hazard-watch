@@ -54,13 +54,16 @@ class RiverGauge extends StatelessWidget {
               Expanded(
                 child: Text(name, maxLines: 1, overflow: TextOverflow.ellipsis, style: label),
               ),
-              Text(
-                pctText,
-                textAlign: TextAlign.right,
-                style: label.copyWith(
-                  fontWeight: FontWeight.w600,
-                  fontFeatures: const [FontFeature.tabularFigures()],
-                  color: level == HwLevel.normal ? c.ink : c.text(level),
+              // Flexible: a long state wraps on a narrow phone rather than running off the edge.
+              Flexible(
+                child: Text(
+                  pctText,
+                  textAlign: TextAlign.right,
+                  style: label.copyWith(
+                    fontWeight: FontWeight.w600,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                    color: level == HwLevel.normal ? c.ink : c.text(level),
+                  ),
                 ),
               ),
             ],
