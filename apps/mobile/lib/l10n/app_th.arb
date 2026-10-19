@@ -2272,6 +2272,38 @@
   "@sourcesWarnings": {
     "description": "sources.warnings"
   },
+  "mapZoomIn": "ซูมเข้า",
+  "@mapZoomIn": {
+    "description": "map.zoomIn"
+  },
+  "mapZoomOut": "ซูมออก",
+  "@mapZoomOut": {
+    "description": "map.zoomOut"
+  },
+  "mapRefreshThai": "รีเฟรชข้อมูลไทย",
+  "@mapRefreshThai": {
+    "description": "map.refreshThai"
+  },
+  "mapBaseCredit": "ที่มาของแผนที่",
+  "@mapBaseCredit": {
+    "description": "map.baseCredit"
+  },
+  "mapDataCreditAll": "แหล่งข้อมูลบนแผนที่ทั้งหมด",
+  "@mapDataCreditAll": {
+    "description": "map.dataCreditAll"
+  },
+  "notGovTitle": "แอปนี้ไม่ใช่แอปของรัฐ",
+  "@notGovTitle": {
+    "description": "notGov.title"
+  },
+  "notGovDontShow": "ไม่ต้องแสดงอีก",
+  "@notGovDontShow": {
+    "description": "notGov.dontShow"
+  },
+  "notGovAck": "รับทราบ",
+  "@notGovAck": {
+    "description": "notGov.ack"
+  },
   "mapEventPage": "หน้าเหตุการณ์ · {domain}",
   "@mapEventPage": {
     "description": "map.eventPage",

@@ -424,5 +424,13 @@
   "sourcesDescBmaFlood": "Flooding on Bangkok roads",
   "sourcesDescBmaRain": "Rainfall from Bangkok rain gauges",
   "sourcesWarnings": "For warnings, check each agency’s own website and channels.",
+  "mapZoomIn": "Zoom in",
+  "mapZoomOut": "Zoom out",
+  "mapRefreshThai": "Refresh Thai data",
+  "mapBaseCredit": "Map data credits",
+  "mapDataCreditAll": "All map data sources",
+  "notGovTitle": "This is not a government app",
+  "notGovDontShow": "Don't show again",
+  "notGovAck": "Got it",
   "mapEventPage": "Event page · {domain}"
 }
