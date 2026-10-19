@@ -345,6 +345,7 @@ class _MapScreenState extends State<MapScreen> {
                 final tight = box.maxHeight - chipsBottom < needed;
                 return OverflowBox(
                   alignment: Alignment.bottomRight,
+                  minHeight: 0,
                   maxHeight: double.infinity,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
