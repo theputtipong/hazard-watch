@@ -20,6 +20,7 @@ import '../theme/hw_app_theme.dart';
 import '../widgets/dam_card.dart';
 import '../widgets/reading_tile.dart';
 import '../widgets/source_link.dart';
+import 'sources_screen.dart';
 
 /// The web map's hazards on OpenFreeMap tiles: street flooding, rain, canal levels, PM2.5 and earthquakes, coloured by
 /// severity, plus NASA layers (FIRMS hotspots, EONET events, one GIBS raster) that reach out to the whole world.
@@ -316,6 +317,8 @@ class _MapScreenState extends State<MapScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                const _NotGovStrip(),
+                const SizedBox(height: HwSize.space2),
                 _LayerChips(
                   selected: _layers,
                   onChanged: (layer, on) =>
@@ -598,6 +601,62 @@ class _LayerChips extends StatelessWidget {
                 onSelected: (on) => onChanged(layer, on),
               ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// "Not a government app" in one line above the layer chips, opening the sources page (Google Play: screens showing
+/// government data must say the app is not a government app).
+class _NotGovStrip extends StatelessWidget {
+  const _NotGovStrip();
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final c = context.hw;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: HwSize.space4),
+      child: Semantics(
+        button: true,
+        label: l.notGovTitle,
+        excludeSemantics: true,
+        child: Material(
+          key: const ValueKey('map-not-gov'),
+          color: c.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(HwSize.radiusControl),
+            side: BorderSide(color: c.line),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: () => openSources(context),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: HwSize.touchTarget),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: HwSize.space3),
+                child: Row(
+                  spacing: HwSize.space2,
+                  children: [
+                    Icon(Icons.info_outline_rounded, size: 16, color: c.sevDangerInk),
+                    Expanded(
+                      child: Text(
+                        l.notGovTitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                          color: c.sevDangerInk,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    Icon(Icons.chevron_right_rounded, size: 20, color: c.inkMuted),
+                  ],
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );

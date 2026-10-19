@@ -347,22 +347,6 @@
   "@mapFitRegion": {
     "description": "map.fitRegion"
   },
-  "mapZoomIn": "ซูมเข้า",
-  "@mapZoomIn": {
-    "description": "map.zoomIn"
-  },
-  "mapZoomOut": "ซูมออก",
-  "@mapZoomOut": {
-    "description": "map.zoomOut"
-  },
-  "mapRefreshThai": "รีเฟรชข้อมูลไทย",
-  "@mapRefreshThai": {
-    "description": "map.refreshThai"
-  },
-  "mapBaseCredit": "ที่มาของแผนที่",
-  "@mapBaseCredit": {
-    "description": "map.baseCredit"
-  },
   "mapLocating": "กำลังหาตำแหน่ง…",
   "@mapLocating": {
     "description": "map.locating"
@@ -1789,18 +1773,6 @@
   "@disclaimerNotGov": {
     "description": "disclaimer.notGov"
   },
-  "notGovTitle": "แอปนี้ไม่ใช่แอปของรัฐ",
-  "@notGovTitle": {
-    "description": "disclaimer.title"
-  },
-  "notGovDontShow": "ไม่ต้องแสดงอีก",
-  "@notGovDontShow": {
-    "description": "disclaimer.dontShow"
-  },
-  "notGovAck": "รับทราบ",
-  "@notGovAck": {
-    "description": "disclaimer.ack"
-  },
   "sourceDataFrom": "ข้อมูลจาก {agency} · {domain}",
   "@sourceDataFrom": {
     "description": "source.dataFrom",
@@ -1821,10 +1793,6 @@
         "type": "String"
       }
     }
-  },
-  "mapDataCreditAll": "แหล่งข้อมูลบนแผนที่ทั้งหมด",
-  "@mapDataCreditAll": {
-    "description": "map.dataCreditAll"
   },
   "agencyTmd": "กรมอุตุนิยมวิทยา",
   "@agencyTmd": {
@@ -2299,6 +2267,10 @@
   "sourcesDescBmaRain": "ปริมาณฝนจากเครื่องวัดฝนในกรุงเทพฯ",
   "@sourcesDescBmaRain": {
     "description": "sources.desc.bmaRain"
+  },
+  "sourcesWarnings": "ประกาศเตือนภัย ให้ติดตามจากเว็บไซต์และช่องทางของหน่วยงานนั้นโดยตรง",
+  "@sourcesWarnings": {
+    "description": "sources.warnings"
   },
   "mapEventPage": "หน้าเหตุการณ์ · {domain}",
   "@mapEventPage": {

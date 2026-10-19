@@ -13,7 +13,7 @@ import '../theme/hw_app_theme.dart';
 import '../widgets/alert_card.dart';
 import '../widgets/severity.dart';
 import 'area_picker_screen.dart';
-import 'sources_screen.dart';
+import 'home_screen.dart';
 
 /// Every current alert for the followed district, grouped by level, most severe first. Loads when the tab is shown
 /// (it stays built in the shell's IndexedStack) and on pull down.
@@ -143,6 +143,8 @@ class _AlertsScreenState extends State<AlertsScreen> {
           padding: const EdgeInsets.all(HwSize.space4),
           children: [
             heading,
+            const SizedBox(height: HwSize.space2),
+            const NotGovernmentBanner(),
             const SizedBox(height: HwSize.space3),
             Text(l.homePickFirst, style: text.bodyLarge),
             const SizedBox(height: HwSize.space6),
@@ -184,6 +186,8 @@ class _AlertsScreenState extends State<AlertsScreen> {
             heading,
             Text([district.name.of(locale), district.province?.of(locale)].nonNulls.join(' · '), style: text.bodySmall),
             const SizedBox(height: HwSize.space4),
+            const NotGovernmentBanner(),
+            const SizedBox(height: HwSize.space3),
             if (_error != null) ...[
               CalmBox(text: _errorText(l, _error!, report, now)),
               if (report == null) ...[
@@ -219,8 +223,6 @@ class _AlertsScreenState extends State<AlertsScreen> {
               const SizedBox(height: HwSize.space2),
               Text(l.alertsNotifyOff, style: text.bodySmall!.copyWith(color: c.inkMuted)),
             ],
-            const SizedBox(height: HwSize.space6),
-            const NotGovernmentNote(),
           ],
         ),
       ),

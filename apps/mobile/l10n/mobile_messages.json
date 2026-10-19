@@ -102,5 +102,6 @@
   "location.timeout": { "th": "หาตำแหน่งไม่ทัน ลองใหม่ หรือเลือกเขต/อำเภอเองด้านล่าง", "en": "Couldn't find your location in time. Try again, or pick a district below" },
   "sources.desc.bmaFlood": { "th": "น้ำท่วมบนถนนในกรุงเทพฯ", "en": "Flooding on Bangkok roads" },
   "sources.desc.bmaRain": { "th": "ปริมาณฝนจากเครื่องวัดฝนในกรุงเทพฯ", "en": "Rainfall from Bangkok rain gauges" },
+  "sources.warnings": { "th": "ประกาศเตือนภัย ให้ติดตามจากเว็บไซต์และช่องทางของหน่วยงานนั้นโดยตรง", "en": "For warnings, check each agency’s own website and channels." },
   "map.eventPage": { "th": "หน้าเหตุการณ์ · {domain}", "en": "Event page · {domain}" }
 }

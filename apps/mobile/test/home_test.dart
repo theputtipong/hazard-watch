@@ -20,6 +20,9 @@ import 'support.dart';
 /// Every tab stays built (IndexedStack), so name the home tab's list.
 final _homeList = find.descendant(of: find.byType(HomeScreen), matching: find.byType(Scrollable)).first;
 
+/// The last thing on Home with a district: the fixture's last feed tile (dams) in the freshness card.
+final _homeEnd = find.byKey(const ValueKey('feed-sources:dams'));
+
 void main() {
   test('the ingest contract fixture parses', () {
     final r = AreaReport.fromJson(fixtureJson());
@@ -64,7 +67,7 @@ void main() {
       expect(find.text('น้ำสูง ยังไม่ล้น · 86%'), findsOneWidget);
 
       // The app shows no radar, so its feed (down in the fixture) is not listed: every feed named links its source.
-      await tester.scrollUntilVisible(find.byType(NotGovernmentNote), 300, scrollable: _homeList);
+      await tester.scrollUntilVisible(_homeEnd, 300, scrollable: _homeList);
       expect(find.text('เรดาร์ฝน'), findsNothing);
       expect(find.textContaining('แหล่งข้อมูลมีปัญหา ตั้งแต่'), findsNothing);
     },
@@ -211,9 +214,10 @@ void main() {
       expect(tester.getTopLeft(banner).dy, lessThan(tester.getTopLeft(find.byType(AlertCard).first).dy));
       final screen = tester.view.physicalSize / tester.view.devicePixelRatio;
       expect(tester.getBottomLeft(banner).dy, lessThan(screen.height));
-      // The longer note stays at the bottom.
-      await tester.scrollUntilVisible(find.byType(NotGovernmentNote), 300, scrollable: _homeList);
-      expect(find.byType(NotGovernmentNote), findsOneWidget);
+      // Said once, at the top: not repeated at the bottom.
+      expect(find.byType(NotGovernmentBanner), findsOneWidget);
+      await tester.scrollUntilVisible(_homeEnd, 300, scrollable: _homeList);
+      expect(find.textContaining('เป็นแอปอิสระ'), findsNothing);
       await tester.scrollUntilVisible(banner, -300, scrollable: _homeList);
       await tester.tap(find.descendant(of: banner, matching: find.widgetWithText(TextButton, 'แหล่งข้อมูล')));
       await tester.pumpAndSettle();
@@ -339,7 +343,7 @@ void main() {
         ('ข้อมูลจาก ThaiWater', 'https://www.thaiwater.net'),
         ('กรมชลประทาน', 'https://app.rid.go.th/reservoir'),
       ]);
-      await tester.scrollUntilVisible(find.byType(NotGovernmentNote), 300, scrollable: _homeList);
+      await tester.scrollUntilVisible(_homeEnd, 300, scrollable: _homeList);
       expect(find.byKey(const ValueKey('feed-sources:radar')), findsNothing);
       expect(names, isNot(contains('เรดาร์ฝน')));
       expect(names, hasLength((j['feeds'] as List).length - 1));
@@ -474,7 +478,7 @@ void main() {
       }
       await pumpApp(tester, api: FakeApi(report: j));
       await tester.scrollUntilVisible(find.text('ข้อมูลอัปเดตล่าสุดเมื่อไหร่'), 300, scrollable: _homeList);
-      await tester.scrollUntilVisible(find.byType(NotGovernmentNote), 300, scrollable: _homeList);
+      await tester.scrollUntilVisible(_homeEnd, 300, scrollable: _homeList);
       final names = tester.widgetList<FeedStatusRow>(find.byType(FeedStatusRow)).map((r) => r.name);
       expect(names, contains('เขื่อนและอ่างเก็บน้ำ'));
       expect(names, isNot(contains('dams')));
@@ -486,7 +490,7 @@ void main() {
       tester.view.physicalSize = Size(width, 800) * tester.view.devicePixelRatio;
       addTearDown(tester.view.resetPhysicalSize);
       await pumpApp(tester);
-      await tester.scrollUntilVisible(find.byType(NotGovernmentNote), 200, scrollable: _homeList);
+      await tester.scrollUntilVisible(_homeEnd, 200, scrollable: _homeList);
       expect(tester.takeException(), isNull);
     });
   }

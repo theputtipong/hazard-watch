@@ -8,6 +8,7 @@ import 'package:hazardwatch/screens/settings_screen.dart';
 import 'package:hazardwatch/screens/sources_screen.dart';
 import 'package:hazardwatch/sources_meta.g.dart';
 import 'package:hazardwatch/theme/hw_app_theme.dart';
+import 'package:hazardwatch/widgets/hw_card.dart';
 import 'package:hazardwatch/widgets/reading_tile.dart';
 import 'package:hazardwatch/widgets/source_link.dart';
 
@@ -93,10 +94,31 @@ void main() {
       expect(sourceUrl(id), isNotNull);
       expect(sourceDomain(id), isNotNull);
     }
-    await tester.scrollUntilVisible(find.textContaining('ไม่ได้เป็นของหรือเป็นตัวแทนของหน่วยงานรัฐ'), 100);
     await tester.scrollUntilVisible(find.widgetWithText(SourceLink, '191'), 100);
     expect(find.widgetWithText(SourceLink, '1784'), findsOneWidget);
     expect(tester.widget<SourceLink>(find.widgetWithText(SourceLink, '191')).url, 'tel:191');
+  });
+
+  testWidgets('sources page says it is not a government app once, at the top; the end keeps only the warnings line', (
+    tester,
+  ) async {
+    // Tall enough that the whole list, down to the emergency numbers, is built at once.
+    tester.view.physicalSize = const Size(800, 4000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await pumpThemed(tester, const SizedBox.expand(child: SourcesScreen()));
+    final emergency = find.widgetWithText(SourceLink, '191');
+    expect(emergency, findsOneWidget);
+    final note = find.byKey(const ValueKey('not-gov'));
+    expect(find.textContaining('เป็นแอปอิสระ'), findsOneWidget);
+    expect(find.descendant(of: note, matching: find.textContaining('เป็นแอปอิสระ')), findsOneWidget);
+    final warnings = find.textContaining('ให้ติดตามจากเว็บไซต์และช่องทางของหน่วยงานนั้นโดยตรง');
+    expect(warnings, findsOneWidget);
+    expect(find.descendant(of: note, matching: warnings), findsNothing);
+    // Warnings line sits between the source rows and the emergency numbers, which stay last.
+    final cardBottom = tester.getRect(find.byType(HwCard)).bottom;
+    expect(tester.getTopLeft(warnings).dy, greaterThan(cardBottom));
+    expect(tester.getTopLeft(emergency).dy, greaterThan(tester.getTopLeft(warnings).dy));
   });
 
   testWidgets('settings opens the sources page in one tap', (tester) async {
@@ -116,11 +138,13 @@ void main() {
     expect(find.byType(SourcesScreen), findsOneWidget);
   });
 
-  testWidgets('home ends with the not-a-government-app note', (tester) async {
+  testWidgets('home says it is not a government app once, at the top, not again at the end', (tester) async {
     await pumpApp(tester);
     final home = find.descendant(of: find.byType(HomeScreen), matching: find.byType(Scrollable)).first;
-    await tester.scrollUntilVisible(find.byType(NotGovernmentNote), 300, scrollable: home);
+    expect(find.byType(NotGovernmentBanner), findsOneWidget);
     expect(find.textContaining('เป็นแอปอิสระ'), findsOneWidget);
+    await tester.scrollUntilVisible(find.byKey(const ValueKey('feed-sources:dams')), 300, scrollable: home);
+    expect(find.textContaining('เป็นแอปอิสระ'), findsNothing);
   });
 
   group('SourceText', () {

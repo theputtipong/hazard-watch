@@ -19,6 +19,7 @@ import 'package:hazardwatch/map/map_markers.dart';
 import 'package:hazardwatch/map/nasa_layers.g.dart';
 import 'package:hazardwatch/map/nasa_map.dart';
 import 'package:hazardwatch/screens/map_screen.dart';
+import 'package:hazardwatch/screens/sources_screen.dart';
 import 'package:hazardwatch/settings.dart';
 import 'package:hazardwatch/sources_meta.g.dart';
 import 'package:hazardwatch/theme/hw_app_theme.dart';
@@ -750,6 +751,18 @@ void main() {
         ['thaiwater', 'rid', 'nasa-gibs', 'nasa-firms', 'nasa-eonet'],
       );
       expect(mapCreditSourceIds({}, const NasaLayerState(firms: false, events: false)), isEmpty);
+    });
+
+    testWidgets('a not-government line sits above the layer chips and opens the sources page', (tester) async {
+      await pumpMap(tester);
+      final notGov = find.byKey(const ValueKey('map-not-gov'));
+      expect(notGov, findsOneWidget);
+      expect(find.descendant(of: notGov, matching: find.text('แอปนี้ไม่ใช่แอปของรัฐ')), findsOneWidget);
+      final chip = find.widgetWithText(FilterChip, 'น้ำท่วมบนถนน');
+      expect(tester.getRect(notGov).bottom, lessThanOrEqualTo(tester.getRect(chip).top));
+      await tester.tap(notGov);
+      await tester.pumpAndSettle();
+      expect(find.byType(SourcesScreen), findsOneWidget);
     });
 
     testWidgets('layer chips show and hide pins', (tester) async {

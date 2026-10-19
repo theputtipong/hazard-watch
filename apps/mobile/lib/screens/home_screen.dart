@@ -186,8 +186,6 @@ class _HomeScreenState extends State<HomeScreen> {
               onPressed: _pick,
               child: Text(l.locationPick),
             ),
-            const SizedBox(height: HwSize.space8),
-            const NotGovernmentNote(),
           ],
         ),
       );
@@ -353,8 +351,6 @@ class _HomeScreenState extends State<HomeScreen> {
           },
         ),
       ),
-      const SizedBox(height: HwSize.space4),
-      const NotGovernmentNote(),
     ];
   }
 

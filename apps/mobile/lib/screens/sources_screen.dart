@@ -113,7 +113,7 @@ class SourcesScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: HwSize.space6),
-            Text(l.sourcesDisclaimer, style: text.bodyMedium),
+            Text(l.sourcesWarnings, style: text.bodyMedium),
             const SizedBox(height: HwSize.space3),
             SourceText(
               l.sourcesEmergency,
@@ -244,32 +244,6 @@ class _NotGovernmentDialogState extends State<NotGovernmentDialog> {
           child: Text(l.sourcesTitle),
         ),
         FilledButton(onPressed: () => Navigator.of(context).pop(_hide), child: Text(l.notGovAck)),
-      ],
-    );
-  }
-}
-
-/// Short note that the app is not a government service, with the way to the sources page.
-class NotGovernmentNote extends StatelessWidget {
-  const NotGovernmentNote({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final l = AppLocalizations.of(context);
-    final c = context.hw;
-    final text = Theme.of(context).textTheme;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(l.sourcesDisclaimer, style: text.bodySmall!.copyWith(color: c.inkMuted)),
-        TextButton(
-          style: TextButton.styleFrom(
-            padding: EdgeInsets.zero,
-            minimumSize: const Size(HwSize.touchTarget, HwSize.touchTarget),
-          ),
-          onPressed: () => openSources(context),
-          child: Text(l.sourcesTitle),
-        ),
       ],
     );
   }

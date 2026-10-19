@@ -13,6 +13,7 @@ import 'package:hazardwatch/bma/device_bma.dart';
 import 'package:hazardwatch/bma/rules.dart';
 import 'package:hazardwatch/location.dart';
 import 'package:hazardwatch/screens/alerts_screen.dart';
+import 'package:hazardwatch/screens/home_screen.dart' show NotGovernmentBanner;
 import 'package:hazardwatch/screens/settings_screen.dart';
 import 'package:hazardwatch/screens/sources_screen.dart';
 import 'package:hazardwatch/settings.dart';
@@ -431,8 +432,12 @@ void main() {
     final notifyOff = find.text('Phone notifications are off. You can turn them on in Settings');
     await tester.scrollUntilVisible(notifyOff, 300, scrollable: _alertsList);
     expect(notifyOff, findsOneWidget);
-    await tester.scrollUntilVisible(find.byType(NotGovernmentNote), 300, scrollable: _alertsList);
-    expect(find.byType(NotGovernmentNote), findsOneWidget);
+    // Not a government app: said once, at the top, above the first alert.
+    final notGov = find.byType(NotGovernmentBanner);
+    await tester.scrollUntilVisible(notGov, -300, scrollable: _alertsList);
+    expect(notGov, findsOneWidget);
+    expect(find.descendant(of: notGov, matching: find.textContaining('It is not a government app')), findsOneWidget);
+    expect(tester.getTopLeft(notGov).dy, lessThan(tester.getTopLeft(cards.first).dy));
   });
 
   testWidgets('an alert whose source is unknown links the sources list', (tester) async {
@@ -466,6 +471,21 @@ void main() {
     await tester.tap(find.text('Alerts'));
     await tester.pumpAndSettle();
     expect(find.text('No alerts for this district right now'), findsOneWidget);
+  });
+
+  testWidgets('with no district, alerts says it is not a government app above the pick button', (tester) async {
+    await pumpApp(tester, lang: 'en', withDistrict: false);
+    await tester.tap(find.text('Alerts'));
+    await tester.pumpAndSettle();
+    final notGov = find.descendant(of: find.byType(AlertsScreen), matching: find.byType(NotGovernmentBanner));
+    expect(notGov, findsOneWidget);
+    expect(find.descendant(of: notGov, matching: find.textContaining('It is not a government app')), findsOneWidget);
+    final pick = find.descendant(
+      of: find.byType(AlertsScreen),
+      matching: find.widgetWithText(FilledButton, 'Choose area'),
+    );
+    expect(pick, findsOneWidget);
+    expect(tester.getTopLeft(notGov).dy, lessThan(tester.getTopLeft(pick).dy));
   });
 
   testWidgets('notifications switch asks permission first and shows quake choices once on', (tester) async {
