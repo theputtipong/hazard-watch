@@ -13,13 +13,16 @@ List<String> alertSourceIds(String kind) => switch (kind) {
   _ => const [],
 };
 
-/// "ข้อมูลจาก กรมอุตุนิยมวิทยา · earthquake.tmd.go.th" for the alert's main source, so a notification away from the app
-/// still names the agency and its site (Google Play source-link policy); null for a kind with no known source.
+/// "ข้อมูลจาก กรมอุตุนิยมวิทยา · earthquake.tmd.go.th" so a notification away from the app still names the agency and its
+/// site (Google Play source-link policy); null for a kind with no known source. An alert does not say which adapter it
+/// came from (a quake may be TMD's or USGS's), so a kind with several sources credits them all, joined by " / ".
 String? alertCreditLine(AppLocalizations l, String kind) {
+  final credits = <String>[];
   for (final id in alertSourceIds(kind)) {
     final agency = sourceAgency(l, id);
     final domain = sourceDomain(id);
-    if (agency != null && domain != null) return l.sourceDataFrom(agency, domain);
+    if (agency == null || domain == null) continue;
+    credits.add(credits.isEmpty ? l.sourceDataFrom(agency, domain) : '$agency · $domain');
   }
-  return null;
+  return credits.isEmpty ? null : credits.join(' / ');
 }

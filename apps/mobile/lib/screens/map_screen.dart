@@ -60,6 +60,9 @@ class MapScreen extends StatefulWidget {
 }
 
 class _MapScreenState extends State<MapScreen> {
+  /// Not-government, refresh, zoom in/out, NASA, locate, area.
+  static const _mapButtonCount = 7;
+
   /// Same as WEB.refreshMs: reopening the tab after this reloads.
   static const _refreshAfter = Duration(minutes: 2);
 
@@ -317,8 +320,6 @@ class _MapScreenState extends State<MapScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const _NotGovStrip(),
-                const SizedBox(height: HwSize.space2),
                 _LayerChips(
                   selected: _layers,
                   onChanged: (layer, on) =>
@@ -333,62 +334,84 @@ class _MapScreenState extends State<MapScreen> {
             ),
           ),
         ),
-        Positioned(
-          right: HwSize.space4,
-          bottom: HwSize.space6,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            spacing: HwSize.space2,
-            children: [
-              if (_hint != null)
-                ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 240),
-                  child: _StatusPill(
-                    key: const ValueKey('map-hint'),
-                    text: _hint!,
-                    actionLabel: _hintAction?.label,
-                    onRetry: _locating ? null : _hintAction?.onPressed,
+        Positioned.fill(
+          child: Padding(
+            padding: const EdgeInsets.only(right: HwSize.space4, bottom: HwSize.space6),
+            child: LayoutBuilder(
+              builder: (context, box) {
+                // On short screens a tighter gap keeps the not-government button clear of the layer chips.
+                const needed = _mapButtonCount * HwSize.touchTarget + (_mapButtonCount - 1) * HwSize.space2;
+                final chipsBottom = MediaQuery.paddingOf(context).top + HwSize.space2 + HwSize.touchTarget;
+                final tight = box.maxHeight - chipsBottom < needed;
+                return OverflowBox(
+                  alignment: Alignment.bottomRight,
+                  maxHeight: double.infinity,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    spacing: tight ? HwSize.space1 : HwSize.space2,
+                    children: [
+                      if (_hint != null)
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 240),
+                          child: _StatusPill(
+                            key: const ValueKey('map-hint'),
+                            text: _hint!,
+                            actionLabel: _hintAction?.label,
+                            onRetry: _locating ? null : _hintAction?.onPressed,
+                          ),
+                        ),
+                      // Google Play: screens showing government data must say the app is not a government app.
+                      _MapButton(
+                        key: const ValueKey('map-not-gov'),
+                        icon: Icons.info_outline_rounded,
+                        tooltip: l.notGovTitle,
+                        iconColor: c.sevDangerInk,
+                        onPressed: () => openSources(context),
+                      ),
+                      _MapButton(
+                        key: const ValueKey('refresh-thai'),
+                        icon: Icons.refresh,
+                        tooltip: l.mapRefreshThai,
+                        busy: _loading,
+                        onPressed: _loading ? null : () => _load(thaiOnly: true),
+                      ),
+                      _MapButton(
+                        key: const ValueKey('zoom-in'),
+                        icon: Icons.add,
+                        tooltip: l.mapZoomIn,
+                        onPressed: () => _zoomBy(1),
+                      ),
+                      _MapButton(
+                        key: const ValueKey('zoom-out'),
+                        icon: Icons.remove,
+                        tooltip: l.mapZoomOut,
+                        onPressed: () => _zoomBy(-1),
+                      ),
+                      // NASA layers get their own sheet (seven of them) rather than more chips; outlined while any is on.
+                      _MapButton(
+                        key: const ValueKey('nasa-button'),
+                        icon: Icons.satellite_alt,
+                        tooltip: 'NASA · ${l.mapLayers}',
+                        active: nasa.anyOn,
+                        onPressed: _openNasaSheet,
+                      ),
+                      _MapButton(
+                        icon: Icons.my_location,
+                        tooltip: _locating ? l.mapLocating : l.mapLocate,
+                        busy: _locating,
+                        onPressed: _locating ? null : _goToMe,
+                      ),
+                      _MapButton(
+                        icon: widget.settings.district == null ? Icons.zoom_out_map : Icons.home_work_outlined,
+                        tooltip: widget.settings.district == null ? l.mapFitRegion : l.mapArea,
+                        onPressed: _goToArea,
+                      ),
+                    ],
                   ),
-                ),
-              _MapButton(
-                key: const ValueKey('refresh-thai'),
-                icon: Icons.refresh,
-                tooltip: l.mapRefreshThai,
-                busy: _loading,
-                onPressed: _loading ? null : () => _load(thaiOnly: true),
-              ),
-              _MapButton(
-                key: const ValueKey('zoom-in'),
-                icon: Icons.add,
-                tooltip: l.mapZoomIn,
-                onPressed: () => _zoomBy(1),
-              ),
-              _MapButton(
-                key: const ValueKey('zoom-out'),
-                icon: Icons.remove,
-                tooltip: l.mapZoomOut,
-                onPressed: () => _zoomBy(-1),
-              ),
-              // NASA layers get their own sheet (seven of them) rather than more chips; outlined while any is on.
-              _MapButton(
-                key: const ValueKey('nasa-button'),
-                icon: Icons.satellite_alt,
-                tooltip: 'NASA · ${l.mapLayers}',
-                active: nasa.anyOn,
-                onPressed: _openNasaSheet,
-              ),
-              _MapButton(
-                icon: Icons.my_location,
-                tooltip: _locating ? l.mapLocating : l.mapLocate,
-                busy: _locating,
-                onPressed: _locating ? null : _goToMe,
-              ),
-              _MapButton(
-                icon: widget.settings.district == null ? Icons.zoom_out_map : Icons.home_work_outlined,
-                tooltip: widget.settings.district == null ? l.mapFitRegion : l.mapArea,
-                onPressed: _goToArea,
-              ),
-            ],
+                );
+              },
+            ),
           ),
         ),
       ],
@@ -607,62 +630,6 @@ class _LayerChips extends StatelessWidget {
   }
 }
 
-/// "Not a government app" in one line above the layer chips, opening the sources page (Google Play: screens showing
-/// government data must say the app is not a government app).
-class _NotGovStrip extends StatelessWidget {
-  const _NotGovStrip();
-
-  @override
-  Widget build(BuildContext context) {
-    final l = AppLocalizations.of(context);
-    final c = context.hw;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: HwSize.space4),
-      child: Semantics(
-        button: true,
-        label: l.notGovTitle,
-        excludeSemantics: true,
-        child: Material(
-          key: const ValueKey('map-not-gov'),
-          color: c.surface,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(HwSize.radiusControl),
-            side: BorderSide(color: c.line),
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: InkWell(
-            onTap: () => openSources(context),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(minHeight: HwSize.touchTarget),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: HwSize.space3),
-                child: Row(
-                  spacing: HwSize.space2,
-                  children: [
-                    Icon(Icons.info_outline_rounded, size: 16, color: c.sevDangerInk),
-                    Expanded(
-                      child: Text(
-                        l.notGovTitle,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                          color: c.sevDangerInk,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                    Icon(Icons.chevron_right_rounded, size: 20, color: c.inkMuted),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _StatusPill extends StatelessWidget {
   const _StatusPill({super.key, required this.text, this.onRetry, this.actionLabel});
 
@@ -720,6 +687,7 @@ class _MapButton extends StatelessWidget {
     required this.onPressed,
     this.busy = false,
     this.active = false,
+    this.iconColor,
   });
 
   final IconData icon;
@@ -727,6 +695,7 @@ class _MapButton extends StatelessWidget {
   final VoidCallback? onPressed;
   final bool busy;
   final bool active;
+  final Color? iconColor;
 
   @override
   Widget build(BuildContext context) {
@@ -744,7 +713,7 @@ class _MapButton extends StatelessWidget {
         constraints: const BoxConstraints.tightFor(width: HwSize.touchTarget, height: HwSize.touchTarget),
         icon: busy
             ? SizedBox.square(dimension: 20, child: CircularProgressIndicator(strokeWidth: 2, color: c.accent))
-            : Icon(icon, color: c.accent),
+            : Icon(icon, color: iconColor ?? c.accent),
       ),
     );
   }

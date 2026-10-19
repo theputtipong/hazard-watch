@@ -348,7 +348,8 @@ void main() {
 
     test('every alert credits its agency and site under the body', () {
       final th = {
-        'quake': 'ข้อมูลจาก กรมอุตุนิยมวิทยา · earthquake.tmd.go.th',
+        'quake':
+            'ข้อมูลจาก กรมอุตุนิยมวิทยา · earthquake.tmd.go.th / สำนักสำรวจธรณีวิทยาสหรัฐฯ (USGS) · earthquake.usgs.gov',
         'flood': 'ข้อมูลจาก กรุงเทพมหานคร · weather.bangkok.go.th',
         'rain': 'ข้อมูลจาก กรุงเทพมหานคร · weather.bangkok.go.th',
         'water': 'ข้อมูลจาก สถาบันสารสนเทศทรัพยากรน้ำ (สสน.) · thaiwater.net',
@@ -361,7 +362,11 @@ void main() {
         expect(n.body, 'รายละเอียด\n$credit', reason: kind);
       }
       final en = alertNotificationText(of('quake'), const Locale('en'));
-      expect(en.body, 'Details\nData from Thai Meteorological Department (TMD) · earthquake.tmd.go.th');
+      expect(
+        en.body,
+        'Details\nData from Thai Meteorological Department (TMD) · earthquake.tmd.go.th / '
+        'U.S. Geological Survey (USGS) · earthquake.usgs.gov',
+      );
     });
 
     test('a kind with no known source keeps the body as it is', () {

@@ -753,16 +753,31 @@ void main() {
       expect(mapCreditSourceIds({}, const NasaLayerState(firms: false, events: false)), isEmpty);
     });
 
-    testWidgets('a not-government line sits above the layer chips and opens the sources page', (tester) async {
+    testWidgets('a not-government button sits just above refresh and opens the sources page', (tester) async {
       await pumpMap(tester);
       final notGov = find.byKey(const ValueKey('map-not-gov'));
+      final refresh = find.byKey(const ValueKey('refresh-thai'));
       expect(notGov, findsOneWidget);
-      expect(find.descendant(of: notGov, matching: find.text('แอปนี้ไม่ใช่แอปของรัฐ')), findsOneWidget);
-      final chip = find.widgetWithText(FilterChip, 'น้ำท่วมบนถนน');
-      expect(tester.getRect(notGov).bottom, lessThanOrEqualTo(tester.getRect(chip).top));
+      expect(find.byTooltip('แอปนี้ไม่ใช่แอปของรัฐ'), findsOneWidget);
+      expect(tester.getRect(notGov).bottom, lessThanOrEqualTo(tester.getRect(refresh).top));
+      expect(tester.getRect(notGov).right, closeTo(tester.getRect(refresh).right, 0.5));
+      expect(find.text('แอปนี้ไม่ใช่แอปของรัฐ'), findsNothing);
       await tester.tap(notGov);
       await tester.pumpAndSettle();
       expect(find.byType(SourcesScreen), findsOneWidget);
+    });
+
+    testWidgets('the right-hand map buttons fit a 320 x 568 phone with the not-government button', (tester) async {
+      tester.view.physicalSize = const Size(320, 568);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await pumpMap(tester);
+      expect(tester.takeException(), isNull);
+      final rect = tester.getRect(find.byKey(const ValueKey('map-not-gov')));
+      expect(rect.top, greaterThanOrEqualTo(0));
+      expect(rect.right, lessThanOrEqualTo(320));
+      expect(rect.top, greaterThanOrEqualTo(tester.getRect(find.byType(FilterChip).first).bottom));
+      expect(tester.getRect(find.byKey(const ValueKey('refresh-thai'))).top - rect.bottom, greaterThanOrEqualTo(4));
     });
 
     testWidgets('layer chips show and hide pins', (tester) async {

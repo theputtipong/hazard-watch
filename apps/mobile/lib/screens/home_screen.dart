@@ -516,8 +516,7 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 /// At the top of Home, before any data: the app is independent, not a government app, with the way to the sources
-/// page (Google Play government-information policy: a reviewer must see it without scrolling). The longer note stays
-/// at the bottom.
+/// page (Google Play government-information policy: a reviewer must see it without scrolling). Shown once, at the top.
 class NotGovernmentBanner extends StatelessWidget {
   const NotGovernmentBanner({super.key});
 

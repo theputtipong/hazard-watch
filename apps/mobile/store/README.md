@@ -10,7 +10,7 @@
 | | Value |
 |---|---|
 | Android applicationId / iOS bundle id | `com.pdouvch.hazardwatch` (cannot change after the first upload) |
-| Version | `version:` in `pubspec.yaml` (`1.0.3+4`, version code 4); CI overrides the build number with the run number. Play needs a version code higher than any upload so far, rejected ones included |
+| Version | `version:` in `pubspec.yaml` (`1.0.4+5`, version code 5); CI overrides the build number with the run number. Play needs a version code higher than any upload so far, rejected ones included |
 | Android upload key | alias `upload`, kept with its `key.properties` in the owner's offline backup, never in git |
 
 ## Before submitting (both stores)

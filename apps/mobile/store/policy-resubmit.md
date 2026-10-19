@@ -4,6 +4,100 @@ Google Play rejected `com.pdouvch.hazardwatch` under the Misleading Claims polic
 Government Information — Your app provides government information but lacks one or more clear and accessible
 URL/link(s) to the original source(s) (for example, .gov domains)."
 
+## 1.0.4 (third submission)
+
+Google Play's rejection stands on the same issue, so the listing and the app are tightened again. We keep answering
+as **option 2 (not government-affiliated)**.
+
+What changed in `1.0.4` (`pubspec.yaml` `1.0.4+5`):
+
+- **Store listing** (`listing.md`, th + en): the "Data sources" block now matches what the app really shows. Each
+  agency is named in full with the page that hosts its data, RID is listed with a note that its figures come through
+  ThaiWater, the fire / event / imagery lines say what each NASA source provides, and a base-map line credits
+  OpenFreeMap and OpenStreetMap contributors. The "In the app" line and the closing note match the app (the closing
+  note sends readers to each agency's own channels for warnings).
+- **In the app**: the "This is not a government app" notice is shown once, at the top of Home, Alerts (with and
+  without a district) and Settings → Data sources; the repeated notes at the bottom of those screens are gone. On
+  the Map tab the notice is an ⓘ button directly above the refresh button on the map's right-hand controls (tooltip
+  "This is not a government app"; tap opens Settings → Data sources).
+
+Before sending the reply below, check each in-app point on the release build; drop any point that did not ship.
+
+URL check: every URL in the listing returned HTTP 200 on **2026-10-19** (`curl -L` (GET), all 12 URLs, from
+Thailand). Fill the date in the reply's "Note" as well.
+
+### Reply to Play review for 1.0.4 (paste into the appeal / "Reply" form, English)
+
+```
+Hello Google Play team,
+
+Thank you for the review of HazardWatch (com.pdouvch.hazardwatch). HazardWatch is NOT affiliated with any
+government (option 2). Version 1.0.4 follows each option-2 step for "Missing Source Link for Government
+Information":
+
+1. Disclaimer first in the description. The short description starts with "Independent app, not a government
+   app." The full description (English and Thai) opens with the heading "⚠️ Independent app, not a government app",
+   followed by: "HazardWatch is an independent app made by a private developer. It is not affiliated with, endorsed
+   by, or representing any government entity, including the Thai Meteorological Department (TMD), Pollution
+   Control Department (PCD), Bangkok Metropolitan Administration (BMA), Hydro-Informatics Institute (HII), Royal
+   Irrigation Department (RID), USGS or NASA."
+
+2. Full source URLs in the description. Right after the disclaimer, a "Data sources" block names every source with
+   the full URL of the page that hosts the data:
+   - Thai Meteorological Department (TMD), earthquakes: https://earthquake.tmd.go.th
+   - Pollution Control Department (PCD), Air4Thai, PM2.5: https://air4thai.pcd.go.th
+   - Bangkok Metropolitan Administration (BMA), street flooding: https://weather.bangkok.go.th/flood
+   - Bangkok Metropolitan Administration (BMA), rainfall: https://weather.bangkok.go.th/rain
+   - Hydro-Informatics Institute (HII), ThaiWater, canal and river levels and dams: https://www.thaiwater.net
+   - Royal Irrigation Department (RID), dams and reservoirs (figures come through ThaiWater): https://app.rid.go.th/reservoir
+   - USGS, earthquakes worldwide: https://earthquake.usgs.gov
+   - NASA FIRMS, satellite fire hotspots: https://firms.modaps.eosdis.nasa.gov
+   - NASA EONET, storms, volcanoes, floods and landslides worldwide: https://eonet.gsfc.nasa.gov
+   - NASA GIBS / Worldview, satellite imagery and map layers: https://worldview.earthdata.nasa.gov
+   - Base map: OpenFreeMap (https://openfreemap.org) © OpenStreetMap contributors (https://www.openstreetmap.org/copyright)
+   The description does not call the data "official" and says that for warnings people should check each agency's
+   own websites and channels.
+
+3. In the app, the "This is not a government app" notice is at the top of Home, Alerts and Settings → Data sources
+   (shown once on each screen, with a "Data sources" button on Home), and on the Map tab it is an ⓘ button directly
+   above the refresh button on the map's right-hand controls, that opens Settings → Data sources. On launch, a "This is
+   not a government app" dialog also appears at most once per day. Source links name the agency and open its page, e.g.
+   "Data from Thai Meteorological Department (TMD) · earthquake.tmd.go.th"; Settings → Data sources gives every
+   agency's full name, domain and URL:
+   - Home: the data cards and alert cards carry source links (an alert of a kind with no single source links
+     Settings → Data sources instead), and each row of "When the data last updated" has its
+     source link(s) under the feed name, with an "All data sources" button on that card.
+   - Map: a credit strip under the map ("Map data: ...") links every agency whose data is on the map by its short
+     name (e.g. BMA, ThaiWater), on the default view and whenever a layer is on; its ⓘ lists them by full name and
+     site. Each marker's sheet has its
+     own source link. A small ⓘ in the map's corner credits the base map (OpenFreeMap, OpenStreetMap contributors).
+   - Dams: the dam card on Home and the dam sheet on the Map link both ThaiWater (thaiwater.net) and the Royal
+     Irrigation Department (app.rid.go.th/reservoir).
+   - Settings → Data sources: the notice at the top, then the 10 data sources listed above (all except the base
+     map, which is credited on the map itself), each with agency, domain and full URL, and the emergency numbers
+     1784 / 191.
+   - Alert notifications end with "Data from <agency> · <domain>"; tapping one opens the Alerts tab.
+
+How to check (no login needed):
+1. Open the app and pick any Bangkok district (e.g. Bang Rak), or tap "Use my location".
+2. Map tab: the ⓘ button directly above the refresh button on the map's right-hand controls ("This is not a government
+   app") opens Data sources. The "Map
+   data: ..." strip is under the map; tap any agency in it, or tap a marker to see the "Data from ... · <domain>"
+   link in its sheet. Turn on the dam layer and tap a dam to see the ThaiWater and Royal Irrigation Department
+   links.
+3. Home tab: the notice is at the top; tap any "Data from ... · <domain>" link to open the agency's page. Scroll
+   down to "When the data last updated" to see each feed's source link and "All data sources". Alerts tab: the
+   same notice is at the top.
+4. Settings → Data sources: the notice at the top and all 10 data sources with their full URLs.
+
+Note: some Thai government sites (.go.th) can load slowly or time out from outside Thailand. All links returned
+HTTP 200 when tested from Thailand on 2026-10-19; please allow a little longer for them to load.
+
+Thank you,
+HazardWatch developer
+support.pdouvch@gmail.com
+```
+
 ## 1.0.3 (second rejection)
 
 Google Play rejected the app again with the same issue, "Missing Source Link for Government Information". We answer
@@ -216,8 +310,8 @@ support.pdouvch@gmail.com
 1. **Build ใหม่ และ version code**: Play รับเฉพาะ version code ที่มากกว่าทุกตัวที่เคยอัปโหลดเข้าแอปนี้
    (นับตัวที่ถูกปฏิเสธด้วย) AAB ที่ build ในเครื่องวันที่ 11 ต.ค. เป็น version code 1 จึงห้ามใช้ซ้ำ
    เลือกทางเดียวแล้วใช้ทางนั้นต่อไป:
-   - **Build ในเครื่อง (แนะนำรอบนี้ เพราะยังไม่ได้ตั้ง secrets ของ CI)**: version code มาจาก `+4` ใน
-     `pubspec.yaml` (`1.0.3+4`, version code 4; 1.0.1 used `+2`, 1.0.2 used `+3`)
+   - **Build ในเครื่อง (แนะนำรอบนี้ เพราะยังไม่ได้ตั้ง secrets ของ CI)**: version code มาจาก `+5` ใน
+     `pubspec.yaml` (`1.0.4+5`, version code 5; 1.0.1 used `+2`, 1.0.2 used `+3`, 1.0.3 used `+4`)
      ```sh
      cd apps/mobile
      HW_KEY_PROPERTIES=/path/to/key.properties flutter build appbundle --release --obfuscate --split-debug-info=build/symbols
@@ -225,14 +319,15 @@ support.pdouvch@gmail.com
      ได้ไฟล์ `build/app/outputs/bundle/release/app-release.aab` เก็บโฟลเดอร์ `build/symbols` ของ build นี้ไว้
      (ใช้อ่าน stack trace ตอนแอปแครชด้วย `flutter symbolize`) ถ้าไม่มี key.properties ตัว build จะหยุดพร้อม error
      ไม่ยอมเซ็นด้วย debug key
-   - **Build จาก CI**: job `android` (ส่วน AAB ซึ่งสร้างเมื่อตั้ง secrets ของ upload key แล้ว) ใช้เลขรอบ CI (`github.run_number`) เป็น version code ซึ่งสูงกว่า 4 มาก
+   - **Build จาก CI**: job `android` (ส่วน AAB ซึ่งสร้างเมื่อตั้ง secrets ของ upload key แล้ว) ใช้เลขรอบ CI (`github.run_number`) เป็น version code ซึ่งสูงกว่า 5 มาก
      ดาวน์โหลด artifact `hazardwatch-android-aab-<run>` (และ `hazardwatch-android-symbols-<run>` ซึ่งเก็บ 90 วัน)
      ถ้าเคยอัปโหลด build จาก CI แล้ว build ในเครื่องรอบถัดไปต้องตั้ง `+N` ใน `pubspec.yaml` ให้สูงกว่าเลขนั้น
      (หรือใช้ `--build-number`) จึงควรเลือก CI ไปตลอดเมื่อตั้ง secrets แล้ว
 2. **อัปโหลด** AAB เข้า track เดิม (เช่น Closed testing) แล้วสร้าง release ใหม่ ใส่ release notes สั้น ๆ
-   สำหรับ 1.0.3:
-   - th: "แอปอิสระ ไม่ใช่แอปของรัฐ: ลิงก์แหล่งข้อมูลทุกจุดแสดงชื่อหน่วยงานเต็มและโดเมน แผนที่มีเครดิตแหล่งข้อมูลใต้แผนที่ เพิ่มลิงก์กรมชลประทาน และข้อความแอปอิสระบนหน้าแรกและหน้าแหล่งข้อมูล"
-   - en: "Independent app, not a government app: every source link now shows the agency's full name and its domain, the map shows a source credit panel, the Royal Irrigation Department is linked, and the disclaimer is on Home and Data sources."
+   สำหรับ 1.0.4:
+   - th: "แก้ข้อมูลในหน้าร้านให้ตรงกับแอป ข้อความ \"ไม่ใช่แอปของรัฐ\" แสดงครั้งเดียวด้านบนของหน้าแรก แจ้งเตือน และแหล่งข้อมูล ส่วนบนแผนที่เป็นปุ่ม ⓘ เหนือปุ่มรีเฟรชในแถวปุ่มด้านขวาของแผนที่"
+   - en: "Store listing corrected to match the app. The \"This is not a government app\" notice is shown once at the top of Home, Alerts and Data sources, and on the Map it is an ⓘ button directly above the refresh button on the map's right-hand controls."
+   (1.0.3 ใช้: "Independent app, not a government app: every source link now shows the agency's full name and its domain, the map shows a source credit panel, the Royal Irrigation Department is linked, and the disclaimer is on Home and Data sources.")
    (1.0.2 ใช้: "ครอบคลุมทั้ง 77 จังหวัด เพิ่มข้อมูลจุดความร้อน ภัยธรรมชาติ และชั้นแผนที่ดาวเทียมจาก NASA และข้อมูลเขื่อนจาก ThaiWater พร้อมลิงก์แหล่งข้อมูล")
 3. **Store listing**: คัดข้อความจาก `listing.md` ทั้งไทยและอังกฤษ (short description + full description) แทนของเดิมทั้งหมด
    ตรวจว่าบรรทัดแรกของทั้งสองช่องคือข้อความแอปอิสระ และ URL ทุกตัวในบล็อก "แหล่งข้อมูล / Data sources" กดได้
@@ -254,19 +349,19 @@ support.pdouvch@gmail.com
    เพราะแอปไม่มีบัญชี ไม่มีการจ่ายเงิน และข้อมูลเป็นข้อมูลเปิด จึงไม่จำเป็นต้องกันอุปกรณ์ที่ root หรือไม่ผ่านการรับรอง
 7. **ภาพหน้าจอ** ที่ควรใส่ (ช่วยผู้ตรวจเห็นลิงก์ได้เร็ว) ทั้งไทยและอังกฤษ:
    - หน้าแรก (Home) เห็นการ์ดพร้อมลิงก์ "ข้อมูลจาก ..." / "Data from ..."
-   - แท็บแจ้งเตือน (Alerts) เห็นการ์ดแจ้งเตือนพร้อมลิงก์แหล่งข้อมูล และข้อความว่าเป็นแอปอิสระด้านล่าง
-   - ส่วนล่างของหน้าแรก เห็นข้อความว่าเป็นแอปอิสระ
+   - แท็บแจ้งเตือน (Alerts) เห็นข้อความ "ไม่ใช่แอปของรัฐ" ด้านบน (ทั้งตอนเลือกเขตแล้วและยังไม่เลือก) และการ์ดแจ้งเตือนพร้อมลิงก์แหล่งข้อมูล (ใช้เขตทดสอบ เช่น บางรัก)
+   - (ใหม่ใน 1.0.4) แผนที่ เห็นปุ่ม ⓘ เหนือปุ่มรีเฟรชในแถวปุ่มด้านขวาของแผนที่ (tooltip "This is not a government app" / "แอปนี้ไม่ใช่แอปของรัฐ")
    - แผนที่ (Map) แตะจุดบนแผนที่ให้แผ่นรายละเอียดเปิดขึ้น เห็นลิงก์แหล่งข้อมูล
-   - ตั้งค่า → แหล่งข้อมูล เห็นรายชื่อหน่วยงานพร้อม URL รวม NASA FIRMS / EONET / GIBS ข้อความปฏิเสธความเกี่ยวข้อง และเบอร์ 1784 / 191
+   - (ใหม่ใน 1.0.4) ตั้งค่า → แหล่งข้อมูล เห็นกล่องข้อความไม่ใช่แอปของรัฐด้านบน รายชื่อหน่วยงานพร้อม URL รวม NASA FIRMS / EONET / GIBS ข้อความ "For warnings, check each agency’s own website and channels." (ฉบับไทยตามแอป) และเบอร์ 1784 / 191
    - (ใหม่ใน 1.0.2) การ์ด NASA บนหน้าแรก เห็นบรรทัดเครดิต "NASA FIRMS (LANCE/ESDIS) · NASA EONET" ที่กดเป็นลิงก์ได้
    - (ใหม่ใน 1.0.2) การ์ดเขื่อนบนหน้าแรก และแผนที่ที่เปิดชั้นเขื่อนแล้วแตะหมุดเขื่อน เห็นเครดิต "ข้อมูลเขื่อนจาก ThaiWater ..." ที่กด ThaiWater เป็นลิงก์ได้
    - (ใหม่ใน 1.0.2) แผนที่ที่เปิดชั้นแผนที่ NASA เห็นเครดิตลิงก์ "Imagery: NASA EOSDIS GIBS / Worldview" และแผ่นรายละเอียดจุดความร้อนที่มีลิงก์ "NASA FIRMS ↗"
-   - (ใหม่ใน 1.0.3, ใส่เป็นภาพแรก ๆ) หน้าแรกส่วนบน เห็นแบนเนอร์ใต้ชื่อเขต "HazardWatch เป็นแอปอิสระ ไม่ใช่แอปของรัฐ …" พร้อมปุ่ม "แหล่งข้อมูล" และการ์ดที่มีลิงก์ "ข้อมูลจาก กรมอุตุนิยมวิทยา · earthquake.tmd.go.th" (ชื่อหน่วยงานเต็ม + โดเมน)
+   - (ใหม่ใน 1.0.3, ใส่เป็นภาพแรก ๆ) หน้าแรกส่วนบน เห็นแบนเนอร์ใต้ชื่อเขต "HazardWatch เป็นแอปอิสระ ไม่ใช่แอปของรัฐ …" พร้อมปุ่ม "แหล่งข้อมูล" (1.0.4 แสดงครั้งเดียวด้านบน ไม่มีหมายเหตุซ้ำด้านล่าง)
    - (ใหม่ใน 1.0.3) หน้าแรกส่วน "ข้อมูลอัปเดตล่าสุดเมื่อไหร่" เห็นลิงก์แหล่งข้อมูลใต้ชื่อฟีดแต่ละแถว และปุ่ม "แหล่งข้อมูลทั้งหมด"
-   - (ใหม่ใน 1.0.3) แผนที่มุมมองเริ่มต้น เห็นแผงเครดิตใต้แผนที่ "ข้อมูลบนแผนที่: กรุงเทพมหานคร · weather.bangkok.go.th, สถาบันสารสนเทศทรัพยากรน้ำ (สสน.) · thaiwater.net, …"
+   - (ใหม่ใน 1.0.3) แผนที่มุมมองเริ่มต้น เห็นแถบเครดิตใต้แผนที่ "ข้อมูลบนแผนที่: กทม. · ThaiWater · …" (ชื่อย่อ; ปุ่ม ⓘ ท้ายแถบแสดงชื่อเต็มและเว็บไซต์)
    - (ใหม่ใน 1.0.3) แผนที่ที่เปิดชั้นเขื่อนแล้วแตะหมุดเขื่อน เห็นลิงก์ ThaiWater (thaiwater.net) และกรมชลประทาน (app.rid.go.th) ในแผ่นรายละเอียด (การ์ดเขื่อนบนหน้าแรกก็มีทั้งสองลิงก์)
    - (ใหม่ใน 1.0.3) ตั้งค่า → แหล่งข้อมูล เห็นข้อความแอปอิสระด้านบน และครบ 10 แหล่ง แต่ละแถวมีชื่อหน่วยงาน โดเมน และ URL เต็ม รวม weather.bangkok.go.th/rain และ app.rid.go.th/reservoir
-8. **ส่งตรวจ**: Publishing overview → **Send for review** แล้วตอบผู้ตรวจด้วยข้อความใน "Reply to Play review for 1.0.3" (ส่วน 1.0.3 ด้านบน)
+8. **ส่งตรวจ**: Publishing overview → **Send for review** แล้วตอบผู้ตรวจด้วยข้อความใน "Reply to Play review for 1.0.4" (ส่วน 1.0.4 ด้านบน)
    (ถ้ามีปุ่ม Appeal / Reply ที่ Policy status)
 9. **ติดตามผล**: Policy and programs → **Policy status** (ดูว่าปัญหา Misleading Claims ถูกปิดแล้ว)
 10. **บัญชีส่วนตัว**: ก่อนขอสิทธิ์ Production ต้องทำ Closed testing มีผู้ทดสอบ 12 คนขึ้นไป ต่อเนื่อง 14 วัน
