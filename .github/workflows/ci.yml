@@ -1,0 +1,198 @@
+name: CI
+
+# Pushes to main get CI through the `ci` job of deploy.yml, so this file has no push trigger.
+on:
+  pull_request:
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  # github.workflow is the caller's name under workflow_call, so a deploy run never shares a group with a PR run.
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FLUTTER_VERSION: 3.44.8
+  JAVA_VERSION: 17
+
+jobs:
+  commits:
+    name: Commit messages
+    # Advisory only: non-conventional messages are reported as warnings and never fail CI.
+    if: github.event_name == 'pull_request' || (github.event_name == 'push' && startsWith(github.ref, 'refs/heads/'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Check commit messages
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+          PUSH_BEFORE: ${{ github.event.before }}
+          PUSH_SHA: ${{ github.sha }}
+        run: |
+          check_msg() {
+            subject=$(head -n 1 "$1")
+            case "$subject" in "Merge "*|"Revert \""*) return 0 ;; esac
+            printf '%s\n' "$subject" | grep -qE '^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\(.+\))?!?: .+'
+          }
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            set -- "$PR_BASE..$PR_HEAD"
+          elif [ -n "$PUSH_BEFORE" ] && ! echo "$PUSH_BEFORE" | grep -qE '^0+$' && git cat-file -e "$PUSH_BEFORE^{commit}" 2>/dev/null; then
+            set -- "$PUSH_BEFORE..$PUSH_SHA"
+          else
+            set -- --max-count=20 "$PUSH_SHA"
+          fi
+          bad=0
+          for sha in $(git rev-list "$@"); do
+            git log -1 --format=%B "$sha" > "$RUNNER_TEMP/msg"
+            if ! check_msg "$RUNNER_TEMP/msg"; then
+              echo "::warning::$sha does not follow the commit convention: $(head -n 1 "$RUNNER_TEMP/msg")"
+              bad=1
+            fi
+          done
+          if [ "$bad" = 1 ]; then echo "::notice::Commit message check is advisory and does not fail CI."; fi
+
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      # paths-filter lists the PR's files through the API.
+      pull-requests: read
+    outputs:
+      mobile: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.mobile == 'true' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        id: filter
+        if: github.event_name != 'workflow_dispatch'
+        with:
+          filters: |
+            mobile:
+              - 'apps/mobile/**'
+              - 'packages/tokens/**'
+              - 'packages/core/src/i18n/**'
+              - '.github/workflows/ci.yml'
+
+  # Also checks that generated tokens, strings and mobile data are not stale (`pnpm test`).
+  check-web:
+    name: Check Web
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      # next typegen writes the route types that the typecheck reads.
+      - name: Typecheck
+        run: |
+          pnpm --filter @hw/web exec next typegen
+          pnpm typecheck
+      - name: Lint
+        run: pnpm lint
+      - name: Test
+        run: pnpm test
+
+  check-mobile:
+    name: Check Mobile
+    needs: changes
+    if: needs.changes.outputs.mobile == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - name: Install dependencies
+        run: flutter pub get --enforce-lockfile
+      # hw_theme.dart is copied verbatim from the mobile design system, so it keeps that file's formatting.
+      - name: Format check
+        run: find lib test -name '*.dart' ! -path lib/theme/hw_theme.dart ! -path 'lib/l10n/gen/*' -print0 | xargs -0 dart format --set-exit-if-changed
+      - name: Lint
+        run: flutter analyze
+      - name: Test
+        run: flutter test
+
+  # Debug-signed release APK (for testing, not Play), so every PR proves the Android build still works.
+  # The Play AAB is built by release-android.yml.
+  check-android:
+    name: Check Android
+    needs: check-mobile
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - name: Install dependencies
+        run: flutter pub get --enforce-lockfile
+      - name: Build
+        env:
+          BUILD_NUMBER: ${{ github.run_number }}
+        run: flutter build apk --release --build-number "$BUILD_NUMBER"
+      - name: Upload APK
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: hazard-watch-android-apk-${{ github.run_number }}
+          path: apps/mobile/build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 14
+          if-no-files-found: error
+
+  # Flutter/pub has no first-party vulnerability scanner, so only the pnpm workspace is audited.
+  audit:
+    name: Audit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+      # shortcut: existing advisories GHSA-2464-fhr4-w9xw GHSA-673q-mjm6-r5xr GHSA-p3m5-59mp-jv5r (next),
+      # GHSA-27r3-jxmh-p828 (body-parser), GHSA-2m5v-pch6-74hx GHSA-4w7w-5xrc-9h26 GHSA-qrxm-fqhp-jwvm
+      # GHSA-xjj6-f33q-929c (undici), GHSA-587h-7wmj-h5pm (vite), GHSA-mrhx-c7xc-m3w5 (zod),
+      # remove after dependabot bumps
+      - name: Audit dependencies
+        continue-on-error: true
+        run: pnpm audit --audit-level=high

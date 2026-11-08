@@ -319,8 +319,8 @@ support.pdouvch@gmail.com
      ได้ไฟล์ `build/app/outputs/bundle/release/app-release.aab` เก็บโฟลเดอร์ `build/symbols` ของ build นี้ไว้
      (ใช้อ่าน stack trace ตอนแอปแครชด้วย `flutter symbolize`) ถ้าไม่มี key.properties ตัว build จะหยุดพร้อม error
      ไม่ยอมเซ็นด้วย debug key
-   - **Build จาก CI**: job `android` (ส่วน AAB ซึ่งสร้างเมื่อตั้ง secrets ของ upload key แล้ว) ใช้เลขรอบ CI (`github.run_number`) เป็น version code ซึ่งสูงกว่า 5 มาก
-     ดาวน์โหลด artifact `hazardwatch-android-aab-<run>` (และ `hazardwatch-android-symbols-<run>` ซึ่งเก็บ 90 วัน)
+   - **Build จาก CI**: push tag `android-vX.Y.Z` แล้ว workflow `release-android.yml` (สร้างเมื่อตั้ง secrets ของ upload key แล้ว) ใช้เลขรอบของ workflow + 100 เป็น version code ซึ่งสูงกว่า 5 มาก
+     ดาวน์โหลด AAB และ symbols จาก GitHub Release ของ tag นั้น (หรือ artifact `hazard-watch-android-aab-<version>` / `hazard-watch-android-symbols-<version>` ซึ่งเก็บ 90 วัน)
      ถ้าเคยอัปโหลด build จาก CI แล้ว build ในเครื่องรอบถัดไปต้องตั้ง `+N` ใน `pubspec.yaml` ให้สูงกว่าเลขนั้น
      (หรือใช้ `--build-number`) จึงควรเลือก CI ไปตลอดเมื่อตั้ง secrets แล้ว
 2. **อัปโหลด** AAB เข้า track เดิม (เช่น Closed testing) แล้วสร้าง release ใหม่ ใส่ release notes สั้น ๆ

@@ -101,8 +101,11 @@ packages/
             colours for Leaflet, and the palettes the Flutter app's own design system is checked against (plus its
             colour-blind mode); `test` fails if a generated file is stale.
 .github/workflows/
-  check-deploy-web.yml    Typecheck, lint, tests; on main also deploys what changed (see Deploy).
-  check-build-mobile.yml  Flutter analyze, tests and Android/iOS builds (apps/mobile).
+  ci.yml                  Pull requests: commit messages, typecheck, lint, tests, Flutter format/analyze/test and a
+                          debug-signed APK (mobile jobs only when apps/mobile, tokens or i18n changed), pnpm audit.
+  deploy.yml              Push to main: runs ci.yml, then deploys what changed (see Deploy).
+  release-android.yml     Tag `android-vX.Y.Z`: signed Play AAB + symbols as a GitHub Release (apps/mobile).
+  release-ios.yml         Tag `ios-vX.Y.Z` or manual: iOS build without signing (macOS).
   fetch-feeds.yml         Fetches feeds that block Cloudflare IPs (BMA, ThaiWater) or are too big for it (NASA) and
                           pushes them to ingest.
   monitor-sources.yml     Source-outage check every 2 h; opens/closes `outage` issues (tools/monitor).
@@ -157,13 +160,15 @@ pnpm test && pnpm typecheck
 
 ## Deploy
 
-Pushing to `main` runs `.github/workflows/check-deploy-web.yml`: checks first, then only the parts that changed are deployed.
+Pushing to `main` runs `.github/workflows/deploy.yml`: the whole CI (`ci.yml`) first, then only the parts that changed are
+deployed (jobs use the `production` environment). Commit messages must follow Conventional Commits (`feat: ...`,
+`fix(web): ...`), or CI fails and nothing deploys.
 
 | Job | Runs when | Does |
 |---|---|---|
 | `deploy-ingest` | `apps/ingest`, `packages`, district polygons or the lockfile changed | `wrangler d1 migrations apply hw-push --remote`, then `wrangler deploy` |
 | `deploy-web` | `apps/web`, `packages` or the lockfile changed (after ingest, which goes first) | OpenNext build + deploy with `NEXT_PUBLIC_API_BASE=https://api.hazard.pdouvch.com` |
-| `extension` | `apps/extension`, `packages` or geo files changed | builds the store zip as a run artifact (store upload stays manual) |
+| `build-extension` | `apps/extension`, `packages` or geo files changed | builds the store zip as a run artifact (store upload stays manual) |
 
 *Run workflow* → `deploy_all` redeploys both without a change. Needs, in the GitHub repo settings:
 - secret `CLOUDFLARE_API_TOKEN`: Cloudflare token from the "Edit Cloudflare Workers" template plus *D1: Edit*
