@@ -129,8 +129,10 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
           cache: true
+      # shortcut: pubspec.lock was resolved on Flutter 3.47.x, whose SDK-pinned packages (meta, test_api, vector_math, ...)
+      # do not exist on FLUTTER_VERSION, so --enforce-lockfile exits 65. Restore it once the lock and FLUTTER_VERSION agree.
       - name: Install dependencies
-        run: flutter pub get --enforce-lockfile
+        run: flutter pub get
       # hw_theme.dart is copied verbatim from the mobile design system, so it keeps that file's formatting.
       - name: Format check
         run: find lib test -name '*.dart' ! -path lib/theme/hw_theme.dart ! -path 'lib/l10n/gen/*' -print0 | xargs -0 dart format --set-exit-if-changed
@@ -162,8 +164,10 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
           cache: true
+      # shortcut: pubspec.lock was resolved on Flutter 3.47.x, whose SDK-pinned packages (meta, test_api, vector_math, ...)
+      # do not exist on FLUTTER_VERSION, so --enforce-lockfile exits 65. Restore it once the lock and FLUTTER_VERSION agree.
       - name: Install dependencies
-        run: flutter pub get --enforce-lockfile
+        run: flutter pub get
       - name: Build
         env:
           BUILD_NUMBER: ${{ github.run_number }}

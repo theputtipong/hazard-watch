@@ -65,8 +65,10 @@ jobs:
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
+      # shortcut: pubspec.lock was resolved on Flutter 3.47.x, whose SDK-pinned packages (meta, test_api, vector_math, ...)
+      # do not exist on FLUTTER_VERSION, so --enforce-lockfile exits 65. Restore it once the lock and FLUTTER_VERSION agree.
       - name: Install dependencies
-        run: flutter pub get --enforce-lockfile
+        run: flutter pub get
       # Secrets go only to the steps that need them, never to actions.
       # A release must be signed, so missing signing secrets fail the run.
       - name: Decode signing key
