@@ -27,7 +27,7 @@
    before production access).
 2. Create the app "HazardWatch เฝ้าระวังภัย", default language Thai, free, category Weather.
 3. Enrol in Play App Signing (default). Upload an AAB signed with the upload key: a local build (see
-   `../README.md`, Release builds) or the `hazardwatch-android-aab-<run>` artifact of the CI `android` job (built when the upload key secrets are set). Google keeps the app signing key; ours is only the
+   `../README.md`, Release builds) or the AAB attached to the GitHub Release of an `android-vX.Y.Z` tag (`release-android.yml`, built when the upload key secrets are set). Google keeps the app signing key; ours is only the
    upload key, so a lost upload key can be reset through Play Console support.
 4. Fill in store listing, Data safety, content rating (IARC), target audience, ads (none), government app (no),
    news app (no), then roll out to internal testing first. After a policy rejection follow `policy-resubmit.md`.

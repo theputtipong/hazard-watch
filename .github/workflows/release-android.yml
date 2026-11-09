@@ -1,0 +1,129 @@
+name: Release Android
+
+# Tag android-vX.Y.Z: signed, obfuscated Play AAB + symbols, attached to a GitHub Release (Play upload stays manual).
+# Manual run: same build from the pubspec version, as run artifacts only.
+on:
+  push:
+    tags: ['android-v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-android
+  cancel-in-progress: false
+
+env:
+  FLUTTER_VERSION: 3.44.8
+  JAVA_VERSION: 17
+  # Play only accepts a version code higher than every earlier upload. The old "Check & Build Mobile" workflow
+  # numbered its AABs with its own run number (last run 19), so this workflow's run number starts above that.
+  BUILD_NUMBER_OFFSET: 100
+
+jobs:
+  release-android:
+    name: Release Android
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    environment: android-release
+    permissions:
+      # gh release create.
+      contents: write
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Resolve version
+        id: version
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+          RUN_NUMBER: ${{ github.run_number }}
+        run: |
+          echo "code=$((RUN_NUMBER + BUILD_NUMBER_OFFSET))" >> "$GITHUB_OUTPUT"
+          if [ "$REF_TYPE" = "tag" ]; then
+            name="${REF_NAME#android-v}"
+            if ! printf '%s\n' "$name" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+              echo "::error::Tag $REF_NAME is not android-vX.Y.Z"
+              exit 1
+            fi
+            echo "name=$name" >> "$GITHUB_OUTPUT"
+            echo "label=$name" >> "$GITHUB_OUTPUT"
+          else
+            echo "label=$RUN_NUMBER" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+      # No cache: a release build must not restore anything a PR run could have written.
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+      # shortcut: pubspec.lock was resolved on Flutter 3.47.x, whose SDK-pinned packages (meta, test_api, vector_math, ...)
+      # do not exist on FLUTTER_VERSION, so --enforce-lockfile exits 65. Restore it once the lock and FLUTTER_VERSION agree.
+      - name: Install dependencies
+        run: flutter pub get
+      # Secrets go only to the steps that need them, never to actions.
+      # A release must be signed, so missing signing secrets fail the run.
+      - name: Decode signing key
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          # This repo stores one password for both store and key as ANDROID_KEY_PASSWORD (no ANDROID_KEYSTORE_PASSWORD).
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS || 'upload' }}
+        run: |
+          if [ -z "$ANDROID_KEYSTORE_BASE64" ] || [ -z "$ANDROID_KEYSTORE_PASSWORD" ]; then
+            echo "::error::ANDROID_KEYSTORE_BASE64 / ANDROID_KEY_PASSWORD not set, cannot sign the release."
+            exit 1
+          fi
+          umask 077
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/upload.jks"
+          printf 'storePassword=%s\nkeyPassword=%s\nkeyAlias=%s\nstoreFile=upload.jks\n' \
+            "$ANDROID_KEYSTORE_PASSWORD" "$ANDROID_KEY_PASSWORD" "$ANDROID_KEY_ALIAS" > "$RUNNER_TEMP/key.properties"
+      - name: Build
+        env:
+          HW_KEY_PROPERTIES: ${{ runner.temp }}/key.properties
+          BUILD_NAME: ${{ steps.version.outputs.name }}
+          BUILD_NUMBER: ${{ steps.version.outputs.code }}
+        run: |
+          set -- --build-number "$BUILD_NUMBER"
+          if [ -n "$BUILD_NAME" ]; then set -- "$@" --build-name "$BUILD_NAME"; fi
+          flutter build appbundle --release --obfuscate --split-debug-info=build/symbols "$@"
+      # Before any later action runs.
+      - name: Remove signing material
+        if: always()
+        run: rm -f "$RUNNER_TEMP/upload.jks" "$RUNNER_TEMP/key.properties"
+      - name: Upload AAB
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: hazard-watch-android-aab-${{ steps.version.outputs.label }}
+          path: apps/mobile/build/app/outputs/bundle/release/app-release.aab
+          retention-days: 14
+          if-no-files-found: error
+      # Obfuscated stack traces can only be read with the symbols of the exact build (`flutter symbolize`).
+      - name: Upload symbols
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: hazard-watch-android-symbols-${{ steps.version.outputs.label }}
+          path: apps/mobile/build/symbols
+          retention-days: 90
+          if-no-files-found: error
+      - name: GitHub Release
+        if: github.ref_type == 'tag'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+          LABEL: ${{ steps.version.outputs.label }}
+        run: |
+          aab="hazard-watch-android-$LABEL.aab"
+          symbols="hazard-watch-android-symbols-$LABEL.zip"
+          cp build/app/outputs/bundle/release/app-release.aab "$aab"
+          (cd build/symbols && zip -r -q "../../$symbols" .)
+          gh release create "$TAG" "$aab" "$symbols" --verify-tag --generate-notes --title "Android $LABEL"

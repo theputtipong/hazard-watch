@@ -1,0 +1,189 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      deploy_all:
+        description: Deploy ingest and web even if they did not change
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  ci:
+    name: CI
+    uses: ./.github/workflows/ci.yml # zizmor: ignore[self-repository] standard pins the ./ form (actionlint-compatible)
+    permissions:
+      contents: read
+      pull-requests: read
+
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      ingest: ${{ steps.filter.outputs.ingest == 'true' || inputs.deploy_all == true }}
+      web: ${{ steps.filter.outputs.web == 'true' || inputs.deploy_all == true }}
+      extension: ${{ steps.filter.outputs.extension }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        id: filter
+        with:
+          filters: |
+            ingest:
+              - 'apps/ingest/**'
+              - 'packages/**'
+              - 'apps/web/public/geo/districts.json'
+              - 'pnpm-lock.yaml'
+            web:
+              - 'apps/web/**'
+              - 'packages/**'
+              - 'pnpm-lock.yaml'
+            extension:
+              - 'apps/extension/**'
+              - 'packages/**'
+              - 'apps/web/public/geo/**'
+
+  # API first: the web reads fields (e.g. wind) that only a new ingest returns.
+  # Migrations apply on every ingest deploy; the schema policy is additive-only, so they never break the running web.
+  deploy-ingest:
+    name: Deploy Ingest
+    needs: [ci, changes]
+    if: github.ref == 'refs/heads/main' && needs.changes.outputs.ingest == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment: production
+    steps:
+      - name: Check config
+        id: config
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -n "$CLOUDFLARE_API_TOKEN" ] && [ -n "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID not set, skipping the ingest deploy."
+          fi
+      - if: steps.config.outputs.present == 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - if: steps.config.outputs.present == 'true'
+        uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - if: steps.config.outputs.present == 'true'
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          # No cache: a deploy build must not restore anything a PR run could have written.
+          package-manager-cache: false
+      - if: steps.config.outputs.present == 'true'
+        name: Install dependencies
+        run: pnpm install --frozen-lockfile --filter @hw/ingest...
+      # The token goes only to the wrangler steps, never to actions or install scripts.
+      - if: steps.config.outputs.present == 'true'
+        name: Apply D1 migrations
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+        run: pnpm --filter @hw/ingest exec wrangler d1 migrations apply hw-push --remote
+      - if: steps.config.outputs.present == 'true'
+        name: Deploy ingest
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+        run: pnpm --filter @hw/ingest run deploy
+
+  deploy-web:
+    name: Deploy Web
+    needs: [ci, changes, deploy-ingest]
+    if: >-
+      always() && github.ref == 'refs/heads/main' && needs.ci.result == 'success'
+      && needs.changes.outputs.web == 'true' && needs.deploy-ingest.result != 'failure'
+      && needs.deploy-ingest.result != 'cancelled'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    environment: production
+    steps:
+      - name: Check config
+        id: config
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -n "$CLOUDFLARE_API_TOKEN" ] && [ -n "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID not set, skipping the web deploy."
+          fi
+      - if: steps.config.outputs.present == 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - if: steps.config.outputs.present == 'true'
+        uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - if: steps.config.outputs.present == 'true'
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          # No cache: a deploy build must not restore anything a PR run could have written.
+          package-manager-cache: false
+      - if: steps.config.outputs.present == 'true'
+        name: Install dependencies
+        run: pnpm install --frozen-lockfile --filter @hw/web...
+      # Same commands as the package's deploy script, split so the build never sees the token.
+      - if: steps.config.outputs.present == 'true'
+        name: Build
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          NEXT_PUBLIC_API_BASE: https://api.hazard.pdouvch.com
+        run: pnpm --filter @hw/web exec opennextjs-cloudflare build
+      - if: steps.config.outputs.present == 'true'
+        name: Deploy web
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          NEXT_PUBLIC_API_BASE: https://api.hazard.pdouvch.com
+        run: pnpm --filter @hw/web exec opennextjs-cloudflare deploy
+
+  # Store uploads stay manual: download the zip from the run's artifacts.
+  build-extension:
+    name: Build Extension
+    needs: [ci, changes]
+    if: github.ref == 'refs/heads/main' && needs.changes.outputs.extension == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          # No cache: a deploy build must not restore anything a PR run could have written.
+          package-manager-cache: false
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --filter @hw/extension...
+      - name: Build
+        run: pnpm --filter @hw/extension run zip
+      - name: Upload extension zip
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: hazard-watch-extension-zip-${{ github.run_number }}
+          path: apps/extension/hazardwatch-extension-*.zip
+          retention-days: 14
+          if-no-files-found: error

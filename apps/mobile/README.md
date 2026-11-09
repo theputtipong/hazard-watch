@@ -68,18 +68,21 @@ flutter build apk --release
   ```
 
   Store builds are obfuscated; keep `build/symbols` of each upload (CI keeps it 90 days as
-  `hazardwatch-android-symbols-<run>`) to read crash stack traces with `flutter symbolize`. Play only accepts a
-  version code higher than every earlier upload, rejected ones included. A local build uses the `+N` in
-  `pubspec.yaml`; a CI build (`hazardwatch-android-aab-<run>`) uses the run number, which is far higher, so once a CI
-  AAB has been uploaded keep using CI (or raise `+N` past that run number). Both are signed with the same upload key.
+  `hazard-watch-android-symbols-<version>` and attaches it to the GitHub Release) to read crash stack traces with
+  `flutter symbolize`. Play only accepts a version code higher than every earlier upload, rejected ones included. A
+  local build uses the `+N` in `pubspec.yaml`; a CI build (`hazard-watch-android-aab-<version>`) uses the Release
+  Android run number + 100, which is far higher, so once a CI AAB has been uploaded keep using CI (or raise `+N` past
+  that number). Both are signed with the same upload key.
 
 - iOS: `flutter build ipa --release` once a signing team is set in Xcode.
 - Launcher icons and Play graphics: `node tools/icons/make-icons.mjs`. Store text, data-safety answers and the manual
   store steps: `store/`.
 
-CI: `.github/workflows/check-build-mobile.yml` (analyze, test, then one `android` job that builds the debug-signed APK artifact
-and, outside pull requests, the signed AAB plus symbols artifacts once these repository secrets exist). The iOS build
-without signing runs only on manual dispatch or `v*` tags.
+CI: `.github/workflows/ci.yml` (`check-mobile`: format, analyze, test; `build-android`: the debug-signed APK artifact)
+runs on pull requests and before every deploy when `apps/mobile`, tokens or i18n changed. Releases: push a tag
+`android-vX.Y.Z` (`.github/workflows/release-android.yml`: signed AAB plus symbols, versioned X.Y.Z, attached to a
+GitHub Release; skipped with a notice until these repository secrets exist) or `ios-vX.Y.Z`
+(`.github/workflows/release-ios.yml`: iOS build without signing; also on manual dispatch).
 
 ```sh
 base64 -i upload.jks | gh secret set ANDROID_KEYSTORE_BASE64 --repo theputtipong/hazard-watch
