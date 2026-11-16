@@ -13,7 +13,7 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   flutter_map: ^8.3.2
-  geolocator: ^14.1.1
+  geolocator: ^14.1.2
   http: ^1.6.0
   intl: any
   latlong2: ^0.10.1
